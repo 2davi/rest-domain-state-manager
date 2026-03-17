@@ -1,0 +1,21 @@
+{
+  "name": "rest-domain-state-manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint src"
+    , "format": "prettier --write \"src/**/*.{js,html,css}\""
+    , "dev": "live-server --port=5500 ./"
+    , "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "eslint": "^10.0.3",
+    "live-server": "^1.2.2",
+    "prettier": "^3.8.1"
+  }
+}
