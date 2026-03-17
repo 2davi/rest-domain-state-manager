@@ -34,6 +34,12 @@ export function createProxy(domainObject) {
     // 이 인스턴스 전용 변경 이력 — 클로저로 외부 접근 차단
     const changeLog = [];
 
+    //2026-03-17, 배열 변이 메서드가 실행되는 동안 자잘한 set 트랩을 무시하기 위한 플래그
+    let isMuting = false;
+
+    //2026-03-17, 하이재킹할 배열 원본 메서드 목록
+    const ARRAY_MUTATIONS = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
+
     // ── 변경 이력 기록 ──────────────────────────────────────────────────────
     /**
      * @param {string} op
@@ -42,6 +48,8 @@ export function createProxy(domainObject) {
      * @param {*}      newValue
      */
     function record(op, path, oldValue, newValue) {
+        if(isMuting) return; //2026-03-17, 뮤트 상태에서는 개별 기록을 생략한다.
+
         const entry = { op, path };
         if (op !== OP.REMOVE) entry.newValue = newValue;
         if (op !== OP.ADD)    entry.oldValue = oldValue;
@@ -62,10 +70,18 @@ export function createProxy(domainObject) {
              * Proxy 명세: strict mode에서 false 반환 시 TypeError 발생 → 반드시 boolean 반환
              */
             set(target, prop, value, receiver) {
+                //2026-03-17, 검증 - 값이 완전히 동일하면 (No-op) 무시한다.
+                if(target[prop] === value) return true;
+
                 const path   = `${basePath}/${String(prop)}`;
                 const hasOwn = Object.prototype.hasOwnProperty.call(target, prop);
                 const oldVal = hasOwn ? target[prop] : undefined;
                 const op     = hasOwn ? OP.REPLACE : OP.ADD;
+
+                //2026-03-13, 검증 - 배열의 length 변경은 무시
+                if(Array.isArray(target) && prop === 'length') {
+                    return Reflect.set(target, prop, value, receiver);
+                }
 
                 const ok = Reflect.set(target, prop, value, receiver);
                 if (ok) record(op, path, oldVal, value);
@@ -75,9 +91,28 @@ export function createProxy(domainObject) {
             /**
              * get 트랩: 중첩 객체에 재귀적으로 Proxy를 씌워 deep tracking 활성화
              * Symbol, toJSON, then, valueOf는 bypass — JSON.stringify/Promise 체인 보존
+             * 2026-03-17, 추가 - 배열 메서드 하이재킹하여, 변경 이력 최적화
              */
             get(target, prop, receiver) {
                 if (shouldBypassDeepProxy(prop)) return Reflect.get(target, prop, receiver);
+
+                //2026-03-17, 배열 메서드 하이재킹
+                if(Array.isArray(target) && ARRAY_MUTATIONS.includes(prop)) {
+                    return (...args) => {
+                        const oldArray = [...target]; // 변경 전 배열의 상태 얕은 복사
+
+                        isMuting = true;              // 내부 인덱스 변경에 따른 set 트랩은 무시
+                        const result = Array.prototype[prop].apply(target, args); //원본 메서드 실행
+                        isMuting = false;             // 인덱스 변경 완료와 함께 뮤트 상태 종료
+
+                        // 메서드 실행이 끝난 후, 배열 전체가 교체된 것으로 단일 로그를 남김
+                        // (배열의 부분 패이보다 전체 교체가 백엔드 파싱 및 정합성 유지에 유리함)
+                        record(OP.REPLACE, basePath, oldArray, [...target]);
+
+                        return result;
+                    }
+                }
+
 
                 const value = Reflect.get(target, prop, receiver);
 
