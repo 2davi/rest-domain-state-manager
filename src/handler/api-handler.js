@@ -10,7 +10,11 @@
  * 외부 개발자 접근 메서드: get()
  * 내부 전용 메서드:        _fetch() (DomainState.save/remove에서 호출)
  *
- * 하단에서 싱글톤 인스턴스를 export하므로 외부는 클래스를 알 필요 없다.
+ * 클래스만 export한다. 인스턴스 생성은 소비자(Consumer)가 담당한다.
+ *
+ * @example
+ * import { ApiHandler } from './rest-domain-state-manager.js';
+ * const api = new ApiHandler({ host: 'localhost:8080', debug: true });
  *
  * @module handler/api-handler
  */
@@ -126,22 +130,4 @@ class ApiHandler {
 }
 
 
-// ── 싱글톤 export ─────────────────────────────────────────────────────────────
-// 외부 개발자는 ApiHandler 클래스를 알 필요 없다.
-// 서버 주소와 환경 설정만 변경하면 된다.
-//
-// @example
-// // 개발 환경
-// export const api = new ApiHandler({ host: 'localhost:8080', debug: true, env: 'development' });
-//
-// // 프로덕션
-// export const api = new ApiHandler({ host: 'api.example.com', env: 'production' });
-//
-// @example (통합 문자열형)
-// export const api = new ApiHandler({ baseURL: 'localhost:8080/app/api', debug: true });
-
-export const api = new ApiHandler({
-    host:  'localhost:8080',
-    debug: true,
-    env:   'development',
-});
+export { ApiHandler };

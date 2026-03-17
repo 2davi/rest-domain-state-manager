@@ -174,11 +174,18 @@
 <script type="module">
   // ── 진입점 import ───────────────────────────────────────────────────────
   import {
-    api,
+    ApiHandler,
     DomainState,
     DomainVO,
     DomainRenderer,
   } from '../rest-domain-state-manager.js';
+
+  // ── ApiHandler 인스턴스 생성 — 서버 주소는 소비자가 직접 결정 ───────────
+  const api = new ApiHandler({
+    host:  'localhost:8080',
+    debug: true,
+    env:   'development',
+  });
 
   // ── DomainRenderer 플러그인 등록 ────────────────────────────────────────
   DomainState.use(DomainRenderer);
@@ -187,8 +194,9 @@
   class UserVO extends DomainVO {
     static baseURL = 'localhost:8080/api/users';
     static fields  = {
-      user_id:  { default: '' },
+      userId:  { default: '' },
       name:    { default: '', validate: v => v.trim().length > 0 },
+      age:     { default: 0,  validate: v => v >= 0, transform: Number },
       address: { default: { city: '', zip: '' } },
       role:    { default: 'USER' },
     };
