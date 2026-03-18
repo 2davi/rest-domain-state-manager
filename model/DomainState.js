@@ -6,7 +6,6 @@
  *
  * ── 생성 경로 ────────────────────────────────────────────────────────────────
  *   fromJSON(text, handler, opts?)    GET 응답 → DomainState (isNew: false)
- *   fromForm(form, handler, opts?)    Form 요소 → 빈 골격 DomainState (isNew: true)
  *   fromVO(vo, handler, opts?)        DomainVO → 기본값 골격 DomainState (isNew: true)
  *
  * ── 외부 인터페이스 ──────────────────────────────────────────────────────────
@@ -127,9 +126,7 @@ export class DomainState {
      * [팩토리 1] REST API 응답 JSON 문자열로부터 DomainState를 생성한다.
      * api-handler.js의 get() 내부에서 호출한다.
      *
-     * options.vo    → DomainVO 정합성 검증 후 validators/transformers 주입 (4-1)
-     * options.form  → 로드된 데이터를 form 요소에 자동 채움 (4-2)
-     * 둘 다         → 정합성 검증 → form 채움 (4-3)
+     * options.vo    → DomainVO 정합성 검증 후 validators/transformers 주입
      *
      * @param {string}          jsonText
      * @param {object}          handler      ApiHandler 인스턴스
@@ -138,7 +135,6 @@ export class DomainState {
      * @param {boolean}         [options.debug]
      * @param {string}          [options.label]
      * @param {DomainVO|null}   [options.vo]   DomainVO 인스턴스 (정합성 검증용)
-     * @param {string|HTMLFormElement|null} [options.form]  form 요소 또는 id
      * @returns {DomainState}
      */
     static fromJSON(jsonText, handler, {
@@ -146,7 +142,6 @@ export class DomainState {
         debug       = false,
         label       = null,
         vo          = null,
-        form        = null,
     } = {}) {
         const wrapper = toDomain(jsonText);
         const state   = new DomainState(wrapper, {
@@ -157,7 +152,7 @@ export class DomainState {
             label:  label ?? `json_${Date.now()}`,
         });
 
-        // 4-1: DomainVO 정합성 검증
+        // DomainVO 정합성 검증
         if (vo instanceof DomainVO) {
             const { valid } = vo.checkSchema(wrapper.getTarget());
             if (valid) {
@@ -166,55 +161,9 @@ export class DomainState {
             }
         }
 
-        // 4-2: form에 데이터 채움
-        if (form) {
-            const formEl = _resolveForm(form);
-            if (formEl) _syncToForm(formEl, wrapper.getTarget());
-        }
-
         return state;
     }
 
-    /**
-     * [팩토리 2] HTML Form 요소 또는 form id 문자열로부터 DomainState를 생성한다.
-     * form[name] 속성의 점(dot) 표기 중첩 구조를 읽어 빈 골격 Proxy를 만든다.
-     * form 요소에 이벤트 리스너를 자동으로 등록하여 실시간 변경을 추적한다.
-     *
-     * @param {string|HTMLFormElement} form   form id 문자열 또는 DOM 요소
-     * @param {object}  handler
-     * @param {object}  [options]
-     * @param {object|null}  [options.urlConfig]
-     * @param {boolean}      [options.debug]
-     * @param {string}       [options.label]
-     * @returns {DomainState}
-     * @throws {TypeError|Error}
-     */
-    static fromForm(form, handler, {
-        urlConfig = null,
-        debug     = false,
-        label     = null,
-    } = {}) {
-        const formEl = _resolveForm(form);
-        if (!formEl) {
-            if (typeof form === 'string') throw new Error(ERR.FORM_NOT_FOUND(form));
-            throw new TypeError(ERR.FROM_FORM_TYPE);
-        }
-
-        const skeleton = _formToSkeleton(formEl);
-        const wrapper  = createProxy(skeleton);
-        const state    = new DomainState(wrapper, {
-            handler,
-            urlConfig,
-            isNew: true,
-            debug,
-            label: label ?? (formEl.id ? `form_${formEl.id}` : `form_${Date.now()}`),
-        });
-
-        // 6번: form 요소 이벤트 리스너 등록
-        _bindFormEvents(formEl, wrapper.proxy, () => state._broadcast());
-
-        return state;
-    }
 
     /**
      * [팩토리 3] DomainVO 인스턴스로부터 DomainState를 생성한다.
@@ -375,106 +324,6 @@ export class DomainState {
 // ══════════════════════════════════════════════════════════════════════════════
 // 모듈 내부 유틸 함수
 // ══════════════════════════════════════════════════════════════════════════════
-
-/**
- * form id 문자열 또는 HTMLFormElement를 받아 HTMLFormElement를 반환한다.
- * 찾을 수 없으면 null을 반환한다.
- *
- * @param {string|HTMLFormElement|*} form
- * @returns {HTMLFormElement|null}
- */
-function _resolveForm(form) {
-    if (form instanceof HTMLFormElement)    return form;
-    if (typeof form === 'string')           return document.getElementById(form);
-    return null;
-}
-
-/**
- * HTMLFormElement를 읽어 빈 골격 객체를 생성한다.
- * input[name]의 점(dot) 표기를 중첩 객체로 변환한다.
- *
- * @param {HTMLFormElement} formEl
- * @returns {object}
- *
- * @example
- * // <input name="address.city" /> → { address: { city: '' } }
- */
-function _formToSkeleton(formEl) {
-    const skeleton = {};
-    for (const el of formEl.elements) {
-        if (!el.name) continue;
-        _setNestedValue(skeleton, el.name.split('.'), '');
-    }
-    return skeleton;
-}
-
-/**
- * 점(dot) 분해된 키 배열로 중첩 객체에 값을 설정한다.
- *
- * @param {object}   target
- * @param {string[]} keys
- * @param {*}        value
- */
-function _setNestedValue(target, keys, value) {
-    let cursor = target;
-    for (let i = 0; i < keys.length - 1; i++) {
-        if (cursor[keys[i]] == null || typeof cursor[keys[i]] !== 'object') {
-            cursor[keys[i]] = {};
-        }
-        cursor = cursor[keys[i]];
-    }
-    cursor[keys[keys.length - 1]] = value;
-}
-
-/**
- * DomainState 데이터를 form 요소의 value로 채운다. (4-2 syncForm)
- *
- * @param {HTMLFormElement} formEl
- * @param {object}          data
- */
-function _syncToForm(formEl, data) {
-    for (const el of formEl.elements) {
-        if (!el.name) continue;
-        const val = el.name.split('.').reduce((obj, k) => obj?.[k], data);
-        if (val == null) continue;
-
-        if (el.type === 'checkbox' || el.type === 'radio') {
-            el.checked = el.value === String(val);
-        } else {
-            el.value = val;
-        }
-    }
-}
-
-/**
- * form 요소에 변경 이벤트 리스너를 등록한다. (6번)
- *
- * 추적 전략:
- *   input[type='text'], textarea → blur 시 proxy 업데이트
- *   select, radio, checkbox      → change 시 proxy 업데이트 (선택 즉시 확정)
- *
- * @param {HTMLFormElement} formEl
- * @param {object}          proxy  - createProxy()의 반환 proxy
- */
-function _bindFormEvents(formEl, proxy, onUpdate) {
-    const textLike = new Set(['text', 'email', 'password', 'number', 'tel', 'url', 'search', 'textarea']);
-
-    for (const el of formEl.elements) {
-        if (!el.name) continue;
-        const keys  = el.name.split('.');
-        const event = textLike.has(el.type || el.tagName.toLowerCase()) ? 'blur' : 'change';
-
-        el.addEventListener(event, () => {
-            const value = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value;
-            // 중첩 경로 proxy 탐색 후 최종 키에 값 설정
-            let cursor = proxy;
-            for (let i = 0; i < keys.length - 1; i++) cursor = cursor[keys[i]];
-            cursor[keys[keys.length - 1]] = value;
-            // proxy 업데이트 후 broadcast 호출
-            onUpdate();
-        });
-    }
-}
 
 /**
  * DomainPipeline을 순환 참조 없이 lazy load한다.
