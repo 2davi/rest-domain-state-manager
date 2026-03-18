@@ -18,7 +18,7 @@
 
 이거 안 해두면 나중에 상속 구조 복잡한 객체 들어왔을 때 this 바인딩 날아가는 치명적인 컨텍스트 소실(Context Loss) 터지니까 무조건 예외 없이 싹 다 바꿔.
 
-만약 `domainObject`가 Getter를 가지고 있고, 그 안에서 `this`를 호출한다고 할 때, `target[prop]`으로 접근하는 순간 `this`바인딩이 원본 객체로 엇나가버린다.
+만약 `domainObject`가 Getter를 가지고 있고, 그 안에서 `this`를 호출한다고 할 때, `target[prop]`으로 원시 접근하는 순간 `this`바인딩이 원본 객체로 엇나가버린다.
 
 ### STEP 2. 마의 구간: 배열(Array) 하이재킹 알고리즘 전면 수정
 

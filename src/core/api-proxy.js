@@ -45,7 +45,11 @@ export function createProxy(domainObject) {
 
     //2026-03-17, 배열 변이 메서드가 실행되는 동안 자잘한 set 트랩을 무시하기 위한 플래그와, 하이재킹할 배열 원본 메서드 목록
     let isMuting = false;
-    const ARRAY_MUTATIONS = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
+
+    //[refactor/array-patch-optimization(2026-03-18)] 배열 변이 최적화를 위한 메서드 구분
+    // const ARRAY_MUTATIONS = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
+    const O1_MUTATIONS = ['push', 'pop'];
+    const ON_MUTATIONS = ['shift', 'unshift', 'splice', 'sort', 'reverse'];
 
     // ── 변경 이력 기록 ──────────────────────────────────────────────────────
     /**
@@ -81,7 +85,7 @@ export function createProxy(domainObject) {
                 const currentValue = Reflect.get(target, prop, receiver);
 
                 //2026-03-17, 검증 - 값이 완전히 동일하면 (No-op) 무시한다.
-                if(target[prop] === value) return true;
+                if(currentValue === value) return true;
 
                 const path     = `${basePath}/${String(prop)}`;
                 const hasOwn   = Object.prototype.hasOwnProperty.call(target, prop);
@@ -106,18 +110,52 @@ export function createProxy(domainObject) {
             get(target, prop, receiver) {
                 if (shouldBypassDeepProxy(prop)) return Reflect.get(target, prop, receiver);
 
-                //2026-03-17, 배열 메서드 하이재킹
+                //[refactor/array-patch-optimization(2026-03-18)] 배열 메서드에 따른 하이재킹 분기
+                //[refactor/array-patch-optimization(2026-03-18)] O(1)Group: 가로채지 않는다.
+                if(Array.isArray(target) && O1_MUTATIONS.includes(prop)) {
+                    /* nothing */
+                }
+
+
+                
+                //[refactor/array-patch-optimization(2026-03-18)] O(N)Group: 래퍼 함수를 반환한다.
                 if(Array.isArray(target) && ARRAY_MUTATIONS.includes(prop)) {
                     return (...args) => {
-                        const oldArray = [...target]; // 변경 전 배열의 상태 얕은 복사
+                        // 원본 배열 상태 저장 (삭제한 값 수정용)
+                        const oldArray = [...target];
 
-                        isMuting = true;              // 내부 인덱스 변경에 따른 set 트랩은 무시
-                        const result = Array.prototype[prop].apply(target, args); //원본 메서드 실행
-                        isMuting = false;             // 인덱스 변경 완료와 함께 뮤트 상태 종료
+                        // V8 렌더링 폭주를 막기 위한 Proxy set 트랩 뮤트
+                        isMuting = true;
+                        const result = Array.prototype[prop].apply(target, args);
+                        isMuting = false;
+
+                        
+                        const path     = `${basePath}/${String(prop)}`;
+                        const hasOwn   = Object.prototype.hasOwnProperty.call(target, prop);
+                        //[refactor/array-patch-optimization(2026-03-18)] 호출된 메서드에 따라 정확한 Delta 로그만 남기도록 분기
+                        switch(prop) {
+                            case 'shift':
+                                record(OP.REMOVE, `${basePath}/0`, oldArray[0], undefined);
+                                break;
+                            case 'unshift':
+                                const argsArray = [...args];
+                                argsArray.forEach((el, idx) => {
+                                    record(OP.ADD, `${basePath}/${idx}`, oldArray, el);
+                                });
+                                break;
+                            case 'splice':
+                                break;
+                            case 'sort':
+                                break;
+                            case 'reverse':
+                                break;
+                            
+                        }
+
 
                         // 메서드 실행이 끝난 후, 배열 전체가 교체된 것으로 단일 로그를 남김
                         // (배열의 부분 패이보다 전체 교체가 백엔드 파싱 및 정합성 유지에 유리함)
-                        record(OP.REPLACE, basePath, oldArray, [...target]);
+                        //record(OP.REPLACE, basePath, oldArray, [...target]);
 
                         return result;
                     }
