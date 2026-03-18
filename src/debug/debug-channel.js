@@ -200,7 +200,7 @@ function _buildPopupHTML() {
 <div id="tab-bar"></div>
 <div id="content"><div id="empty">탭 데이터를 기다리는 중...</div></div>
 <script>
-const tabs    = new Map(); // tabId → { tabUrl, states, lastSeen }
+  const tabs    = new Map(); 
   let activeTab = null;
   const channel = new BroadcastChannel('dsm_debug');
   
@@ -212,7 +212,6 @@ const tabs    = new Map(); // tabId → { tabUrl, states, lastSeen }
     const now = Date.now();
 
     if (data.type === 'TAB_REGISTER') {
-      // [Heartbeat] 핑에 대한 응답(PONG)으로 레지스터가 날아오면 생존 시간 갱신!
       tabs.set(data.tabId, { url: data.tabUrl, states: data.states ?? {}, lastSeen: now });
       if (!activeTab) activeTab = data.tabId;
       render();
@@ -225,7 +224,7 @@ const tabs    = new Map(); // tabId → { tabUrl, states, lastSeen }
     if (data.type === 'DS_UPDATE' && tabs.has(data.tabId)) {
       const tab = tabs.get(data.tabId);
       tab.states[data.label] = { label: data.label, ...data.snapshot };
-      tab.lastSeen = now; // 업데이트가 들어와도 생존한 거니까 시간 갱신
+      tab.lastSeen = now;
       render();
     }
     if (data.type === 'DS_ERROR' && tabs.has(data.tabId)) {
@@ -254,12 +253,69 @@ const tabs    = new Map(); // tabId → { tabUrl, states, lastSeen }
               isDeadFound = true;
           }
       }
-      if (isDeadFound) render(); // 죽은 탭 치웠으니 화면 다시 그리기
+      if (isDeadFound) render();
   }, 2000);
 
-  // ... (아래 render() 함수는 기존과 동일하게 냅둬)
   function render() {
-// ... 기존 render 함수 내용 ...
+      document.getElementById('tab-count').textContent = \`활성 탭: \${tabs.size}개\`;
+      const tabBar = document.getElementById('tab-bar');
+      const content = document.getElementById('content');
+
+      if (tabs.size === 0) {
+        tabBar.innerHTML = '';
+        content.innerHTML = '<div id="empty">대기 중...</div>';
+        return;
+      }
+
+      tabBar.innerHTML = [...tabs.keys()].map(k => \`
+        <button class="tab-btn \${k === activeTab ? 'active' : ''}" data-id="\${k}">
+          \${k.split('_')[1]} (\${new URL(tabs.get(k).url).pathname})
+        </button>
+      \`).join('');
+
+      if (!activeTab || !tabs.has(activeTab)) activeTab = [...tabs.keys()][0];
+      const states = tabs.get(activeTab).states;
+      const keys = Object.keys(states);
+
+      if (keys.length === 0) {
+        content.innerHTML = '<div id="empty">생성된 DomainState 없음</div>';
+      } else {
+        content.innerHTML = keys.map(k => {
+          const s = states[k];
+          const badgeClass = s.isNew ? 'badge-new' : 'badge-exist';
+          const badgeText  = s.isNew ? 'NEW' : 'EXIST';
+          const hasError   = (s.errors?.length ?? 0) > 0;
+
+          return \`<div class="ds-block">
+            <div class="ds-header">
+              <span>\${s.label ?? k}</span>
+              <span>
+                <span class="badge \${badgeClass}">\${badgeText}</span>
+                \${hasError ? '<span class="badge badge-error">ERROR</span>' : ''}
+              </span>
+            </div>
+            <div class="ds-section">
+              <div class="ds-section-title">data (현재 상태)</div>
+              <pre>\${JSON.stringify(s.data, null, 2)}</pre>
+            </div>
+            <div class="ds-section">
+              <div class="ds-section-title">changeLog (\${(s.changeLog ?? []).length}건)</div>
+              \${(s.changeLog ?? []).map(e =>
+                \`<pre class="change-entry">\${JSON.stringify(e)}</pre>\`
+              ).join('') || '<pre style="color:#666">변경 없음</pre>'}
+            </div>
+            \${hasError ? \`<div class="ds-section">
+              <div class="ds-section-title">errors</div>
+              \${s.errors.map(e => \`<pre class="error-entry">\${JSON.stringify(e)}</pre>\`).join('')}
+            </div>\` : ''}
+          </div>\`;
+        }).join('');
+      }
+
+      tabBar.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = () => { activeTab = btn.dataset.id; render(); };
+      });
+  }
 <\/script>
 </body>
 </html>`;
