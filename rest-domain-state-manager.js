@@ -52,10 +52,11 @@
 
 // DomainPipeline을 먼저 import해 전역 레지스트리(globalThis.__DSM_DomainPipeline)를 등록한다.
 // DomainState.all()의 lazy load가 이 등록에 의존한다.
-import { DomainPipeline } from './model/DomainPipeline.js';
-import { DomainState }    from './model/DomainState.js';
-import { DomainVO }       from './model/DomainVO.js';
-import { DomainRenderer } from './plugin/domain-renderer/DomainRenderer.js';
-import { ApiHandler }     from './src/handler/api-handler.js';
+import { DomainPipeline }    from './model/DomainPipeline.js';
+import { DomainState }       from './model/DomainState.js';
+import { DomainVO }          from './model/DomainVO.js';
+import { ApiHandler }        from './src/handler/api-handler.js';
+import { DomainRenderer }    from './plugin/domain-renderer/DomainRenderer.js';
+import { FormBinder} from './plugin/form-binding/FormBinder.js';
 
-export { ApiHandler, DomainState, DomainVO, DomainPipeline, DomainRenderer };
+export { ApiHandler, DomainState, DomainVO, DomainPipeline, DomainRenderer, FormBinder };
