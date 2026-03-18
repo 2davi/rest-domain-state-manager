@@ -119,7 +119,7 @@ export function createProxy(domainObject) {
 
                 
                 //[refactor/array-patch-optimization(2026-03-18)] O(N)Group: 래퍼 함수를 반환한다.
-                if(Array.isArray(target) && ARRAY_MUTATIONS.includes(prop)) {
+                if(Array.isArray(target) && ON_MUTATIONS.includes(prop)) {
                     return (...args) => {
                         // 원본 배열 상태 저장 (삭제한 값 수정용)
                         const oldArray = [...target];
@@ -129,25 +129,40 @@ export function createProxy(domainObject) {
                         const result = Array.prototype[prop].apply(target, args);
                         isMuting = false;
 
-                        
-                        const path     = `${basePath}/${String(prop)}`;
-                        const hasOwn   = Object.prototype.hasOwnProperty.call(target, prop);
                         //[refactor/array-patch-optimization(2026-03-18)] 호출된 메서드에 따라 정확한 Delta 로그만 남기도록 분기
                         switch(prop) {
                             case 'shift':
                                 record(OP.REMOVE, `${basePath}/0`, oldArray[0], undefined);
                                 break;
                             case 'unshift':
-                                const argsArray = [...args];
-                                argsArray.forEach((el, idx) => {
-                                    record(OP.ADD, `${basePath}/${idx}`, oldArray, el);
+                                args.forEach((el, idx) => {
+                                    record(OP.ADD, `${basePath}/${idx}`, undefined, el);
                                 });
                                 break;
                             case 'splice':
+                                // args[0]: 시작 인덱스, args[1]: 삭제할 개수, args[2~]: 추가할 아이템들
+                                // 시작 인덱스 보정: 음수일 경우 배열 끝에서부터 계산
+                                const startIdx = args[0] < 0
+                                      ? Math.max(oldArray.length + args[0], 0)
+                                      : Math.min(args[0], oldArray.length);
+
+                                // 1. 삭제(REMOVE) 처리
+                                // result 배열에는 삭제된 요소들이 담겨 있다.
+                                // JSON Patch에서 요소를 삭제하면 배열의 인덱스가 줄어드므로,
+                                // 동일한 시작 인덱스 `startIdx`를 향해 연속으로 REMOVE를 날려주면 된다.
+                                result.forEach( deletedItem => {
+                                    record(OP.REMOVE, `${basePath}/${startIdx}`, deletedItem, undefined);
+                                });
+                                // 2. 추가(ADD) 처리
+                                // args의 3번째 인자부터가 새로 추가할 아이템들이다.
+                                const addedItems = args.slice(2);
+                                addedItems.forEach((addedItems, idx) => {
+                                    record(OP.ADD, `${basePath}/${startIdx + idx}`, undefined, addedItem);
+                                });
                                 break;
                             case 'sort':
-                                break;
                             case 'reverse':
+                                record(OP.REPLACE, basePath, oldArray, [...target]);
                                 break;
                             
                         }
