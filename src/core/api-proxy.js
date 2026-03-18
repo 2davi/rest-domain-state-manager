@@ -4,6 +4,10 @@
  * createProxy()는 domainObject를 감싸는 Proxy를 생성하고,
  * set / get / deleteProperty 트랩으로 모든 변경을 자동 기록한다.
  *
+ * [refactor/core-engine (2026-03-18)]
+ * 1. WewkMap을 이용한 Lazy Proxying 캐싱으로 V8 GC 부하 완화
+ * 2. 트랩 내부의 모든 속성 접근을 Reflect API로 전면 교체하여 컨텍스트 소실 원천 차단
+ * 
  * 반환값 { proxy, getChangeLog, getTarget, clearChangeLog }는
  * DomainState가 "도개교"로 보관한다.
  *
@@ -34,10 +38,13 @@ export function createProxy(domainObject) {
     // 이 인스턴스 전용 변경 이력 — 클로저로 외부 접근 차단
     const changeLog = [];
 
-    //2026-03-17, 배열 변이 메서드가 실행되는 동안 자잘한 set 트랩을 무시하기 위한 플래그
-    let isMuting = false;
+    // [refactor/core-engine(2026-03-18)] WeakMap Cache 도입
+    // 중첩 객체에 접근할 때마다(get 트랩의 deeper proxy) Proxy를 무한정 생성하던 기존 로직을 개선.
+    // 원본 객체를 키(Key)로 삼아 Proxy를 캐싱해두면, 객체가 사라질 때 Proxy도 같이 GC의 대상이 된다.
+    const proxyCache = new WeakMap();
 
-    //2026-03-17, 하이재킹할 배열 원본 메서드 목록
+    //2026-03-17, 배열 변이 메서드가 실행되는 동안 자잘한 set 트랩을 무시하기 위한 플래그와, 하이재킹할 배열 원본 메서드 목록
+    let isMuting = false;
     const ARRAY_MUTATIONS = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
 
     // ── 변경 이력 기록 ──────────────────────────────────────────────────────
@@ -70,13 +77,16 @@ export function createProxy(domainObject) {
              * Proxy 명세: strict mode에서 false 반환 시 TypeError 발생 → 반드시 boolean 반환
              */
             set(target, prop, value, receiver) {
+                //[refactor/core-engine(2026-03-18)] target[prop] 쌩접근 방지 -> Reflect.get으로 우아하게
+                const currentValue = Reflect.get(target, prop, receiver);
+
                 //2026-03-17, 검증 - 값이 완전히 동일하면 (No-op) 무시한다.
                 if(target[prop] === value) return true;
 
-                const path   = `${basePath}/${String(prop)}`;
-                const hasOwn = Object.prototype.hasOwnProperty.call(target, prop);
-                const oldVal = hasOwn ? target[prop] : undefined;
-                const op     = hasOwn ? OP.REPLACE : OP.ADD;
+                const path     = `${basePath}/${String(prop)}`;
+                const hasOwn   = Object.prototype.hasOwnProperty.call(target, prop);
+                const oldValue = hasOwn ? currentValue : undefined;
+                const op       = hasOwn ? OP.REPLACE : OP.ADD;
 
                 //2026-03-13, 검증 - 배열의 length 변경은 무시
                 if(Array.isArray(target) && prop === 'length') {
@@ -84,7 +94,7 @@ export function createProxy(domainObject) {
                 }
 
                 const ok = Reflect.set(target, prop, value, receiver);
-                if (ok) record(op, path, oldVal, value);
+                if (ok) record(op, path, oldValue, value);
                 return ok;
             },
 
@@ -117,9 +127,18 @@ export function createProxy(domainObject) {
                 const value = Reflect.get(target, prop, receiver);
 
                 if (isPlainObject(value) || isArray(value)) {
+                    //[refactor/core-engine(2026-03-18)] Lazy Proxying & WeakMap 캐싱 적용
+                    if(proxyCache.has(value)) {
+                        return proxyCache.get(value); // 이미 Proxy로 씌워둔 놈은 그대로 반환
+                    }
+
                     const childPath = `${basePath}/${String(prop)}`;
                     console.debug(formatMessage(LOG.proxy.deepProxy, { path: childPath }));
-                    return new Proxy(value, makeHandler(childPath));
+
+                    //[refactor/core-engine(2026-03-18)] 새로 만든 Proxy 놈은 캐시에 등록
+                    const childProxy = new Proxy(value, makeHandler(childPath));
+                    proxyCache.set(value, childProxy);
+                    return childProxy;
                 }
 
                 return value;
@@ -133,8 +152,10 @@ export function createProxy(domainObject) {
                 if (!Object.prototype.hasOwnProperty.call(target, prop)) return true;
 
                 const path   = `${basePath}/${String(prop)}`;
-                const oldVal = target[prop];
+                //[refactor/core-engine(2026-03-18)] 삭제 과정에서 값을 읽을 때도 Reflect API로 교체
+                const oldVal = Reflect.get(target, prop);
                 const ok     = Reflect.deleteProperty(target, prop);
+
                 if (ok) record(OP.REMOVE, path, oldVal, undefined);
                 return ok;
             },
