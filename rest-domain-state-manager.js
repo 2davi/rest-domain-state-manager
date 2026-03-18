@@ -50,13 +50,14 @@
  * @module rest-domain-state-manager
  */
 
-// DomainPipeline을 먼저 import해 전역 레지스트리(globalThis.__DSM_DomainPipeline)를 등록한다.
-// DomainState.all()의 lazy load가 이 등록에 의존한다.
 import { DomainPipeline }    from './model/DomainPipeline.js';
 import { DomainState }       from './model/DomainState.js';
 import { DomainVO }          from './model/DomainVO.js';
 import { ApiHandler }        from './src/handler/api-handler.js';
 import { DomainRenderer }    from './plugin/domain-renderer/DomainRenderer.js';
-import { FormBinder} from './plugin/form-binding/FormBinder.js';
+import { FormBinder}         from './plugin/form-binding/FormBinder.js';
+
+// 의존성 주입: DomainState가 순환 참조 없이 DomainPipeline을 생성할 수 있도록 생성자를 넘겨준다.
+DomainState.PipelineConstructor = DomainPipeline;
 
 export { ApiHandler, DomainState, DomainVO, DomainPipeline, DomainRenderer, FormBinder };

@@ -57,11 +57,6 @@ export class DomainPipeline {
          * @type {Array<{ key: string, handler: function }>}
          */
         this._queue = [];
-
-        // 전역 등록 (DomainState의 lazy load 지원)
-        if (typeof globalThis.__DSM_DomainPipeline === 'undefined') {
-            globalThis.__DSM_DomainPipeline = DomainPipeline;
-        }
     }
 
 
@@ -158,5 +153,3 @@ export class DomainPipeline {
     }
 }
 
-// DomainState.all()의 lazy load를 위해 전역에 미리 등록
-globalThis.__DSM_DomainPipeline = DomainPipeline;

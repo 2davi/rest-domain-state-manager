@@ -58,26 +58,20 @@ export class DomainState {
     }
 
     /**
-     * 여러 DomainState를 병렬로 fetch하고 순서 있는 후처리를 체이닝한다.
-     * DomainPipeline을 반환한다.
-     *
+     * @type {typeof import('./DomainPipeline.js').DomainPipeline | null}
+     */
+    static PipelineConstructor = null;
+
+    /**
      * @param {Record<string, Promise<DomainState>>} resourceMap
      * @param {{ strict?: boolean }} [options]
      * @returns {import('./DomainPipeline.js').DomainPipeline}
-     *
-     * @example
-     * const result = await DomainState.all({
-     *   roles: api.get('/api/roles'),
-     *   user:  api.get('/api/users/1'),
-     * }, { strict: false })
-     * .after('roles', roles => roles.renderTo('#roleDiv', { type: 'select', ... }))
-     * .after('user',  user  => user.bindForm('#userForm'))
-     * .run();
      */
     static all(resourceMap, options = {}) {
-        // 순환 참조 방지를 위해 DomainPipeline을 동적 import 대신 lazy require
-        const { DomainPipeline } = _requirePipeline();
-        return new DomainPipeline(resourceMap, options);
+        if(!DomainState.PipelineConstructor) {
+            throw new Error('[DSM] DomainPipeline이 주입되지 않았습니다. rest-domain-state-manager.js 진입점을 사용하세요.');
+        }
+        return new DomainPipelineConstructor(resourceMap, options);
     }
 
 
@@ -318,29 +312,4 @@ export class DomainState {
             errors:    this._errors,
         });
     }
-}
-
-
-// ══════════════════════════════════════════════════════════════════════════════
-// 모듈 내부 유틸 함수
-// ══════════════════════════════════════════════════════════════════════════════
-
-/**
- * DomainPipeline을 순환 참조 없이 lazy load한다.
- * (DomainState ↔ DomainPipeline 상호 import 방지)
- *
- * @returns {{ DomainPipeline: typeof import('./DomainPipeline.js').DomainPipeline }}
- */
-let _pipelineCache = null;
-function _requirePipeline() {
-    if (!_pipelineCache) {
-        // ES Module 환경에서는 정적 import를 사용하지만,
-        // 순환 참조를 끊기 위해 전역 등록 방식을 사용한다.
-        // DomainPipeline.js가 로드되면 전역에 등록되어 있어야 한다.
-        if (typeof globalThis.__DSM_DomainPipeline === 'undefined') {
-            throw new Error('[DSM] DomainPipeline을 먼저 import해야 합니다. rest-domain-state-manager.js를 사용하세요.');
-        }
-        _pipelineCache = { DomainPipeline: globalThis.__DSM_DomainPipeline };
-    }
-    return _pipelineCache;
 }
