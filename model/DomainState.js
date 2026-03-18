@@ -137,8 +137,13 @@ export class DomainState {
         label       = null,
         vo          = null,
     } = {}) {
-        const wrapper = toDomain(jsonText);
-        const state   = new DomainState(wrapper, {
+        let state = null; //클로저로 묶어둘 변수
+        const wrapper = toDomain(jsonText, () => {
+            //Proxy 상태가 변경될 때마다 즉시 디버거 채털로 쏘는 onMutate 콜백을 주입
+            if(state?._debug) state._broadcast()
+        });
+
+        state   = new DomainState(wrapper, {
             handler,
             urlConfig,
             isNew:  false,
@@ -183,9 +188,13 @@ export class DomainState {
         // urlConfig 미입력 시 DomainVO의 static baseURL 폴백
         const resolvedUrlConfig = urlConfig
             ?? (vo.getBaseURL() ? normalizeUrlConfig({ baseURL: vo.getBaseURL(), debug }) : null);
-
-        const wrapper  = createProxy(vo.toSkeleton());
-        return new DomainState(wrapper, {
+        
+        let state = null; //클로저로 묶어둘 변수
+        const wrapper  = createProxy(vo.toSkeleton(), () => {
+            //Proxy 상태가 변경될 때마다 즉시 디버거 채털로 쏘는 onMutate 콜백을 주입
+            if(state?._debug) state._broadcast();
+        });
+        state = new DomainState(wrapper, {
             handler,
             urlConfig:    resolvedUrlConfig,
             isNew:        true,
@@ -194,6 +203,7 @@ export class DomainState {
             validators:   vo.getValidators(),
             transformers: vo.getTransformers(),
         });
+        return state;
     }
 
 

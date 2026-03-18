@@ -33,7 +33,7 @@ import { LOG, formatMessage }                             from '../constants/log
  *   clearChangeLog: () => void,
  * }}
  */
-export function createProxy(domainObject) {
+export function createProxy(domainObject, onMutate = null) {
 
     // 이 인스턴스 전용 변경 이력 — 클로저로 외부 접근 차단
     const changeLog = [];
@@ -66,6 +66,8 @@ export function createProxy(domainObject) {
         if (op !== OP.ADD)    entry.oldValue = oldValue;
         changeLog.push(entry);
         console.debug(formatMessage(LOG.proxy[op], { path, oldValue, newValue }));
+
+        if(onMutate) onMutate();
     }
 
     // ── 트랩 핸들러 팩토리 — basePath를 누적해 중첩 경로를 추적 ─────────────
@@ -156,7 +158,7 @@ export function createProxy(domainObject) {
                                 // 2. 추가(ADD) 처리
                                 // args의 3번째 인자부터가 새로 추가할 아이템들이다.
                                 const addedItems = args.slice(2);
-                                addedItems.forEach((addedItems, idx) => {
+                                addedItems.forEach((addedItem, idx) => {
                                     record(OP.ADD, `${basePath}/${startIdx + idx}`, undefined, addedItem);
                                 });
                                 break;
