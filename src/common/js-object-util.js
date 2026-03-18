@@ -122,3 +122,22 @@ export const shouldBypassDeepProxy = (prop) => {
     if (prop === 'valueOf')             return true;
     return false;
 };
+
+
+/**
+ * 점(dot) 분해된 키 배열로 중첩 객체에 값을 설정한다.
+ *
+ * @param {object}   target
+ * @param {string[]} keys
+ * @param {*}        value
+ */
+export function _setNestedValue(target, keys, value) {
+    let cursor = target;
+    for (let i = 0; i < keys.length - 1; i++) {
+        if (cursor[keys[i]] == null || typeof cursor[keys[i]] !== 'object') {
+            cursor[keys[i]] = {};
+        }
+        cursor = cursor[keys[i]];
+    }
+    cursor[keys[keys.length - 1]] = value;
+}

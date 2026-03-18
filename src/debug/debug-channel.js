@@ -38,6 +38,20 @@ function getChannel() {
 }
 
 /**
+ * BroadcastChannel을 명시적으로 닫고 메모리를 해제한다.
+ * SPA 환경에서 컴포넌트 언마운트 시점에 호출하여 누수를 방지한다.
+ */
+export function closeDebugChannel() {
+    if(_channel) {
+        // 죽기 전에 팝업에 마지막 인사(UNREGISTER)는 한 번 시도해 본다.
+        _channel.postMessage({type:MSG_TYPE.TAB_UNREGISTER, tabId: TAB_ID});
+        _channel.close();
+        _channel = null;
+        console.debug('[DSM] Debug BroadcastChannel closed.');
+    }
+}
+
+/**
  * 현재 탭의 DomainState 스냅샷 맵
  * key: 개발자가 DomainState 생성 시 지정한 레이블 (없으면 자동 생성)
  * value: { label, data, changeLog, isNew, errors }
@@ -186,16 +200,19 @@ function _buildPopupHTML() {
 <div id="tab-bar"></div>
 <div id="content"><div id="empty">탭 데이터를 기다리는 중...</div></div>
 <script>
-  const tabs    = new Map(); // tabId → { tabUrl, states }
+  const tabs    = new Map(); 
   let activeTab = null;
   const channel = new BroadcastChannel('dsm_debug');
+  
+  // 1. 초기 핑 쏘기
   channel.postMessage({ type: 'TAB_PING' });
 
   channel.addEventListener('message', ({ data }) => {
     if (!data) return;
+    const now = Date.now();
 
     if (data.type === 'TAB_REGISTER') {
-      tabs.set(data.tabId, { url: data.tabUrl, states: data.states ?? {} });
+      tabs.set(data.tabId, { url: data.tabUrl, states: data.states ?? {}, lastSeen: now });
       if (!activeTab) activeTab = data.tabId;
       render();
     }
@@ -207,67 +224,97 @@ function _buildPopupHTML() {
     if (data.type === 'DS_UPDATE' && tabs.has(data.tabId)) {
       const tab = tabs.get(data.tabId);
       tab.states[data.label] = { label: data.label, ...data.snapshot };
+      tab.lastSeen = now;
       render();
     }
     if (data.type === 'DS_ERROR' && tabs.has(data.tabId)) {
       const tab = tabs.get(data.tabId);
       (tab.errors ??= []).push({ key: data.key, error: data.error });
+      tab.lastSeen = now;
       render();
     }
   });
 
+  // 2. [Heartbeat] 2초마다 탭들에게 살아있냐고 찔러보기 (PING)
+  setInterval(() => {
+      channel.postMessage({ type: 'TAB_PING' });
+  }, 2000);
+
+  // 3. [Garbage Collector] 2초마다 영안실 순회하며 죽은 탭 청소
+  setInterval(() => {
+      const now = Date.now();
+      let isDeadFound = false;
+      
+      for (const [id, tab] of tabs.entries()) {
+          // 5초(5000ms) 이상 대답이 없으면 죽은 탭으로 간주하고 삭제!
+          if (now - tab.lastSeen > 5000) {
+              tabs.delete(id);
+              if (activeTab === id) activeTab = [...tabs.keys()][0] ?? null;
+              isDeadFound = true;
+          }
+      }
+      if (isDeadFound) render();
+  }, 2000);
+
   function render() {
-    const tabBar = document.getElementById('tab-bar');
-    const content = document.getElementById('content');
-    document.getElementById('tab-count').textContent = \`\${tabs.size}개 탭\`;
+      document.getElementById('tab-count').textContent = \`활성 탭: \${tabs.size}개\`;
+      const tabBar = document.getElementById('tab-bar');
+      const content = document.getElementById('content');
 
-    tabBar.innerHTML = [...tabs.entries()].map(([id, t]) =>
-      \`<button class="tab-btn \${id === activeTab ? 'active' : ''}"
-          onclick="activeTab='\${id}';render()">
-        \${new URL(t.url).pathname}
-      </button>\`
-    ).join('');
+      if (tabs.size === 0) {
+        tabBar.innerHTML = '';
+        content.innerHTML = '<div id="empty">대기 중...</div>';
+        return;
+      }
 
-    if (!activeTab || !tabs.has(activeTab)) {
-      content.innerHTML = '<div id="empty">탭을 선택하세요</div>';
-      return;
-    }
+      tabBar.innerHTML = [...tabs.keys()].map(k => \`
+        <button class="tab-btn \${k === activeTab ? 'active' : ''}" data-id="\${k}">
+          \${k.split('_')[1]} (\${new URL(tabs.get(k).url).pathname})
+        </button>
+      \`).join('');
 
-    const { states, errors } = tabs.get(activeTab);
-    const keys = Object.keys(states);
+      if (!activeTab || !tabs.has(activeTab)) activeTab = [...tabs.keys()][0];
+      const states = tabs.get(activeTab).states;
+      const keys = Object.keys(states);
 
-    if (!keys.length) { content.innerHTML = '<div id="empty">DomainState 없음</div>'; return; }
+      if (keys.length === 0) {
+        content.innerHTML = '<div id="empty">생성된 DomainState 없음</div>';
+      } else {
+        content.innerHTML = keys.map(k => {
+          const s = states[k];
+          const badgeClass = s.isNew ? 'badge-new' : 'badge-exist';
+          const badgeText  = s.isNew ? 'NEW' : 'EXIST';
+          const hasError   = (s.errors?.length ?? 0) > 0;
 
-    content.innerHTML = keys.map(k => {
-      const s = states[k];
-      const badgeClass = s.isNew ? 'badge-new' : 'badge-exist';
-      const badgeText  = s.isNew ? 'NEW' : 'EXIST';
-      const hasError   = (s.errors?.length ?? 0) > 0;
+          return \`<div class="ds-block">
+            <div class="ds-header">
+              <span>\${s.label ?? k}</span>
+              <span>
+                <span class="badge \${badgeClass}">\${badgeText}</span>
+                \${hasError ? '<span class="badge badge-error">ERROR</span>' : ''}
+              </span>
+            </div>
+            <div class="ds-section">
+              <div class="ds-section-title">data (현재 상태)</div>
+              <pre>\${JSON.stringify(s.data, null, 2)}</pre>
+            </div>
+            <div class="ds-section">
+              <div class="ds-section-title">changeLog (\${(s.changeLog ?? []).length}건)</div>
+              \${(s.changeLog ?? []).map(e =>
+                \`<pre class="change-entry">\${JSON.stringify(e)}</pre>\`
+              ).join('') || '<pre style="color:#666">변경 없음</pre>'}
+            </div>
+            \${hasError ? \`<div class="ds-section">
+              <div class="ds-section-title">errors</div>
+              \${s.errors.map(e => \`<pre class="error-entry">\${JSON.stringify(e)}</pre>\`).join('')}
+            </div>\` : ''}
+          </div>\`;
+        }).join('');
+      }
 
-      return \`<div class="ds-block">
-        <div class="ds-header">
-          <span>\${s.label ?? k}</span>
-          <span>
-            <span class="badge \${badgeClass}">\${badgeText}</span>
-            \${hasError ? '<span class="badge badge-error">ERROR</span>' : ''}
-          </span>
-        </div>
-        <div class="ds-section">
-          <div class="ds-section-title">data (현재 상태)</div>
-          <pre>\${JSON.stringify(s.data, null, 2)}</pre>
-        </div>
-        <div class="ds-section">
-          <div class="ds-section-title">changeLog (\${(s.changeLog ?? []).length}건)</div>
-          \${(s.changeLog ?? []).map(e =>
-            \`<pre class="change-entry">\${JSON.stringify(e)}</pre>\`
-          ).join('') || '<pre style="color:#666">변경 없음</pre>'}
-        </div>
-        \${hasError ? \`<div class="ds-section">
-          <div class="ds-section-title">errors</div>
-          \${s.errors.map(e => \`<pre class="error-entry">\${JSON.stringify(e)}</pre>\`).join('')}
-        </div>\` : ''}
-      </div>\`;
-    }).join('');
+      tabBar.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = () => { activeTab = btn.dataset.id; render(); };
+      });
   }
 <\/script>
 </body>

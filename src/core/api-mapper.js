@@ -18,8 +18,8 @@ import { OP }          from '../constants/op.const.js';
  * @returns {{ proxy, getChangeLog, getTarget, clearChangeLog }}
  * @throws {SyntaxError} 유효하지 않은 JSON일 때
  */
-export function toDomain(jsonText) {
-    return createProxy(JSON.parse(jsonText));
+export function toDomain(jsonText, onMutate = null) {
+    return createProxy(JSON.parse(jsonText), onMutate);
 }
 
 /**
