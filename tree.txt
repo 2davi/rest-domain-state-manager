@@ -1,0 +1,212 @@
+폴더 PATH의 목록입니다.
+볼륨 일련 번호는 0CDF-1D79입니다.
+C:.
+|   .gitignore
+|   ARCHITECTURE.md
+|   ard-0000-alignment.md
+|   index.html
+|   package-lock.json
+|   package.json
+|   README.md
+|   rest-domain-state-manager.js
+|   tree.txt
+|   tsconfig.json
+|   typedoc.json
+|   vite.config.js
+|   
++---.github
+|   \---workflows
+|           deploy-docs.yml
+|           
++---dist
+|   |   index.cjs
+|   |   index.cjs.map
+|   |   index.js
+|   |   index.js.map
+|   |   rest-domain-state-manager.d.ts
+|   |   
+|   +---model
+|   |       DomainPipeline.d.ts
+|   |       DomainState.d.ts
+|   |       DomainVO.d.ts
+|   |       
+|   +---plugin
+|   |   +---domain-renderer
+|   |   |   |   DomainRenderer.d.ts
+|   |   |   |   renderer.const.d.ts
+|   |   |   |   
+|   |   |   \---renderers
+|   |   |           button.renderer.d.ts
+|   |   |           radio-checkbox.renderer.d.ts
+|   |   |           select.renderer.d.ts
+|   |   |           
+|   |   \---form-binding
+|   |           FormBinder.d.ts
+|   |           
+|   \---src
+|       +---common
+|       |       js-object-util.d.ts
+|       |       
+|       +---constants
+|       |       channel.const.d.ts
+|       |       error.messages.d.ts
+|       |       log.messages.d.ts
+|       |       op.const.d.ts
+|       |       protocol.const.d.ts
+|       |       
+|       +---core
+|       |       api-mapper.d.ts
+|       |       api-proxy.d.ts
+|       |       url-resolver.d.ts
+|       |       
+|       +---debug
+|       |       debug-channel.d.ts
+|       |       
+|       \---handler
+|               api-handler.d.ts
+|               
++---docs
+|   |   index.md
+|   |   
+|   +---.vitepress
+|   |   |   config.mts
+|   |   |   
+|   |   \---cache
+|   |       \---deps
+|   |               @theme_index.js
+|   |               @theme_index.js.map
+|   |               chunk-2CGNBZMC.js
+|   |               chunk-2CGNBZMC.js.map
+|   |               chunk-NPGVKGNX.js
+|   |               chunk-NPGVKGNX.js.map
+|   |               package.json
+|   |               vitepress___@vueuse_core.js
+|   |               vitepress___@vueuse_core.js.map
+|   |               vitepress___@vue_devtools-api.js
+|   |               vitepress___@vue_devtools-api.js.map
+|   |               vue.js
+|   |               vue.js.map
+|   |               _metadata.json
+|   |               
+|   +---api
+|   |       handler.api-handler.Class.ApiHandler.md
+|   |       handler.api-handler.Interface.GetOptions.md
+|   |       handler.api-handler.Interface.HttpError.md
+|   |       handler.api-handler.Interface.NormalizedUrlConfig.md
+|   |       handler.api-handler.Interface.UrlConfig.md
+|   |       handler.api-handler.md
+|   |       model.DomainPipeline.Class.DomainPipeline.md
+|   |       model.DomainPipeline.Interface.PipelineError.md
+|   |       model.DomainPipeline.Interface.PipelineOptions.md
+|   |       model.DomainPipeline.Interface.QueueEntry.md
+|   |       model.DomainPipeline.md
+|   |       model.DomainPipeline.TypeAlias.AfterHandler.md
+|   |       model.DomainPipeline.TypeAlias.PipelineResult.md
+|   |       model.DomainPipeline.TypeAlias.ResourceMap.md
+|   |       model.DomainState.Class.DomainState.md
+|   |       model.DomainState.Interface.DomainStateOptions.md
+|   |       model.DomainState.Interface.DsmPlugin.md
+|   |       model.DomainState.Interface.FromJsonOptions.md
+|   |       model.DomainState.Interface.FromVoOptions.md
+|   |       model.DomainState.Interface.NormalizedUrlConfig.md
+|   |       model.DomainState.Interface.PipelineOptions.md
+|   |       model.DomainState.Interface.ProxyWrapper.md
+|   |       model.DomainState.md
+|   |       model.DomainState.TypeAlias.PipelineResult.md
+|   |       model.DomainState.TypeAlias.ResourceMap.md
+|   |       model.DomainState.TypeAlias.TransformerMap.md
+|   |       model.DomainState.TypeAlias.ValidatorMap.md
+|   |       model.DomainVO.Class.DomainVO.md
+|   |       model.DomainVO.Interface.FieldSchema.md
+|   |       model.DomainVO.Interface.SchemaCheckResult.md
+|   |       model.DomainVO.md
+|   |       model.DomainVO.TypeAlias.FieldsSchema.md
+|   |       model.DomainVO.TypeAlias.TransformerMap.md
+|   |       model.DomainVO.TypeAlias.ValidatorMap.md
+|   |       plugin.domain-renderer.DomainRenderer.md
+|   |       plugin.domain-renderer.DomainRenderer.TypeAlias.RenderConfig.md
+|   |       plugin.domain-renderer.DomainRenderer.TypeAlias.RenderResult.md
+|   |       plugin.domain-renderer.DomainRenderer.TypeAlias.RenderToMethod.md
+|   |       plugin.domain-renderer.DomainRenderer.Variable.DomainRenderer.md
+|   |       plugin.form-binding.FormBinder.Interface.FromFormOptions.md
+|   |       plugin.form-binding.FormBinder.md
+|   |       plugin.form-binding.FormBinder.TypeAlias.BindFormMethod.md
+|   |       plugin.form-binding.FormBinder.TypeAlias.FromFormFactory.md
+|   |       plugin.form-binding.FormBinder.Variable.FormBinder.md
+|   |       README.md
+|   |       
+|   +---architecture
+|   |       drawbridge.md
+|   |       memory-management.md
+|   |       v8-optimization.md
+|   |       
+|   +---en
+|   |   |   index.md
+|   |   |   
+|   |   +---api
+|   |   \---guide
+|   +---guide
+|   |       apihandler.md
+|   |       core-concepts.md
+|   |       data-flow.md
+|   |       domain-vo.md
+|   |       factories.md
+|   |       getting-started.md
+|   |       pipeline.md
+|   |       plugins.md
+|   |       renderer.md
+|   |       save-strategy.md
+|   |       
+|   \---public
+|           site.css
+|           site.js
+|           
++---model
+|       DomainPipeline.js
+|       DomainState.js
+|       DomainVO.js
+|       
++---plugin
+|   +---domain-renderer
+|   |   |   DomainRenderer.js
+|   |   |   renderer.const.js
+|   |   |   
+|   |   \---renderers
+|   |           button.renderer.js
+|   |           radio-checkbox.renderer.js
+|   |           select.renderer.js
+|   |           
+|   \---form-binding
+|           FormBinder.js
+|           
++---references
+|       alignment_one_20260318.md
+|       schedule_20260318.md
+|       semantic_commits_guide_20260318.md
+|       
++---src
+|   +---common
+|   |       js-object-util.js
+|   |       
+|   +---constants
+|   |       channel.const.js
+|   |       error.messages.js
+|   |       log.messages.js
+|   |       op.const.js
+|   |       protocol.const.js
+|   |       
+|   +---core
+|   |       api-mapper.js
+|   |       api-proxy.js
+|   |       url-resolver.js
+|   |       
+|   +---debug
+|   |       debug-channel.js
+|   |       
+|   \---handler
+|           api-handler.js
+|           
+\---test
+        core-refactor.test.html
+        proxy.test.html
+        
