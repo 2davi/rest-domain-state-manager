@@ -1,5 +1,5 @@
 /**
- * @fileoverview JavaScript 타입/프로토타입 유틸리티
+ * JavaScript 타입/프로토타입 유틸리티
  *
  * typeof, instanceof, Object.prototype.toString() 결과를
  * 상수와 헬퍼 함수로 추상화하여 라이브러리 전체에서 일관되게 사용한다.

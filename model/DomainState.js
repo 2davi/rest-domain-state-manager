@@ -1,5 +1,5 @@
 /**
- * @fileoverview DomainState — REST API 연동 도메인 상태 관리자
+ * DomainState — REST API 연동 도메인 상태 관리자
  *
  * REST 리소스(또는 Aggregate Root) 단위로 인스턴스 하나를 생성한다.
  * `DomainState` 인스턴스는 **현재 상태(Proxy) + 변경 이력(changeLog) + 동기화 단위**의 세 역할을 동시에 수행한다.

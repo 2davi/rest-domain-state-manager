@@ -1,5 +1,5 @@
 /**
- * @fileoverview REST API ↔ DomainState 직렬화/역직렬화 매퍼
+ * REST API ↔ DomainState 직렬화/역직렬화 매퍼
  *
  * `DomainState` 내부 전용 레이어.
  * **외부 개발자는 이 모듈을 직접 import하지 않는다.**

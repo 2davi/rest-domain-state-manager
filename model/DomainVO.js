@@ -1,5 +1,5 @@
 /**
- * @fileoverview DomainVO — 신규 INSERT 도메인 구조 선언 베이스 클래스
+ * DomainVO — 신규 INSERT 도메인 구조 선언 베이스 클래스
  *
  * `DomainState.fromVO()`의 인자로 사용하며,
  * `static fields`를 통해 **기본값 골격**, **필드 유효성 검사**, **타입 변환**을 선언한다.

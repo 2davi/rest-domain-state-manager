@@ -1,5 +1,5 @@
 /**
- * @fileoverview radio / checkbox 그룹 렌더러
+ * radio / checkbox 그룹 렌더러
  *
  * `DomainState` 배열 데이터를 받아 각 항목마다
  * `<div.container> <input> <label>` 구조를 생성하여 컨테이너에 추가한다.

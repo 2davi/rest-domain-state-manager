@@ -1,5 +1,5 @@
 /**
- * @fileoverview URL 조합 및 프로토콜 결정 모듈
+ * URL 조합 및 프로토콜 결정 모듈
  *
  * `ApiHandler` 생성자와 `DomainState._resolveURL()` 내부에서 사용하는
  * URL 정규화·조합·프로토콜 결정 레이어다.

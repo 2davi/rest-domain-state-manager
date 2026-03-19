@@ -1,5 +1,5 @@
 /**
- * @fileoverview ApiHandler — HTTP 전송 레이어
+ * ApiHandler — HTTP 전송 레이어
  *
  * `fetch()` 위의 얇은 래퍼로, 다음을 담당한다.
  *

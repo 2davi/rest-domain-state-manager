@@ -1,5 +1,5 @@
 /**
- * @fileoverview DomainRenderer — DOM 렌더링 플러그인
+ * DomainRenderer — DOM 렌더링 플러그인
  *
  * `DomainState.use(DomainRenderer)` 한 번으로 모든 `DomainState` 인스턴스에
  * `renderTo()` 메서드를 주입하는 플러그인이다.
@@ -72,7 +72,6 @@ import { ERR }                 from '../../src/constants/error.messages.js';
  * 타입 참조 전용.
  *
  * @callback RenderToMethod
- * @this {import('../../model/DomainState.js').DomainState}
  * @param {string | HTMLElement} container
  *   렌더링 결과를 삽입할 컨테이너. CSS 셀렉터 형식 문자열(`'#id'` 또는 `'id'`) 또는 `HTMLElement`.
  * @param {RenderConfig} config - 렌더링 설정 옵션

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/handler/api-handler.js",
+    "model/DomainState.js",
+    "model/DomainVO.js",
+    "model/DomainPipeline.js",
+    "plugin/domain-renderer/DomainRenderer.js",
+    "plugin/form-binding/FormBinder.js"
+  ],
+  "out": "docs/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "hideBreadcrumbs": true,
+  "hidePageHeader": true,
+  "readme": "none",
+  "disableSources": true,
+  "flattenOutputFiles": true
+}

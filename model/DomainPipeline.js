@@ -1,5 +1,5 @@
 /**
- * @fileoverview DomainPipeline — 병렬 fetch + 순차 후처리 체이닝
+ * DomainPipeline — 병렬 fetch + 순차 후처리 체이닝
  *
  * `DomainState.all()`이 반환하는 파이프라인 객체.
  * 여러 `DomainState`를 병렬로 fetch하고,

@@ -1,5 +1,5 @@
 /**
- * @fileoverview FormBinder — HTML 폼 자동 바인딩 플러그인
+ * FormBinder — HTML 폼 자동 바인딩 플러그인
  *
  * `DomainState` 코어 엔진에서 브라우저 DOM 의존성을 분리하여
  * 플러그인 형태로 제공하는 폼 바인딩 모듈이다.
@@ -80,7 +80,6 @@ import { createProxy }     from '../../src/core/api-proxy.js';
  * 타입 참조 전용 — 실제 구현은 `FormBinder.install()` 내부에 있다.
  *
  * @callback BindFormMethod
- * @this {import('../../model/DomainState.js').DomainState}
  * @param {string | HTMLFormElement} formOrId - HTML Form 요소의 `id` 문자열 또는 `HTMLFormElement` 직접 참조
  * @returns {import('../../model/DomainState.js').DomainState} 메서드 체이닝용 `this` 반환
  */

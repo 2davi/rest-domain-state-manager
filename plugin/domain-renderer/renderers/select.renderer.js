@@ -1,5 +1,5 @@
 /**
- * @fileoverview select 드롭다운 렌더러
+ * select 드롭다운 렌더러
  *
  * `DomainState` 배열 데이터를 받아 `<select>` 요소와
  * 그 안의 `<option>` 요소들을 생성하여 컨테이너에 추가한다.

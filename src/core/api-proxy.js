@@ -1,5 +1,5 @@
 /**
- * @fileoverview Proxy 기반 도메인 객체 변경 추적 엔진
+ * Proxy 기반 도메인 객체 변경 추적 엔진
  *
  * `createProxy()`는 순수 JS 객체를 ES6 `Proxy`로 감싸
  * `set` / `get` / `deleteProperty` 트랩으로 모든 필드 변경을 자동으로 기록한다.

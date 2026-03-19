@@ -1,5 +1,5 @@
 /**
- * @fileoverview URL 프로토콜 및 실행 환경 상수
+ * URL 프로토콜 및 실행 환경 상수
  *
  * URL 조합 시 프로토콜 결정 우선순위:
  *   1. 명시적 protocol 인자

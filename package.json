@@ -24,7 +24,10 @@
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.{js,ts,html,css}\"",
     "test": "vitest run",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "npm run docs:api && vitepress build docs",
+    "docs:api": "typedoc"
   },
   "keywords": [
     "rest",
@@ -39,8 +42,11 @@
     "eslint": "^9.0.0",
     "prettier": "^3.5.0",
     "terser": "^5.46.1",
+    "typedoc": "^0.28.17",
+    "typedoc-plugin-markdown": "^4.11.0",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
+    "vitepress": "^1.6.4",
     "vitest": "^3.0.0"
   }
 }

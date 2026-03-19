@@ -1,5 +1,5 @@
 /**
- * @fileoverview button 그룹 렌더러
+ * button 그룹 렌더러
  *
  * `DomainState` 배열 데이터를 받아 각 항목마다 `<button>` 요소를 생성하고
  * 컨테이너에 추가한다.

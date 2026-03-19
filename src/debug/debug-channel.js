@@ -1,5 +1,5 @@
 /**
- * @fileoverview 디버그 BroadcastChannel 통신 및 팝업 관리
+ * 디버그 BroadcastChannel 통신 및 팝업 관리
  *
  * 같은 출처(Origin)의 모든 브라우저 탭이 `'dsm_debug'` 채널로 연결되어
  * 디버그 팝업 창에서 모든 탭의 `DomainState` 상태를 실시간으로 확인할 수 있다.
