@@ -10,11 +10,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Install & Build Docs
+      # 1. DSM 레포지토리 체크아웃 (path를 지정했다면 해당 경로로)
+      - name: 1.Checkout DSM repository
+        uses: actions/checkout@v4
+        with:
+          path: 'dsm-repo' # 만약 path를 주었다면 아래 명령어들도 이 경로를 가리킨다.
+
+      # 2. Lab 레포지토리 체크아웃
+      - name: 2. Checkout Lab repository
+        uses: actions/checkout@v4
+        with:
+          repository: '2davi/lab'
+          token: ${{ secrets.LAB_REPO_PAT }}
+          path: 'lab-repo'
+      
+      - name: 3. Install & Build Docs
         run: |
           npm install
           npm run docs:build  # 여기서 TypeDoc 추출 + VitePress 빌드
+        working-directory: ./dsm-repo
 
-      - name: 2. Sync to Lab Repository
+      - name: 4. Sync to Lab Repository
         run: |
-          rsync -av --delete docs/.vitepress/dist/ lab-repo/rest-domain-state-manager/
+          mkdir -p lab-repo/rest-domain-state-manager
+          rsync -av --delete dsm-repo/docs/.vitepress/dist/ lab-repo/rest-domain-state-manager/
