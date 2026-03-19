@@ -10,6 +10,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # 1. DSM 레포지토리 체크아웃 (path를 지정했다면 해당 경로로)
+      - name: 1.Checkout DSM repository
+        uses: actions/checkout@v4
+        with:
+          path: 'dsm-repo' # 만약 path를 주었다면 아래 명령어들도 이 경로를 가리킨다.
+
+      # 2. Lab 레포지토리 체크아웃
+      - name: 2. Checkout Lab repository
+        uses: actions/checkout@v4
+        with:
+          repository: '2davi/lab'
+          token: ${{ secrets.LAB_REPO_PAT }}
+          path: 'lab-repo'
+      
 # 1. 빌드 (dsm-repo 폴더 안에서 수행)
       - name: Install & Build Docs
         working-directory: ./dsm-repo
