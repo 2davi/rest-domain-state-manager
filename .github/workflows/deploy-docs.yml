@@ -10,27 +10,29 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1. DSM 레포지토리 체크아웃 (path를 지정했다면 해당 경로로)
-      - name: 1.Checkout DSM repository
-        uses: actions/checkout@v4
-        with:
-          path: 'dsm-repo' # 만약 path를 주었다면 아래 명령어들도 이 경로를 가리킨다.
-
-      # 2. Lab 레포지토리 체크아웃
-      - name: 2. Checkout Lab repository
-        uses: actions/checkout@v4
-        with:
-          repository: '2davi/lab'
-          token: ${{ secrets.LAB_REPO_PAT }}
-          path: 'lab-repo'
-      
-      - name: 3. Install & Build Docs
+# 1. 빌드 (dsm-repo 폴더 안에서 수행)
+      - name: Install & Build Docs
+        working-directory: ./dsm-repo
         run: |
           npm install
-          npm run docs:build  # 여기서 TypeDoc 추출 + VitePress 빌드
-        working-directory: ./dsm-repo
+          npm run docs:build
 
-      - name: 4. Sync to Lab Repository
+      # 2. 동기화 및 커밋 (파일 경로 영점 조절)
+      - name: Sync and Push to Lab
         run: |
+          # 1. lab 레포의 대상 폴더 비우기 (새 출발)
           mkdir -p lab-repo/rest-domain-state-manager
+          
+          # 2. dsm-repo의 빌드 결과물(dist/)의 '내용물'을 lab-repo로 복사
+          # 소스 경로 끝의 / 가 중요함! (내용물만 복사한다는 뜻)
           rsync -av --delete dsm-repo/docs/.vitepress/dist/ lab-repo/rest-domain-state-manager/
+
+          # 3. lab-repo 폴더로 이동해서 Git 작업 수행
+          cd lab-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          
+          # 변경사항이 있을 때만 커밋 (에러 방지)
+          git diff-index --quiet HEAD || git commit -m "docs: sync from rest-domain-state-manager"
+          git push origin main
