@@ -1,4 +1,8 @@
 /**
+ * *
+ */
+export type RENDERER_TYPE = RendererTypeValue;
+/**
  * @fileoverview DomainRenderer 플러그인 내부 상수 모음
  *
  * `renderTo()` config의 `type` 식별자,
@@ -18,30 +22,17 @@
  * @see {@link module:plugin/domain-renderer/DomainRenderer DomainRenderer}
  * @see {@link module:plugin/form-binding/FormBinder FormBinder}
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 타입 정의
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * `RENDERER_TYPE` 상수 객체의 값 유니온 타입.
  * `renderTo()` config의 `type` 필드에 허용되는 문자열 리터럴 타입이다.
  *
  * @typedef {'select'|'radio'|'checkbox'|'button'} RendererTypeValue
  */
-
 /**
  * `TRACK_EVENT` 상수 객체의 값 유니온 타입.
  *
  * @typedef {'blur'|'change'} TrackEventValue
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 공개 상수
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * `renderTo()`가 지원하는 DOM 요소 타입 식별자 상수.
  *
@@ -65,17 +56,20 @@
  *     case RENDERER_TYPE.BUTTON:   return renderButton(...);
  * }
  */
-export const RENDERER_TYPE = Object.freeze(/** @type {const} */ ({
+export const RENDERER_TYPE: Readonly<{
     /** `<select>` 드롭다운 렌더러를 사용한다. */
-    SELECT:   'select',
+    readonly SELECT: "select";
     /** `<input type="radio">` 그룹 렌더러를 사용한다. */
-    RADIO:    'radio',
+    readonly RADIO: "radio";
     /** `<input type="checkbox">` 그룹 렌더러를 사용한다. */
-    CHECKBOX: 'checkbox',
+    readonly CHECKBOX: "checkbox";
     /** `<button>` 그룹 렌더러를 사용한다. */
-    BUTTON:   'button',
-}));
-
+    readonly BUTTON: "button";
+}>;
+/**
+ * *
+ */
+export type TRACK_EVENT = TrackEventValue;
 /**
  * 폼 요소의 값 변경을 추적할 때 사용하는 DOM 이벤트 전략 분류 상수.
  *
@@ -98,21 +92,20 @@ export const RENDERER_TYPE = Object.freeze(/** @type {const} */ ({
  * const event = TEXT_LIKE_TYPES.has(el.type) ? TRACK_EVENT.TEXT : TRACK_EVENT.SELECT;
  * el.addEventListener(event, handler);
  */
-export const TRACK_EVENT = Object.freeze(/** @type {const} */ ({
+export const TRACK_EVENT: Readonly<{
     /**
      * 텍스트 계열 input 추적 이벤트.
      * `input[type=text|email|password|...]`, `textarea` 에 적용된다.
      * `blur` — 포커스를 잃는 시점에 1회 기록.
      */
-    TEXT:   'blur',
+    readonly TEXT: "blur";
     /**
      * select 계열 요소 추적 이벤트.
      * `select`, `input[type=radio|checkbox]` 에 적용된다.
      * `change` — 선택이 확정되는 즉시 기록.
      */
-    SELECT: 'change',
-}));
-
+    readonly SELECT: "change";
+}>;
 /**
  * `TRACK_EVENT.TEXT` 전략(`blur` 이벤트)을 적용할 텍스트 계열 input type 집합.
  *
@@ -134,6 +127,13 @@ export const TRACK_EVENT = Object.freeze(/** @type {const} */ ({
  *     el.addEventListener('change', handler); // 선택 즉시
  * }
  */
-export const TEXT_LIKE_TYPES = Object.freeze(
-    new Set(['text', 'email', 'password', 'number', 'tel', 'url', 'search', 'date', 'time', 'textarea'])
-);
+export const TEXT_LIKE_TYPES: ReadonlySet<string>;
+/**
+ * `RENDERER_TYPE` 상수 객체의 값 유니온 타입.
+ * `renderTo()` config의 `type` 필드에 허용되는 문자열 리터럴 타입이다.
+ */
+export type RendererTypeValue = "select" | "radio" | "checkbox" | "button";
+/**
+ * `TRACK_EVENT` 상수 객체의 값 유니온 타입.
+ */
+export type TrackEventValue = "blur" | "change";

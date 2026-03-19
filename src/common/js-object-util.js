@@ -132,7 +132,7 @@ export const shouldBypassDeepProxy = (prop) => {
  * @param {*}        value
  */
 export function _setNestedValue(target, keys, value) {
-    let cursor = target;
+    let cursor = /** @type {any} */ (target);
     for (let i = 0; i < keys.length - 1; i++) {
         if (cursor[keys[i]] == null || typeof cursor[keys[i]] !== 'object') {
             cursor[keys[i]] = {};

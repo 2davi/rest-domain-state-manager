@@ -43,12 +43,6 @@
  * @module plugin/domain-renderer/renderers/radio-checkbox.renderer
  * @see {@link module:plugin/domain-renderer/DomainRenderer DomainRenderer}
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 타입 정의
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * radio / checkbox 렌더러의 설정 옵션 객체.
  *
@@ -95,18 +89,11 @@
  * @property {Partial<CSSStyleDeclaration>} [labelCss={}]
  *   각 `label` 요소에 적용할 inline style 객체 (camelCase 키).
  */
-
 /**
  * `renderRadioCheckbox()`가 내부에서 처리하는 단일 항목 데이터 형태.
  *
  * @typedef {Record<string, *>} RadioCheckboxItem
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 공개 API
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * radio 또는 checkbox 그룹을 컨테이너 요소에 렌더링한다.
  *
@@ -176,109 +163,65 @@
  *     },
  * });
  */
-export function renderRadioCheckbox(container, dataArray, config) {
-    const {
-        type,
-        valueField,
-        labelField,
-        name:           inputName    = valueField,  // 미명시 시 valueField를 name으로 사용 (MyBatis 자동 매핑)
-        class:          inputCls     = '',
-        css:            inputCss     = {},
-        events:         evtMap       = {},
-        containerClass: conCls       = '',
-        containerCss:   conCss       = {},
-        labelClass:     lblCls       = '',
-        labelCss:       lblCss       = {},
-    } = config;
-
-    /** @type {HTMLInputElement[]} */
-    const inputs = [];
-
-    // prefix를 forEach 바깥에서 한 번만 생성한다.
-    // 같은 그룹 내 모든 항목이 동일한 prefix를 공유해야 id 충돌이 발생하지 않는다.
-    // container.id가 없으면 Date.now() + random으로 유일한 값을 생성한다.
-    const prefix  = container.id || `dsm_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-
-    dataArray.forEach((item, idx) => {
-        const itemValue = item[valueField] ?? '';
-        const itemLabel = item[labelField] ?? '';
-
-        // 같은 그룹 내 항목끼리는 prefix와 inputName이 동일하고 idx만 달라
-        // 다른 그룹(radio vs checkbox 등)은 container.id 또는 prefix로 구분
-        const inputId = `${prefix}_${inputName}_${idx}`;
-
-        // ── wrapper div ──────────────────────────────────────────────────────
-        const wrapper     = document.createElement('div');
-        if (conCls) wrapper.className = conCls;
-        _applyCSS(wrapper, conCss);
-
-        // ── input ─────────────────────────────────────────────────────────────
-        const input     = document.createElement('input');
-        input.type      = type;
-        input.id        = inputId;
-        input.name      = inputName;
-        input.value     = itemValue;
-        if (inputCls) input.className = inputCls;
-        _applyCSS(input, inputCss);
-        _bindEvents(input, evtMap);
-
-        // ── label ─────────────────────────────────────────────────────────────
-        const label     = document.createElement('label');
-        label.htmlFor   = inputId;
-        label.textContent = itemLabel;
-        if (lblCls) label.className = lblCls;
-        _applyCSS(label, lblCss);
-
-        // ── DOM 조립 ──────────────────────────────────────────────────────────
-        wrapper.appendChild(input);
-        wrapper.appendChild(label);
-        container.appendChild(wrapper);
-        inputs.push(input);
-    });
-
-    return inputs;
-}
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 내부 유틸리티
-// ════════════════════════════════════════════════════════════════════════════════
-
+export function renderRadioCheckbox(container: HTMLElement, dataArray: RadioCheckboxItem[], config: RadioCheckboxConfig): HTMLInputElement[];
 /**
- * CSS 스타일 객체(camelCase 키)를 DOM 요소의 inline style에 적용한다.
- *
- * `cssObj`가 빈 객체이면 아무 동작도 하지 않는다.
- * `Object.entries()`로 순회하므로 프로토타입 체인의 속성은 적용하지 않는다.
- *
- * @param {HTMLElement}                     el     - 스타일을 적용할 DOM 요소
- * @param {Partial<CSSStyleDeclaration>}    cssObj - camelCase 키의 스타일 객체 (예: `{ borderRadius: '4px' }`)
- * @returns {void}
+ * radio / checkbox 렌더러의 설정 옵션 객체.
  */
-function _applyCSS(el, cssObj) {
-    // Object.assign은 대상 객체의 타입에 맞춰 소스 객체를 병합해줌.
-    // 타입스크립트도 CSSStyleDeclaration에 Partial<CSSStyleDeclaration>을 넣는 건 허용해준다!
-    Object.assign(el.style, cssObj);
-}
-
+export type RadioCheckboxConfig = {
+    /**
+     *   렌더링할 `input` 요소의 타입.
+     */
+    type: "radio" | "checkbox";
+    /**
+     *   각 항목에서 `input[value]` 속성 값으로 사용할 데이터 필드명.
+     *   `config.name` 미입력 시 `input[name]`의 기본값으로도 사용된다.
+     */
+    valueField: string;
+    /**
+     *   각 항목에서 `label` 텍스트로 사용할 데이터 필드명.
+     */
+    labelField: string;
+    /**
+     * `input[name]` 속성값을 명시적으로 지정할 때 사용한다.
+     * 미입력 시 `valueField` 값이 자동으로 사용된다.
+     * MyBatis form submit 시 필드명과 자동으로 일치시키려면 미입력으로 두는 것이 권장된다.
+     */
+    name?: string | undefined;
+    /**
+     * 각 `input` 요소에 적용할 `className`.
+     * Bootstrap의 경우 `'form-check-input'`.
+     */
+    class?: string | undefined;
+    /**
+     * 각 `input` 요소에 적용할 inline style 객체 (camelCase 키).
+     */
+    css?: Partial<CSSStyleDeclaration> | undefined;
+    /**
+     * 각 `input` 요소에 바인딩할 이벤트 핸들러 맵.
+     * 키: 이벤트명 (예: `'change'`), 값: 핸들러 함수.
+     * radio / checkbox는 `change` 이벤트 사용을 권장한다.
+     */
+    events?: Record<string, EventListener> | undefined;
+    /**
+     * 각 항목을 감싸는 wrapper `div`에 적용할 `className`.
+     * Bootstrap의 경우 `'form-check'` 또는 `'form-check form-check-inline'`.
+     */
+    containerClass?: string | undefined;
+    /**
+     * 각 항목 wrapper `div`에 적용할 inline style 객체 (camelCase 키).
+     */
+    containerCss?: Partial<CSSStyleDeclaration> | undefined;
+    /**
+     * 각 `label` 요소에 적용할 `className`.
+     * Bootstrap의 경우 `'form-check-label'`.
+     */
+    labelClass?: string | undefined;
+    /**
+     * 각 `label` 요소에 적용할 inline style 객체 (camelCase 키).
+     */
+    labelCss?: Partial<CSSStyleDeclaration> | undefined;
+};
 /**
- * 이벤트 핸들러 맵을 DOM 요소에 바인딩한다.
- *
- * 값이 함수가 아닌 항목은 무시한다.
- * 동일한 이벤트명에 여러 핸들러를 등록하려면 `evtMap`의 값으로 함수 하나를 사용하고
- * 그 안에서 여러 동작을 처리한다.
- *
- * @param {HTMLElement}                    el     - 이벤트를 등록할 DOM 요소
- * @param {Record<string, EventListener>}  evtMap - 이벤트명 → 핸들러 함수 맵
- * @returns {void}
- *
- * @example
- * _bindEvents(input, {
- *     change: (e) => console.log(e.target.value),
- *     focus:  (e) => e.target.style.outline = '2px solid #007acc',
- * });
+ * `renderRadioCheckbox()`가 내부에서 처리하는 단일 항목 데이터 형태.
  */
-function _bindEvents(el, evtMap) {
-    for (const [eventName, handler] of Object.entries(evtMap)) {
-        if (typeof handler === 'function') el.addEventListener(eventName, handler);
-    }
-}
+export type RadioCheckboxItem = Record<string, any>;

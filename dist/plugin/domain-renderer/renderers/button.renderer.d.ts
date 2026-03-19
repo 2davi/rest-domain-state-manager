@@ -28,12 +28,6 @@
  * @module plugin/domain-renderer/renderers/button.renderer
  * @see {@link module:plugin/domain-renderer/DomainRenderer DomainRenderer}
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 타입 정의
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * `renderButton()`의 설정 옵션 객체.
  *
@@ -62,18 +56,11 @@
  *   키: 이벤트명 (예: `'click'`, `'mouseenter'`), 값: 핸들러 함수.
  *   값이 함수가 아닌 항목은 자동으로 무시된다.
  */
-
 /**
  * `renderButton()` 내부에서 처리하는 단일 항목 데이터 형태.
  *
  * @typedef {Record<string, *>} ButtonItem
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 공개 API
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * `<button>` 그룹을 컨테이너 요소에 렌더링한다.
  *
@@ -149,34 +136,42 @@
  *     },
  * });
  */
-export function renderButton(container, dataArray, config) {
-    const {
-        valueField,
-        labelField,
-        class:  cls    = '',
-        css:    cssObj = {},
-        events: evtMap = {},
-    } = config;
-
-    return dataArray.map(item => {
-        const btn = document.createElement('button');
-
-        // type="button" 고정: form 내부에서 의도치 않은 submit 방지
-        btn.type          = 'button';
-        btn.dataset.value = String(item[valueField] ?? '');
-        btn.textContent   = String(item[labelField] ?? '');
-
-        if (cls) btn.className = cls;
-
-        // inline style 적용
-        Object.assign(btn.style, cssObj);
-
-        // 이벤트 핸들러 바인딩 (함수가 아닌 값은 무시)
-        for (const [eventName, handler] of Object.entries(evtMap)) {
-            if (typeof handler === 'function') btn.addEventListener(eventName, handler);
-        }
-
-        container.appendChild(btn);
-        return btn;
-    });
-}
+export function renderButton(container: HTMLElement, dataArray: ButtonItem[], config: ButtonConfig): HTMLButtonElement[];
+/**
+ * `renderButton()`의 설정 옵션 객체.
+ */
+export type ButtonConfig = {
+    /**
+     *   렌더러 타입 식별자. `DomainRenderer`에서 위임 판별에 사용.
+     */
+    type: "button";
+    /**
+     *   각 항목에서 `button[data-value]` 속성 값으로 사용할 데이터 필드명.
+     *   클릭 핸들러에서 `e.target.dataset.value`로 읽는다.
+     */
+    valueField: string;
+    /**
+     *   각 항목에서 버튼 텍스트(`textContent`)로 사용할 데이터 필드명.
+     */
+    labelField: string;
+    /**
+     * 각 `<button>` 요소에 적용할 `className`.
+     * Bootstrap 예: `'btn btn-sm btn-outline-primary'`
+     */
+    class?: string | undefined;
+    /**
+     * 각 `<button>` 요소에 적용할 inline style 객체 (camelCase 키).
+     * 예: `{ margin: '2px', borderRadius: '20px' }`
+     */
+    css?: Partial<CSSStyleDeclaration> | undefined;
+    /**
+     * 각 `<button>` 요소에 바인딩할 이벤트 핸들러 맵.
+     * 키: 이벤트명 (예: `'click'`, `'mouseenter'`), 값: 핸들러 함수.
+     * 값이 함수가 아닌 항목은 자동으로 무시된다.
+     */
+    events?: Record<string, EventListener> | undefined;
+};
+/**
+ * `renderButton()` 내부에서 처리하는 단일 항목 데이터 형태.
+ */
+export type ButtonItem = Record<string, any>;

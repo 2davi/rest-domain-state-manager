@@ -1,35 +1,4 @@
 /**
- * @fileoverview REST API ↔ DomainState 직렬화/역직렬화 매퍼
- *
- * `DomainState` 내부 전용 레이어.
- * **외부 개발자는 이 모듈을 직접 import하지 않는다.**
- *
- * ## 역할
- *
- * | 함수           | 방향                             | 호출 시점                         |
- * |---------------|----------------------------------|----------------------------------|
- * | `toDomain()`  | JSON 문자열 → Proxy 래퍼 객체    | `ApiHandler.get()` 응답 수신 후   |
- * | `toPayload()` | 원본 객체 → JSON 문자열          | `DomainState.save()` POST / PUT  |
- * | `toPatch()`   | 변경 이력 → RFC 6902 Patch 배열  | `DomainState.save()` PATCH       |
- *
- * ## 의존성
- * - `createProxy()` — `toDomain()` 내부에서 JSON.parse 결과를 Proxy로 래핑
- * - `OP` — RFC 6902 연산 상수 (`'add'` | `'replace'` | `'remove'`)
- *
- * @module core/api-mapper
- * @see {@link module:core/api-proxy createProxy}
- * @see {@link https://www.rfc-editor.org/rfc/rfc6902 RFC 6902 — JSON Patch}
- */
-
-import { createProxy } from './api-proxy.js';
-import { OP }          from '../constants/op.const.js';
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 타입 정의
-// ════════════════════════════════════════════════════════════════════════════════
-
-/**
  * `toPatch()`가 반환하는 RFC 6902 JSON Patch 단일 연산 항목.
  *
  * `'remove'` 연산은 RFC 6902 §4.2에 따라 `value` 필드를 포함하지 않는다.
@@ -39,33 +8,24 @@ import { OP }          from '../constants/op.const.js';
  * @property {string}                   path  - JSON Pointer 스타일 경로 (예: `'/name'`, `'/items/0'`)
  * @property {*}                        [value] - 새 값. `op === 'remove'` 시 존재하지 않음.
  */
-
 /**
  * `createProxy()`의 반환값. `toDomain()`이 그대로 반환하는 도개교 세트.
  * 상세 정의는 `api-proxy.js`의 `ProxyWrapper`를 참조한다.
  *
  * @typedef {import('./api-proxy.js').ProxyWrapper} ProxyWrapper
  */
-
 /**
  * `createProxy()`의 `changeLog`에 쌓이는 단일 변경 항목.
  * 상세 정의는 `api-proxy.js`의 `ChangeLogEntry`를 참조한다.
  *
  * @typedef {import('./api-proxy.js').ChangeLogEntry} ChangeLogEntry
  */
-
 /**
  * `DomainState._broadcast()`에서 `broadcastUpdate()`로 전달하는 콜백.
  * `toDomain()` / `createProxy()` 에 주입되어 Proxy 변경 시마다 실행된다.
  *
  * @typedef {import('./api-proxy.js').OnMutateCallback} OnMutateCallback
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 공개 API
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * REST API GET 응답 JSON 문자열을 Proxy 래퍼 객체(도개교 세트)로 역직렬화한다.
  *
@@ -99,10 +59,7 @@ import { OP }          from '../constants/op.const.js';
  * wrapper.proxy.name = 'Lee'; // changeLog: [{ op: 'replace', path: '/name', ... }]
  * console.log(wrapper.getChangeLog());
  */
-export function toDomain(jsonText, onMutate = null) {
-    return createProxy(JSON.parse(jsonText), onMutate);
-}
-
+export function toDomain(jsonText: string, onMutate?: OnMutateCallback | null): ProxyWrapper;
 /**
  * 원본 객체를 POST / PUT 전송용 JSON 문자열로 직렬화한다.
  *
@@ -129,10 +86,7 @@ export function toDomain(jsonText, onMutate = null) {
  * const { getTarget } = createProxy({ name: 'Davi', address: { city: 'Seoul' } });
  * toPayload(getTarget); // → '{"name":"Davi","address":{"city":"Seoul"}}'
  */
-export function toPayload(getTargetFn) {
-    return JSON.stringify(getTargetFn());
-}
-
+export function toPayload(getTargetFn: () => object): string;
 /**
  * `changeLog` 배열을 RFC 6902 JSON Patch 연산 배열로 변환한다.
  *
@@ -183,11 +137,38 @@ export function toPayload(getTargetFn) {
  * //   { op: 'remove',  path: '/address' },   // value 없음
  * // ]
  */
-export function toPatch(getChangeLogFn) {
-    return getChangeLogFn().map(({ op, path, newValue }) => {
-        /** @type {JsonPatchOperation} */
-        const patch = { op, path };
-        if (op !== OP.REMOVE) patch.value = newValue;
-        return patch;
-    });
-}
+export function toPatch(getChangeLogFn: () => ChangeLogEntry[]): JsonPatchOperation[];
+/**
+ * `toPatch()`가 반환하는 RFC 6902 JSON Patch 단일 연산 항목.
+ *
+ * `'remove'` 연산은 RFC 6902 §4.2에 따라 `value` 필드를 포함하지 않는다.
+ */
+export type JsonPatchOperation = {
+    /**
+     * - RFC 6902 연산 종류
+     */
+    op: "add" | "replace" | "remove";
+    /**
+     * - JSON Pointer 스타일 경로 (예: `'/name'`, `'/items/0'`)
+     */
+    path: string;
+    /**
+     * - 새 값. `op === 'remove'` 시 존재하지 않음.
+     */
+    value?: any;
+};
+/**
+ * `createProxy()`의 반환값. `toDomain()`이 그대로 반환하는 도개교 세트.
+ * 상세 정의는 `api-proxy.js`의 `ProxyWrapper`를 참조한다.
+ */
+export type ProxyWrapper = import("./api-proxy.js").ProxyWrapper;
+/**
+ * `createProxy()`의 `changeLog`에 쌓이는 단일 변경 항목.
+ * 상세 정의는 `api-proxy.js`의 `ChangeLogEntry`를 참조한다.
+ */
+export type ChangeLogEntry = import("./api-proxy.js").ChangeLogEntry;
+/**
+ * `DomainState._broadcast()`에서 `broadcastUpdate()`로 전달하는 콜백.
+ * `toDomain()` / `createProxy()` 에 주입되어 Proxy 변경 시마다 실행된다.
+ */
+export type OnMutateCallback = import("./api-proxy.js").OnMutateCallback;

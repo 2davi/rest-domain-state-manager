@@ -28,12 +28,6 @@
  * @module plugin/domain-renderer/renderers/select.renderer
  * @see {@link module:plugin/domain-renderer/DomainRenderer DomainRenderer}
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 타입 정의
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * `renderSelect()`의 설정 옵션 객체.
  *
@@ -70,18 +64,11 @@
  * @property {boolean}                           [multiple=false]
  *   `true`이면 `<select multiple>` 다중 선택을 활성화한다.
  */
-
 /**
  * `renderSelect()` 내부에서 처리하는 단일 항목 데이터 형태.
  *
  * @typedef {Record<string, *>} SelectItem
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 공개 API
-// ════════════════════════════════════════════════════════════════════════════════
-
 /**
  * `<select>` 드롭다운 요소를 생성하고 컨테이너에 추가한다.
  *
@@ -152,78 +139,52 @@
  *     placeholder: '역할 선택',
  * });
  */
-export function renderSelect(container, dataArray, config) {
-    const {
-        valueField,
-        labelField,
-        class:       cls       = '',
-        css:         cssObj    = {},
-        events:      evtMap    = {},
-        placeholder,
-        multiple    = false,
-    } = config;
-
-    const select    = document.createElement('select');
-    select.name     = valueField;  // MyBatis form submit 자동 매핑 기준
-    select.multiple = multiple;
-
-    if (cls) select.className = cls;
-    _applyCSS(select, cssObj);
-
-    // placeholder option: 안내 텍스트 역할만 하며 선택 후에는 드롭다운에 나타나지 않는다
-    if (placeholder) {
-        const ph       = document.createElement('option');
-        ph.value       = '';
-        ph.textContent = placeholder;
-        ph.disabled    = true;
-        ph.selected    = true;
-        ph.hidden      = true;
-        select.appendChild(ph);
-    }
-
-    // 데이터 항목 → <option> 생성
-    for (const item of dataArray) {
-        const opt       = document.createElement('option');
-        opt.value       = String(item[valueField] ?? '');
-        opt.textContent = String(item[labelField] ?? '');
-        select.appendChild(opt);
-    }
-
-    _bindEvents(select, evtMap);
-    container.appendChild(select);
-    return select;
-}
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 내부 유틸리티
-// ════════════════════════════════════════════════════════════════════════════════
-
+export function renderSelect(container: HTMLElement, dataArray: SelectItem[], config: SelectConfig): HTMLSelectElement;
 /**
- * CSS 스타일 객체(camelCase 키)를 DOM 요소의 inline style에 적용한다.
- *
- * `cssObj`가 빈 객체이면 아무 동작도 하지 않는다.
- * `Object.entries()`로 순회하므로 프로토타입 체인의 속성은 적용하지 않는다.
- *
- * @param {HTMLElement}                  el     - 스타일을 적용할 DOM 요소
- * @param {Partial<CSSStyleDeclaration>} cssObj - camelCase 키의 스타일 객체
- * @returns {void}
+ * `renderSelect()`의 설정 옵션 객체.
  */
-function _applyCSS(el, cssObj) {
-    Object.assign(el.style, cssObj);
-}
-
+export type SelectConfig = {
+    /**
+     *   렌더러 타입 식별자. `DomainRenderer`에서 위임 판별에 사용.
+     */
+    type: "select";
+    /**
+     *   각 항목에서 `option[value]` 속성 값으로 사용할 데이터 필드명.
+     *   `select[name]`의 기본값으로도 사용되어 MyBatis form submit 자동 매핑이 가능하다.
+     */
+    valueField: string;
+    /**
+     *   각 항목에서 `option` 표시 텍스트(`textContent`)로 사용할 데이터 필드명.
+     */
+    labelField: string;
+    /**
+     * `<select>` 요소에 적용할 `className`.
+     * Bootstrap 예: `'form-select'`, `'form-select-sm'`
+     */
+    class?: string | undefined;
+    /**
+     * `<select>` 요소에 적용할 inline style 객체 (camelCase 키).
+     * 예: `{ width: '200px', backgroundColor: '#1e1e1e' }`
+     */
+    css?: Partial<CSSStyleDeclaration> | undefined;
+    /**
+     * `<select>` 요소에 바인딩할 이벤트 핸들러 맵.
+     * 키: 이벤트명 (예: `'change'`), 값: 핸들러 함수.
+     * 값이 함수가 아닌 항목은 자동으로 무시된다.
+     */
+    events?: Record<string, EventListener> | undefined;
+    /**
+     * 첫 번째 비활성(`disabled selected hidden`) `<option>`의 텍스트.
+     * 미입력 시 placeholder option 자체가 생성되지 않는다.
+     * 예: `'역할을 선택하세요'`
+     */
+    placeholder?: string | undefined;
+    /**
+     * `true`이면 `<select multiple>` 다중 선택을 활성화한다.
+     */
+    multiple?: boolean | undefined;
+};
 /**
- * 이벤트 핸들러 맵을 DOM 요소에 바인딩한다.
- *
- * 값이 함수가 아닌 항목은 무시한다.
- *
- * @param {HTMLElement}                   el     - 이벤트를 등록할 DOM 요소
- * @param {Record<string, EventListener>} evtMap - 이벤트명 → 핸들러 함수 맵
- * @returns {void}
+ * `renderSelect()` 내부에서 처리하는 단일 항목 데이터 형태.
  */
-function _bindEvents(el, evtMap) {
-    for (const [eventName, handler] of Object.entries(evtMap)) {
-        if (typeof handler === 'function') el.addEventListener(eventName, handler);
-    }
-}
+export type SelectItem = Record<string, any>;

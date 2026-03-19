@@ -1,58 +1,4 @@
 /**
- * @fileoverview DomainState — REST API 연동 도메인 상태 관리자
- *
- * REST 리소스(또는 Aggregate Root) 단위로 인스턴스 하나를 생성한다.
- * `DomainState` 인스턴스는 **현재 상태(Proxy) + 변경 이력(changeLog) + 동기화 단위**의 세 역할을 동시에 수행한다.
- *
- * ## 생성 경로 (팩토리 메서드)
- *
- * | 팩토리               | 입력            | `isNew` | 주 용도                                        |
- * |---------------------|-----------------|---------|------------------------------------------------|
- * | `fromJSON()`        | JSON 문자열     | `false` | GET 응답 수신 후 변경·저장                      |
- * | `fromVO()`          | `DomainVO` 인스턴스 | `true` | 신규 리소스 생성(POST)                        |
- * | `fromForm()` ¹      | HTML Form 요소  | `true`  | FormBinder 플러그인 설치 후 사용 가능           |
- *
- * ¹ `fromForm()`은 `FormBinder` 플러그인이 `DomainState.use(FormBinder)` 호출 후
- *   `DomainState.fromForm`으로 동적 주입된다.
- *
- * ## 외부 인터페이스
- *
- * | 멤버              | 종류            | 설명                                                  |
- * |------------------|-----------------|-------------------------------------------------------|
- * | `.data`          | getter (Proxy)  | 변경 추적 Proxy 객체. 유일한 외부 데이터 진입점.        |
- * | `.save(path?)`   | async method    | `isNew` + `changeLog` 기반 POST / PATCH / PUT 자동 분기 |
- * | `.remove(path?)` | async method    | DELETE 요청 전송                                      |
- * | `.log()`         | method          | changeLog를 콘솔 테이블로 출력 (`debug: true` 시만)    |
- * | `.openDebugger()`| method          | 디버그 팝업 열기 (`debug: true` 시만)                  |
- *
- * ## 플러그인 시스템
- * `DomainState.use(plugin)` 호출 시 `plugin.install(DomainState)`가 실행되어
- * `prototype` 또는 클래스 레벨에 기능을 동적으로 주입할 수 있다.
- *
- * ## 의존성 주입 (순환 참조 해소)
- * `DomainState`와 `DomainPipeline`의 상호 참조를 막기 위해
- * 진입점(`rest-domain-state-manager.js`)에서
- * `DomainState.PipelineConstructor = DomainPipeline`으로 생성자를 주입한다.
- *
- * @module model/DomainState
- * @see {@link module:model/DomainVO DomainVO}
- * @see {@link module:model/DomainPipeline DomainPipeline}
- * @see {@link module:handler/api-handler ApiHandler}
- */
-
-import { toDomain, toPayload, toPatch }          from '../src/core/api-mapper.js';
-import { createProxy }                           from '../src/core/api-proxy.js';
-import { normalizeUrlConfig, buildURL }          from '../src/core/url-resolver.js';
-import { ERR }                                   from '../src/constants/error.messages.js';
-import { broadcastUpdate, openDebugPopup }       from '../src/debug/debug-channel.js';
-import { DomainVO }                              from './DomainVO.js';
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// 타입 정의
-// ════════════════════════════════════════════════════════════════════════════════
-
-/**
  * `DomainState` 생성자에 전달하는 옵션 객체.
  *
  * @typedef {object} DomainStateOptions
@@ -64,7 +10,6 @@ import { DomainVO }                              from './DomainVO.js';
  * @property {ValidatorMap} [validators]   - 필드별 유효성 검사 함수 맵. `DomainVO.getValidators()` 결과.
  * @property {TransformerMap} [transformers] - 필드별 타입 변환 함수 맵. `DomainVO.getTransformers()` 결과.
  */
-
 /**
  * `fromJSON()` 팩토리의 `options` 파라미터.
  *
@@ -74,7 +19,6 @@ import { DomainVO }                              from './DomainVO.js';
  * @property {string|null}              [label=null]     - 디버그 팝업 표시 이름. 미입력 시 `json_{timestamp}`.
  * @property {DomainVO|null}            [vo=null]        - DomainVO 인스턴스. 스키마 검증 + validators/transformers 주입.
  */
-
 /**
  * `fromVO()` 팩토리의 `options` 파라미터.
  *
@@ -83,14 +27,12 @@ import { DomainVO }                              from './DomainVO.js';
  * @property {boolean}                  [debug=false]    - 디버그 모드 활성화.
  * @property {string|null}              [label=null]     - 디버그 팝업 표시 이름. 미입력 시 `vo.constructor.name`.
  */
-
 /**
  * `DomainState.all()` 의 `options` 파라미터.
  *
  * @typedef {object} PipelineOptions
  * @property {boolean} [strict=false] - `true`이면 첫 실패에서 즉시 reject. `false`이면 `_errors`에 기록 후 계속.
  */
-
 /**
  * 정규화된 URL 설정 객체. `normalizeUrlConfig()`의 반환값.
  *
@@ -99,34 +41,29 @@ import { DomainVO }                              from './DomainVO.js';
  * @property {string} host     - 프로토콜을 제외한 호스트 (예: `'api.example.com'`)
  * @property {string} basePath - 공통 경로 접두사 (예: `'/app/api'`)
  */
-
 /**
  * 필드별 유효성 검사 함수 맵.
  * `DomainVO.getValidators()`가 반환하는 형태와 동일하다.
  *
  * @typedef {Record<string, (value: *) => boolean>} ValidatorMap
  */
-
 /**
  * 필드별 타입 변환 함수 맵.
  * `DomainVO.getTransformers()`가 반환하는 형태와 동일하다.
  *
  * @typedef {Record<string, (value: *) => *>} TransformerMap
  */
-
 /**
  * `DomainState.all()`에 전달하는 리소스 맵.
  * 키는 리소스 식별자, 값은 `api.get()` 등이 반환하는 `Promise<DomainState>`.
  *
  * @typedef {Record<string, Promise<DomainState>>} ResourceMap
  */
-
 /**
  * `DomainPipeline.run()`이 반환하는 결과 객체.
  *
  * @typedef {Record<string, DomainState> & { _errors?: Array<{ key: string, error: * }> }} PipelineResult
  */
-
 /**
  * 플러그인 객체가 반드시 구현해야 하는 계약 인터페이스.
  * `DomainState.use(plugin)` 호출 시 `install` 함수의 존재 여부를 검사한다.
@@ -135,30 +72,20 @@ import { DomainVO }                              from './DomainVO.js';
  * @property {(DomainStateClass: typeof DomainState) => void} install
  *   `DomainState` 클래스를 인자로 받아 `prototype` 또는 정적 멤버를 확장하는 함수.
  */
-
 /**
  * `createProxy()`가 반환하는 도개교 세트.
  * 외부에서는 `proxy`만 접근하고, 나머지는 `DomainState` 내부에서만 사용한다.
  *
  * @typedef {import('../src/core/api-proxy.js').ProxyWrapper} ProxyWrapper
  */
-
-
-// ════════════════════════════════════════════════════════════════════════════════
-// DomainState 클래스
-// ════════════════════════════════════════════════════════════════════════════════
-
 export class DomainState {
-
-    // ── 플러그인 레지스트리 ────────────────────────────────────────────────────
     /**
      * 등록된 플러그인 집합. 중복 등록 방지용.
      * Private class field로 외부 변조를 차단한다.
      *
      * @type {Set<DsmPlugin>}
      */
-    static #installedPlugins = new Set();
-
+    static "__#private@#installedPlugins": Set<DsmPlugin>;
     /**
      * 플러그인을 `DomainState`에 등록한다.
      *
@@ -183,18 +110,7 @@ export class DomainState {
      * };
      * DomainState.use(CsvPlugin);
      */
-    static use(plugin) {
-        if (typeof plugin?.install !== 'function') {
-            throw new TypeError(ERR.PLUGIN_NO_INSTALL);
-        }
-        if (!DomainState.#installedPlugins.has(plugin)) {
-            plugin.install(DomainState);
-            DomainState.#installedPlugins.add(plugin);
-        }
-        return DomainState;
-    }
-
-    // ── 의존성 주입 (순환 참조 해소) ──────────────────────────────────────────
+    static use(plugin: DsmPlugin): typeof DomainState;
     /**
      * `DomainPipeline` 클래스 생성자.
      * 진입점(`rest-domain-state-manager.js`)에서 주입된다.
@@ -204,8 +120,7 @@ export class DomainState {
      *
      * @type {typeof import('./DomainPipeline.js').DomainPipeline | null}
      */
-    static PipelineConstructor = null;
-
+    static PipelineConstructor: typeof import("./DomainPipeline.js").DomainPipeline | null;
     /**
      * 여러 `DomainState`를 병렬로 fetch하고, 후처리 핸들러를 순서대로 체이닝하는
      * `DomainPipeline` 인스턴스를 반환한다.
@@ -230,67 +145,7 @@ export class DomainState {
      *
      * if (result._errors?.length) console.warn(result._errors);
      */
-    static all(resourceMap, options = {}) {
-        if(!DomainState.PipelineConstructor) {
-            throw new Error('[DSM] DomainPipeline이 주입되지 않았습니다. rest-domain-state-manager.js 진입점을 사용하세요.');
-        }
-        return new DomainState.PipelineConstructor(resourceMap, options);
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════════════
-    // 생성자 (직접 호출 금지 — 팩토리 메서드 사용)
-    // ════════════════════════════════════════════════════════════════════════════
-
-    /**
-     * `DomainState` 인스턴스를 생성한다.
-     *
-     * **직접 호출 금지.** `fromJSON()` / `fromVO()` 팩토리 메서드를 사용한다.
-     * `FormBinder` 플러그인 설치 후 `fromForm()`도 사용 가능하다.
-     *
-     * 생성 직후 `debug: true`이면 디버그 채널로 초기 상태를 broadcast한다.
-     *
-     * @param {ProxyWrapper}       proxyWrapper - `createProxy()`의 반환값 (도개교 세트)
-     * @param {DomainStateOptions} [options]    - 메타데이터 및 설정 옵션
-     */
-    constructor(proxyWrapper, options = {}) {
-        // ── 도개교 세트 — 클로저 세계의 출입문 네 개 ────────────────────────
-        /** @type {object} — 변경 추적 Proxy 객체 */
-        this._proxy          = proxyWrapper.proxy;
-        /** @type {() => import('../src/core/api-proxy.js').ChangeLogEntry[]} */
-        this._getChangeLog   = proxyWrapper.getChangeLog;
-        /** @type {() => object} */
-        this._getTarget      = proxyWrapper.getTarget;
-        /** @type {() => void} */
-        this._clearChangeLog = proxyWrapper.clearChangeLog;
-
-        // ── 메타데이터 ─────────────────────────────────────────────────────
-        /** @type {import('../src/handler/api-handler.js').ApiHandler|null} */
-        this._handler      = options.handler      ?? null;
-        /** @type {NormalizedUrlConfig|null} */
-        this._urlConfig    = options.urlConfig     ?? null;
-        /** @type {boolean} — true이면 save() 시 POST로 분기 */
-        this._isNew        = options.isNew         ?? false;
-        /** @type {boolean} — true이면 log() / openDebugger() 활성화 */
-        this._debug        = options.debug         ?? false;
-        /** @type {string} — 디버그 팝업 식별 레이블 */
-        this._label        = options.label         ?? `ds_${Date.now()}`;
-        /** @type {ValidatorMap} */
-        this._validators   = options.validators    ?? {};
-        /** @type {TransformerMap} */
-        this._transformers = options.transformers  ?? {};
-        /** @type {Array<*>} — 인스턴스 수준 에러 목록 */
-        this._errors       = [];
-
-        // 생성 직후 디버그 채널에 초기 상태를 broadcast한다
-        if (this._debug) this._broadcast();
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════════════
-    // 팩토리 메서드
-    // ════════════════════════════════════════════════════════════════════════════
-
+    static all(resourceMap: ResourceMap, options?: PipelineOptions): import("./DomainPipeline.js").DomainPipeline;
     /**
      * REST API GET 응답 JSON 문자열로부터 `DomainState`를 생성한다. (`isNew: false`)
      *
@@ -325,39 +180,7 @@ export class DomainState {
      * const user = DomainState.fromJSON(jsonText, api);
      * user.bindForm('userForm'); // FormBinder.bindForm() 호출
      */
-    static fromJSON(jsonText, handler, {
-        urlConfig   = null,
-        debug       = false,
-        label       = null,
-        vo          = null,
-    } = {}) {
-        /** @type {DomainState|null} */
-        let state = null;
-        const wrapper = toDomain(jsonText, () => {
-            //Proxy 상태가 변경될 때마다 즉시 디버거 채털로 쏘는 onMutate 콜백을 주입
-            if(state?._debug) state._broadcast()
-        });
-
-        state   = new DomainState(wrapper, {
-            handler,
-            urlConfig,
-            isNew:  false,
-            debug,
-            label:  label ?? `json_${Date.now()}`,
-        });
-
-        // DomainVO 스키마 검증 및 validators / transformers 주입
-        if (vo instanceof DomainVO) {
-            const { valid } = vo.checkSchema(wrapper.getTarget());
-            if (valid) {
-                state._validators   = vo.getValidators();
-                state._transformers = vo.getTransformers();
-            }
-        }
-
-        return state;
-    }
-
+    static fromJSON(jsonText: string, handler: import("../src/handler/api-handler.js").ApiHandler, { urlConfig, debug, label, vo, }?: FromJsonOptions): DomainState;
     /**
      * `DomainVO` 인스턴스로부터 기본값 골격 `DomainState`를 생성한다. (`isNew: true`)
      *
@@ -393,40 +216,43 @@ export class DomainState {
      *     urlConfig: { host: 'staging.server.com', basePath: '/api' },
      * });
      */
-    static fromVO(vo, handler, {
-        urlConfig = null,
-        debug     = false,
-        label     = null,
-    } = {}) {
-        if (!(vo instanceof DomainVO)) throw new TypeError(ERR.FROM_VO_TYPE);
-
-        const resolvedUrlConfig = urlConfig
-            ?? (vo.getBaseURL() ? normalizeUrlConfig({ baseURL: vo.getBaseURL() ?? undefined, debug }) : null);
-        
-        /** @type {DomainState|null} */
-        let state = null;
-
-        const wrapper  = createProxy(vo.toSkeleton(), () => {
-            if(state?._debug) state._broadcast();
-        });
-
-        state = new DomainState(wrapper, {
-            handler,
-            urlConfig:    resolvedUrlConfig,
-            isNew:        true,
-            debug,
-            label:        label ?? vo.constructor.name,
-            validators:   vo.getValidators(),
-            transformers: vo.getTransformers(),
-        });
-        return state;
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════════════
-    // 외부 인터페이스
-    // ════════════════════════════════════════════════════════════════════════════
-
+    static fromVO(vo: DomainVO, handler: import("../src/handler/api-handler.js").ApiHandler, { urlConfig, debug, label, }?: FromVoOptions): DomainState;
+    /**
+     * `DomainState` 인스턴스를 생성한다.
+     *
+     * **직접 호출 금지.** `fromJSON()` / `fromVO()` 팩토리 메서드를 사용한다.
+     * `FormBinder` 플러그인 설치 후 `fromForm()`도 사용 가능하다.
+     *
+     * 생성 직후 `debug: true`이면 디버그 채널로 초기 상태를 broadcast한다.
+     *
+     * @param {ProxyWrapper}       proxyWrapper - `createProxy()`의 반환값 (도개교 세트)
+     * @param {DomainStateOptions} [options]    - 메타데이터 및 설정 옵션
+     */
+    constructor(proxyWrapper: ProxyWrapper, options?: DomainStateOptions);
+    /** @type {object} — 변경 추적 Proxy 객체 */
+    _proxy: object;
+    /** @type {() => import('../src/core/api-proxy.js').ChangeLogEntry[]} */
+    _getChangeLog: () => import("../src/core/api-proxy.js").ChangeLogEntry[];
+    /** @type {() => object} */
+    _getTarget: () => object;
+    /** @type {() => void} */
+    _clearChangeLog: () => void;
+    /** @type {import('../src/handler/api-handler.js').ApiHandler|null} */
+    _handler: import("../src/handler/api-handler.js").ApiHandler | null;
+    /** @type {NormalizedUrlConfig|null} */
+    _urlConfig: NormalizedUrlConfig | null;
+    /** @type {boolean} — true이면 save() 시 POST로 분기 */
+    _isNew: boolean;
+    /** @type {boolean} — true이면 log() / openDebugger() 활성화 */
+    _debug: boolean;
+    /** @type {string} — 디버그 팝업 식별 레이블 */
+    _label: string;
+    /** @type {ValidatorMap} */
+    _validators: ValidatorMap;
+    /** @type {TransformerMap} */
+    _transformers: TransformerMap;
+    /** @type {Array<*>} — 인스턴스 수준 에러 목록 */
+    _errors: Array<any>;
     /**
      * 변경 추적이 활성화된 Proxy 객체.
      *
@@ -443,10 +269,7 @@ export class DomainState {
      * user.data.address.city = 'Seoul';   // 중첩 쓰기 → path: '/address/city'
      * delete user.data.phone;             // 삭제 → op: 'remove'
      */
-    get data() {
-        return this._proxy;
-    }
-
+    readonly get data(): object;
     /**
      * 도메인 상태를 서버(DB)와 동기화한다.
      *
@@ -491,30 +314,7 @@ export class DomainState {
      *     if (err.status === 409) console.error('충돌 발생:', err.body);
      * }
      */
-    async save(requestPath) {
-        //_assertHandler에서 반환받은 handler를 사용한다. (TS가 완벽하게 ApiHandler로 인식함)
-        const handler = this._assertHandler('save');
-        const url = this._resolveURL(requestPath);
-
-        if (this._isNew) {
-            await handler._fetch(url, { method: 'POST', body: toPayload(this._getTarget) });
-            this._isNew = false;
-        } else {
-            const log = this._getChangeLog();
-            if (log.length > 0) {
-                await handler._fetch(url, {
-                    method: 'PATCH',
-                    body:   JSON.stringify(toPatch(this._getChangeLog)),
-                });
-            } else {
-                await handler._fetch(url, { method: 'PUT', body: toPayload(this._getTarget) });
-            }
-        }
-
-        this._clearChangeLog();
-        if (this._debug) this._broadcast();
-    }
-
+    save(requestPath?: string): Promise<void>;
     /**
      * 해당 리소스를 서버에서 삭제한다. (HTTP DELETE)
      *
@@ -528,12 +328,7 @@ export class DomainState {
      * @example
      * await user.remove('/api/users/user_001');
      */
-    async remove(requestPath) {
-        const handler = this._assertHandler('remove');
-        const url = this._resolveURL(requestPath);
-        await handler._fetch(url, { method: 'DELETE' });
-    }
-
+    remove(requestPath?: string): Promise<void>;
     /**
      * 현재 `changeLog`를 콘솔 테이블로 출력한다.
      *
@@ -547,14 +342,7 @@ export class DomainState {
      * user.data.name = 'Davi';
      * user.log(); // 콘솔 테이블에 changeLog 출력
      */
-    log() {
-        if (!this._debug) return;
-        const log = this._getChangeLog();
-        console.group(`[DSM][${this._label}] changeLog`);
-        log.length ? console.table(log) : console.log('(변경 이력 없음)');
-        console.groupEnd();
-    }
-
+    log(): void;
     /**
      * 디버그 팝업 창을 열거나, 이미 열려있으면 포커스한다.
      *
@@ -567,26 +355,14 @@ export class DomainState {
      * const user = DomainState.fromVO(new UserVO(), api, { debug: true, label: 'UserVO' });
      * user.openDebugger();
      */
-    openDebugger() {
-        if (this._debug) openDebugPopup();
-    }
-
-
-    // ════════════════════════════════════════════════════════════════════════════
-    // 내부 유틸 메서드
-    // ════════════════════════════════════════════════════════════════════════════
-
+    openDebugger(): void;
     /**
      * `handler`가 주입되어 있는지 검사하고, 없으면 `Error`를 throw한다.
      *
      * @param {string} method - 호출한 메서드명 (에러 메시지 생성용)
      * @returns {import('../src/handler/api-handler.js').ApiHandler} - 안전한 핸들러 반환!
      */
-    _assertHandler(method) {
-        if (!this._handler) throw new Error(ERR.HANDLER_MISSING(method));
-        return this._handler;
-    }
-
+    _assertHandler(method: string): import("../src/handler/api-handler.js").ApiHandler;
     /**
      * `_urlConfig`와 `requestPath`를 조합하여 최종 요청 URL을 생성한다.
      *
@@ -599,11 +375,7 @@ export class DomainState {
      * @returns {string} 최종 완성된 요청 URL
      * @throws {Error} URL을 확정할 수 없는 경우 (`buildURL` 내부에서 throw)
      */
-    _resolveURL(requestPath) {
-        const config = this._urlConfig ?? this._handler?.getUrlConfig() ?? /** @type {any} */ ({});
-        return buildURL(config, requestPath ?? '');
-    }
-
+    _resolveURL(requestPath: string | undefined): string;
     /**
      * 현재 `DomainState`의 스냅샷을 디버그 `BroadcastChannel`에 전파한다.
      *
@@ -615,12 +387,142 @@ export class DomainState {
      *
      * @returns {void}
      */
-    _broadcast() {
-        broadcastUpdate(this._label, {
-            data:      this._getTarget(),
-            changeLog: this._getChangeLog(),
-            isNew:     this._isNew,
-            errors:    this._errors,
-        });
-    }
+    _broadcast(): void;
 }
+/**
+ * `DomainState` 생성자에 전달하는 옵션 객체.
+ */
+export type DomainStateOptions = {
+    /**
+     * - `ApiHandler` 인스턴스. `save()` / `remove()` 호출에 필수.
+     */
+    handler?: import("../src/handler/api-handler.js").ApiHandler | null | undefined;
+    /**
+     * - 정규화된 URL 설정. 미입력 시 `handler.getUrlConfig()` 폴백.
+     */
+    urlConfig?: NormalizedUrlConfig | null | undefined;
+    /**
+     * - `true`이면 `save()` 시 POST, `false`이면 PATCH/PUT.
+     */
+    isNew?: boolean | undefined;
+    /**
+     * - `true`이면 `log()` / `openDebugger()` 활성화 및 디버그 채널 연결.
+     */
+    debug?: boolean | undefined;
+    /**
+     * - 디버그 팝업에 표시될 식별 레이블. 미입력 시 `ds_{timestamp}` 자동 생성.
+     */
+    label?: string | undefined;
+    /**
+     * - 필드별 유효성 검사 함수 맵. `DomainVO.getValidators()` 결과.
+     */
+    validators?: ValidatorMap | undefined;
+    /**
+     * - 필드별 타입 변환 함수 맵. `DomainVO.getTransformers()` 결과.
+     */
+    transformers?: TransformerMap | undefined;
+};
+/**
+ * `fromJSON()` 팩토리의 `options` 파라미터.
+ */
+export type FromJsonOptions = {
+    /**
+     * - URL 설정 오버라이드.
+     */
+    urlConfig?: NormalizedUrlConfig | null | undefined;
+    /**
+     * - 디버그 모드 활성화.
+     */
+    debug?: boolean | undefined;
+    /**
+     * - 디버그 팝업 표시 이름. 미입력 시 `json_{timestamp}`.
+     */
+    label?: string | null | undefined;
+    /**
+     * - DomainVO 인스턴스. 스키마 검증 + validators/transformers 주입.
+     */
+    vo?: DomainVO | null | undefined;
+};
+/**
+ * `fromVO()` 팩토리의 `options` 파라미터.
+ */
+export type FromVoOptions = {
+    /**
+     * - URL 설정 오버라이드. 미입력 시 `vo.getBaseURL()` 폴백.
+     */
+    urlConfig?: NormalizedUrlConfig | null | undefined;
+    /**
+     * - 디버그 모드 활성화.
+     */
+    debug?: boolean | undefined;
+    /**
+     * - 디버그 팝업 표시 이름. 미입력 시 `vo.constructor.name`.
+     */
+    label?: string | null | undefined;
+};
+/**
+ * `DomainState.all()` 의 `options` 파라미터.
+ */
+export type PipelineOptions = {
+    /**
+     * - `true`이면 첫 실패에서 즉시 reject. `false`이면 `_errors`에 기록 후 계속.
+     */
+    strict?: boolean | undefined;
+};
+/**
+ * 정규화된 URL 설정 객체. `normalizeUrlConfig()`의 반환값.
+ */
+export type NormalizedUrlConfig = {
+    /**
+     * - 확정된 프로토콜 문자열 (예: `'http://'`, `'https://'`)
+     */
+    protocol: string;
+    /**
+     * - 프로토콜을 제외한 호스트 (예: `'api.example.com'`)
+     */
+    host: string;
+    /**
+     * - 공통 경로 접두사 (예: `'/app/api'`)
+     */
+    basePath: string;
+};
+/**
+ * 필드별 유효성 검사 함수 맵.
+ * `DomainVO.getValidators()`가 반환하는 형태와 동일하다.
+ */
+export type ValidatorMap = Record<string, (value: any) => boolean>;
+/**
+ * 필드별 타입 변환 함수 맵.
+ * `DomainVO.getTransformers()`가 반환하는 형태와 동일하다.
+ */
+export type TransformerMap = Record<string, (value: any) => any>;
+/**
+ * `DomainState.all()`에 전달하는 리소스 맵.
+ * 키는 리소스 식별자, 값은 `api.get()` 등이 반환하는 `Promise<DomainState>`.
+ */
+export type ResourceMap = Record<string, Promise<DomainState>>;
+/**
+ * `DomainPipeline.run()`이 반환하는 결과 객체.
+ */
+export type PipelineResult = Record<string, DomainState> & {
+    _errors?: Array<{
+        key: string;
+        error: any;
+    }>;
+};
+/**
+ * 플러그인 객체가 반드시 구현해야 하는 계약 인터페이스.
+ * `DomainState.use(plugin)` 호출 시 `install` 함수의 존재 여부를 검사한다.
+ */
+export type DsmPlugin = {
+    /**
+     *   `DomainState` 클래스를 인자로 받아 `prototype` 또는 정적 멤버를 확장하는 함수.
+     */
+    install: (DomainStateClass: typeof DomainState) => void;
+};
+/**
+ * `createProxy()`가 반환하는 도개교 세트.
+ * 외부에서는 `proxy`만 접근하고, 나머지는 `DomainState` 내부에서만 사용한다.
+ */
+export type ProxyWrapper = import("../src/core/api-proxy.js").ProxyWrapper;
+import { DomainVO } from './DomainVO.js';
