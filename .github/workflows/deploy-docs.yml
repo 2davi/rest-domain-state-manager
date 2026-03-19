@@ -1,42 +1,48 @@
-name: Deploy Docs to GitHub Pages
+name: Deploy to Lab Hub
 
 on:
   # main 브랜치에 푸시될 때마다 실행
   push:
     branches: ["main"]
-  # 수동으로 실행할 수 있게 허용
   workflow_dispatch:
-
-# GITHUB_TOKEN의 권한 설정
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# 동시 실행 취소 (이전 배포가 진행 중이면 취소하고 최신 것만 배포)
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: 1. Checkout current repository (DSM)
         uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
         with:
-          # 루트 디렉토리 전체를 업로드 (네 HTML 파일들이 루트에 있으니까)
-          path: '.'
+          path: 'dsm-repo'
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: 2. Checkout Lab repository
+        uses: actions/checkout@v4
+        with:
+          repository: '2davi/lab'
+          token: ${{ secrets.LAB_REPO_PAT }} # 우리가 등록한 마스터키 사용!
+          path: 'lab-repo'
+
+      - name: 3. Sync files to Lab repository
+        run: |
+          # lab 레포지토리 내부에 프로젝트 폴더 생성
+          mkdir -p lab-repo/rest-domain-state-manager
+          
+          # HTML 파일들이 JS를 참조하므로, node_modules와 git만 빼고 전체 복사
+          rsync -av --exclude='.git' --exclude='node_modules' --exclude='lab-repo' dsm-repo/ lab-repo/rest-domain-state-manager/
+          
+      - name: 4. Commit and Push to Lab
+        run: |
+          cd lab-repo
+          # 봇 이름으로 커밋 설정
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add rest-domain-state-manager/
+          
+          # 변경사항이 있을 때만 커밋 및 푸시 (잔디 에러 방지)
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to deploy."
+          else
+            git commit -m "docs: rest-domain-state-manager 최신화 (Auto-deployed)"
+            git push origin main
+          fi
