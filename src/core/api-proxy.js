@@ -52,8 +52,8 @@ import { LOG, formatMessage }                             from '../constants/log
  * - `op: 'remove'` : 기존 경로의 값이 삭제됨. `newValue` 없음.
  *
  * @typedef {object} ChangeLogEntry
- * @property {'add'|'replace'|'remove'} op        - RFC 6902 연산 종류
- * @property {string}                   path      - JSON Pointer 스타일 경로 (예: `/address/city`, `/items/0`)
+ * @property {'add'|'replace'|'remove'} op         - RFC 6902 연산 종류
+ * @property {string}                   path       - JSON Pointer 스타일 경로 (예: `/address/city`, `/items/0`)
  * @property {*}                        [newValue] - 새 값. `op: 'remove'` 시 존재하지 않음.
  * @property {*}                        [oldValue] - 이전 값. `op: 'add'` 시 존재하지 않음.
  */
@@ -69,6 +69,8 @@ import { LOG, formatMessage }                             from '../constants/log
  * @property {() => ChangeLogEntry[]}        getChangeLog   - 현재 변경 이력의 얕은 복사본을 반환한다. 외부 변조 방지.
  * @property {() => object}                  getTarget      - 변경이 누적된 원본 객체를 반환한다.
  * @property {() => void}                    clearChangeLog - 동기화 성공 후 변경 이력 전체를 초기화한다.
+ * @property {() => Set<string>}             getDirtyFields   - 변경된 최상위 키 집합의 복사본을 반환한다.
+ * @property {() => void}                    clearDirtyFields - 변경된 최상위 키 집합을 초기화한다.
  */
 
 /**
@@ -168,6 +170,21 @@ export function createProxy(domainObject, onMutate = null) {
     /** @type {boolean} */
     let isMuting = false;
 
+    // ── Dirty Checking — 변경된 최상위 키(top-level key) 집합 ─────────────────
+    // changeLog가 "어떻게 바뀌었나(RFC 6902 감사 이력)"를 기록한다면,
+    // dirtyFields는 "어느 최상위 키가 바뀌었나(존재 여부)"만 빠르게 조회하기 위한 자료구조다.
+    //
+    // path 예시:
+    //   '/name'            → split('/')[1] → 'name'
+    //   '/address/city'    → split('/')[1] → 'address'
+    //   '/items/0/price'   → split('/')[1] → 'items'
+    //   '/items'           → split('/')[1] → 'items'  (sort/reverse 전체 REPLACE 시)
+    //
+    // Set을 쓰는 이유: 동일 최상위 키를 10번 변경해도 Set에는 1개만 유지된다.
+    // DomainState.save()에서 dirtyFields.size / totalFields 비율로 PUT/PATCH를 결정한다.
+    /** @type {Set<string>} */
+    const dirtyFields = new Set();
+
     // ── O(N) 배열 변이 메서드 목록 ─────────────────────────────────────────────
     // 이 메서드들은 get 트랩에서 가로채어 래퍼 함수로 교체된다.
     // push/pop(O(1))은 set 트랩의 자연스러운 동작으로 정확히 추적되므로 포함하지 않는다.
@@ -201,6 +218,16 @@ export function createProxy(domainObject, onMutate = null) {
         if (op !== OP.REMOVE) entry.newValue = newValue;
         if (op !== OP.ADD)    entry.oldValue = oldValue;
         changeLog.push(entry);
+
+        // ── Dirty Tracking ────────────────────────────────────────────────────
+        // path는 항상 '/'로 시작하는 JSON Pointer 형태다 (예: '/address/city').
+        // split('/')[1]로 첫 번째 세그먼트(최상위 키)를 추출한다.
+        // path가 루트 자체를 가리키는 경우(sort/reverse의 basePath='')엔
+        // split('/')[1]이 빈 문자열('')이 되므로 falsy 체크로 건너뛴다.
+        const topLevelKey = path.split('/')[1];
+        if (topLevelKey) dirtyFields.add(topLevelKey);
+        // ─────────────────────────────────────────────────────────────────────
+
         console.debug(formatMessage(LOG.proxy[op], { path, oldValue, newValue }));
 
         if(onMutate) onMutate();
@@ -427,5 +454,25 @@ export function createProxy(domainObject, onMutate = null) {
          * @type {() => void}
          */
         clearChangeLog: () => void (changeLog.length = 0),
+
+        /**
+         * 변경된 최상위 키(top-level key) 집합의 읽기 전용 뷰를 반환한다.
+         *
+         * `DomainState.save()`에서 `dirtyFields.size / totalFields` 비율로
+         * PUT / PATCH 분기를 결정하는 데 사용한다.
+         * 외부 변조를 막기 위해 원본 Set이 아닌 새 Set 복사본을 반환한다.
+         *
+         * @type {() => Set<string>}
+         */
+        getDirtyFields: () => new Set(dirtyFields),
+
+        /**
+         * 변경된 최상위 키 집합을 비운다.
+         * `clearChangeLog()`와 함께 `DomainState.save()` 성공 직후 반드시 쌍으로 호출해야 한다.
+         * 둘 중 하나만 초기화하면 다음 save() 호출 시 분기 판단이 오염된다.
+         *
+         * @type {() => void}
+         */
+        clearDirtyFields: () => dirtyFields.clear(),
     };
 }
