@@ -221,7 +221,7 @@ export const FormBinder = {
  * @returns {HTMLFormElement | null} 찾은 Form 요소 또는 `null`
  */
 function _resolveForm(formOrId) {
-    if (typeof formOrId === 'string') /** @type {HTMLFormElement | null} */ (document.getElementById(formOrId));
+    if (typeof formOrId === 'string') return /** @type {HTMLFormElement | null} */ (document.getElementById(formOrId));
     if (formOrId instanceof HTMLFormElement) return formOrId;
     return null;
 }
