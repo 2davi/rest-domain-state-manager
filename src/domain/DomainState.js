@@ -282,9 +282,6 @@ export class DomainState {
         this._clearDirtyFields = proxyWrapper.clearDirtyFields;
         // ──────────────────────────────────────────────────────────────────────
 
-        /** @type {() => void} */
-        this._clearDirtyFields   = proxyWrapper.clearDirtyFields;
-
         // ── Optimistic Update 롤백용 복원 메서드 ─────────────────────────────
         // save() try 블록이 실패했을 때 _rollback()이 이 세 메서드를 호출하여
         // domainObject, changeLog, dirtyFields를 save() 진입 이전 상태로 되돌린다.

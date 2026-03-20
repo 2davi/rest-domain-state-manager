@@ -143,7 +143,7 @@ export const DomainRenderer = {
          * 5. **컨테이너 초기화** — `el.innerHTML = ''` 으로 기존 자식 요소 제거.
          * 6. **타입별 렌더러 위임** — `RENDERER_TYPE` switch 분기로 해당 렌더러 호출.
          *
-         * @this {import('../../model/DomainState.js').DomainState}
+         * @this {import('../../domain/DomainState.js').DomainState}
          * @param {string | HTMLElement} container
          *   렌더링 결과를 삽입할 컨테이너.
          *   - `string`: `'#roleSelect'` 또는 `'roleSelect'` 형식의 element ID.

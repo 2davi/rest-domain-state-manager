@@ -43,7 +43,7 @@
  *
  * @module debug/debug-channel
  * @see {@link https://developer.mozilla.org/ko/docs/Web/API/BroadcastChannel MDN — BroadcastChannel}
- * @see {@link module:model/DomainState DomainState}
+ * @see {@link module:domain/DomainState DomainState}
  */
 
 import {

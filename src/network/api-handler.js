@@ -26,7 +26,7 @@
  * - `isDebug()`              — 디버그 플래그 외부 노출
  *
  * @module network/api-handler
- * @see {@link module:network/DomainState DomainState}
+ * @see {@link module:domain/DomainState DomainState}
  * @see {@link module:core/url-resolver normalizeUrlConfig}
  *
  * @example <caption>기본 사용</caption>

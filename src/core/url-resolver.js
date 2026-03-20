@@ -34,7 +34,7 @@
  *
  * @module core/url-resolver
  * @see {@link https://developer.mozilla.org/ko/docs/Web/API/URL URL MDN 문서}
- * @see {@link module:handler/api-handler ApiHandler}
+ * @see {@link module:network/api-handler ApiHandler}
  */
 
 import { PROTOCOL, ENV, DEFAULT_PROTOCOL, VALID_PROTOCOL_KEYS } from '../constants/protocol.const.js';
