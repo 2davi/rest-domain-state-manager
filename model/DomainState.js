@@ -46,6 +46,7 @@ import { normalizeUrlConfig, buildURL }          from '../src/core/url-resolver.
 import { ERR }                                   from '../src/constants/error.messages.js';
 import { broadcastUpdate, openDebugPopup }       from '../src/debug/debug-channel.js';
 import { DomainVO }                              from './DomainVO.js';
+import { DIRTY_THRESHOLD }                       from '../src/constants/dirty.const.js';
 
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -254,7 +255,7 @@ export class DomainState {
      * @param {DomainStateOptions} [options]    - 메타데이터 및 설정 옵션
      */
     constructor(proxyWrapper, options = {}) {
-        // ── 도개교 세트 — 클로저 세계의 출입문 네 개 ────────────────────────
+        // ── 도개교 세트 — 클로저 세계의 출입문 네 개 ─────────────────────────
         /** @type {object} — 변경 추적 Proxy 객체 */
         this._proxy          = proxyWrapper.proxy;
         /** @type {() => import('../src/core/api-proxy.js').ChangeLogEntry[]} */
@@ -264,7 +265,14 @@ export class DomainState {
         /** @type {() => void} */
         this._clearChangeLog = proxyWrapper.clearChangeLog;
 
-        // ── 메타데이터 ─────────────────────────────────────────────────────
+        // ── Dirty Tracking 클로저 연결 ────────────────────────────────────────
+        /** @type {() => Set<string>} */
+        this._getDirtyFields   = proxyWrapper.getDirtyFields;
+        /** @type {() => void} */
+        this._clearDirtyFields = proxyWrapper.clearDirtyFields;
+        // ──────────────────────────────────────────────────────────────────────
+        
+        // ── 메타데이터 ────────────────────────────────────────────────────────
         /** @type {import('../src/handler/api-handler.js').ApiHandler|null} */
         this._handler      = options.handler      ?? null;
         /** @type {NormalizedUrlConfig|null} */
@@ -447,24 +455,32 @@ export class DomainState {
         return this._proxy;
     }
 
-    /**
+/**
      * 도메인 상태를 서버(DB)와 동기화한다.
      *
-     * ## HTTP 메서드 분기 전략 (A+C 혼합)
+     * ## HTTP 메서드 분기 전략 (Dirty Checking 기반)
      *
      * ```
      * isNew === true
      *     → POST  (toPayload — 전체 객체 직렬화)
      *
      * isNew === false
-     *     changeLog.length > 0  → PATCH (toPatch — RFC 6902 JSON Patch 배열)
-     *     changeLog.length === 0 → PUT  (toPayload — 전체 객체 직렬화)
+     *     dirtyRatio = dirtyFields.size / Object.keys(target).length
+     *
+     *     dirtyFields.size === 0            → PUT   (변경 없는 의도적 재저장)
+     *     dirtyRatio >= DIRTY_THRESHOLD     → PUT   (변경 비율 70% 이상 — 전체 교체가 효율적)
+     *     dirtyRatio <  DIRTY_THRESHOLD     → PATCH (변경 부분만 RFC 6902 Patch 배열로 전송)
      * ```
      *
+     * ## 기존 분기(changeLog.length 기반)와의 차이
+     * 이전 구현은 `changeLog.length === 0`이면 PUT을 선택했다.
+     * 이는 "이력 없음 = 전체 교체"라는 잘못된 의미론적 매핑이었다.
+     * 새 구현은 "변경된 필드의 비율"이라는 데이터 의미론에 기반한다.
+     *
      * ## 동기화 성공 후 처리
-     * - PATCH / PUT 성공 → `clearChangeLog()` 호출
-     * - POST 성공 → `isNew = false` 전환 후 `clearChangeLog()` 호출
-     * - `debug: true` → `_broadcast()` 호출
+     * - PUT / PATCH 성공 → `clearChangeLog()` + `clearDirtyFields()` 동시 초기화
+     * - POST 성공        → `isNew = false` 전환 후 동일하게 초기화
+     * - `debug: true`    → `_broadcast()` 호출
      *
      * ## `requestPath` 결정 순서
      * 1. `requestPath` 인자 명시 → 그대로 사용
@@ -481,7 +497,7 @@ export class DomainState {
      * await user.save('/api/users/user_001');
      *
      * @example <caption>urlConfig 사용 (DomainVO.baseURL 자동 폴백)</caption>
-     * const newUser = DomainState.fromVO(new UserVO(), api); // UserVO.baseURL 자동 사용
+     * const newUser = DomainState.fromVO(new UserVO(), api);
      * await newUser.save(); // → POST to UserVO.baseURL
      *
      * @example <caption>에러 처리</caption>
@@ -492,26 +508,50 @@ export class DomainState {
      * }
      */
     async save(requestPath) {
-        //_assertHandler에서 반환받은 handler를 사용한다. (TS가 완벽하게 ApiHandler로 인식함)
         const handler = this._assertHandler('save');
-        const url = this._resolveURL(requestPath);
+        const url     = this._resolveURL(requestPath);
 
         if (this._isNew) {
-            await handler._fetch(url, { method: 'POST', body: toPayload(this._getTarget) });
+            // ── POST: 서버에 아직 존재하지 않는 신규 리소스 ─────────────────
+            await handler._fetch(url, {
+                method: 'POST',
+                body:   toPayload(this._getTarget),
+            });
             this._isNew = false;
+
         } else {
-            const log = this._getChangeLog();
-            if (log.length > 0) {
+            // ── PUT / PATCH: Dirty Checking 기반 자동 분기 ───────────────────
+            //
+            // dirtyFields: 이번 save() 사이클에서 변경된 최상위 키 집합
+            // totalFields: 현재 도메인 객체의 최상위 키 수 (Object.keys 기준)
+            //
+            // dirtyRatio가 DIRTY_THRESHOLD(0.7) 이상이면,
+            // PATCH 배열을 생성하는 것보다 전체 객체를 PUT으로 보내는 것이 더 효율적이다.
+            const dirtyFields  = this._getDirtyFields();
+            const totalFields  = Object.keys(this._getTarget()).length;
+            const dirtyRatio   = totalFields > 0 ? dirtyFields.size / totalFields : 0;
+
+            if (dirtyFields.size === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
+                // PUT — 의도적 재저장이거나 대부분의 필드가 변경된 경우
+                await handler._fetch(url, {
+                    method: 'PUT',
+                    body:   toPayload(this._getTarget),
+                });
+            } else {
+                // PATCH — 변경된 부분만 RFC 6902 JSON Patch 배열로 전송
                 await handler._fetch(url, {
                     method: 'PATCH',
                     body:   JSON.stringify(toPatch(this._getChangeLog)),
                 });
-            } else {
-                await handler._fetch(url, { method: 'PUT', body: toPayload(this._getTarget) });
             }
         }
 
+        // ── 동기화 성공 후 상태 초기화 ──────────────────────────────────────
+        // changeLog와 dirtyFields는 반드시 쌍으로 초기화해야 한다.
+        // 둘 중 하나만 초기화하면 다음 save() 호출 시 분기 판단이 오염된다.
         this._clearChangeLog();
+        this._clearDirtyFields();
+
         if (this._debug) this._broadcast();
     }
 
