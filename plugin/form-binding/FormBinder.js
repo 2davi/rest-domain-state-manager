@@ -155,9 +155,8 @@ export const FormBinder = {
             /** @type {any} */
             let state = null;
             const skeleton = _formToSkeleton(formEl);
-            const wrapper  = createProxy(skeleton, () => {
-                //Proxy 상태가 변경될 때마다 즉시 디버거 채털로 쏘는 onMutate 콜백을 주입
-                if(state?._debug) state._broadcast();
+            const wrapper = createProxy(skeleton, () => {
+                state?._scheduleFlush();
             });
             
             state = new DomainStateClass(wrapper, {

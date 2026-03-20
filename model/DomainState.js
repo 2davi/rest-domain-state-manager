@@ -265,6 +265,16 @@ export class DomainState {
         /** @type {() => void} */
         this._clearChangeLog = proxyWrapper.clearChangeLog;
 
+        // ── Batching Scheduler ────────────────────────────────────────────────
+        // 동일한 동기 블록(synchronous block) 안에서 Proxy 변경이 여러 번 발생해도
+        // _broadcast() → postMessage()가 단 한 번만 실행되도록 보장하는 플래그.
+        //
+        // true  : 이번 microtask tick에 이미 flush가 예약됨 → 추가 예약 차단
+        // false : 예약 없음 → 다음 onMutate 호출 시 새로 예약
+        /** @type {boolean} */
+        this._pendingFlush = false;
+        // ──────────────────────────────────────────────────────────────────────
+
         // ── Dirty Tracking 클로저 연결 ────────────────────────────────────────
         /** @type {() => Set<string>} */
         this._getDirtyFields   = proxyWrapper.getDirtyFields;
@@ -342,8 +352,9 @@ export class DomainState {
         /** @type {DomainState|null} */
         let state = null;
         const wrapper = toDomain(jsonText, () => {
-            //Proxy 상태가 변경될 때마다 즉시 디버거 채털로 쏘는 onMutate 콜백을 주입
-            if(state?._debug) state._broadcast()
+            // _broadcast() 직접 호출 대신 배칭 스케줄러를 거친다.
+            // 동일 동기 블록 내 다중 변경이 단일 postMessage로 병합된다.
+            state?._scheduleFlush();
         });
 
         state   = new DomainState(wrapper, {
@@ -414,8 +425,8 @@ export class DomainState {
         /** @type {DomainState|null} */
         let state = null;
 
-        const wrapper  = createProxy(vo.toSkeleton(), () => {
-            if(state?._debug) state._broadcast();
+        const wrapper = createProxy(vo.toSkeleton(), () => {
+            state?._scheduleFlush();
         });
 
         state = new DomainState(wrapper, {
@@ -642,6 +653,52 @@ export class DomainState {
     _resolveURL(requestPath) {
         const config = this._urlConfig ?? this._handler?.getUrlConfig() ?? /** @type {any} */ ({});
         return buildURL(config, requestPath ?? '');
+    }
+
+    /**
+     * 동일 동기 블록 내 다중 상태 변경을 단일 `_broadcast()` 호출로 병합하는
+     * 마이크로태스크(Microtask) 배칭 스케줄러.
+     *
+     * ## 동작 원리
+     * `onMutate` 콜백이 `_broadcast()`를 직접 호출하는 대신 이 메서드를 거친다.
+     * `_pendingFlush`가 `false`일 때만 `queueMicrotask()`로 flush를 예약하고
+     * 플래그를 `true`로 세운다. 이후 동일 동기 블록에서 발생하는 추가 변경은
+     * 플래그 체크에서 걸러져 중복 예약 없이 차단된다.
+     * 현재 Call Stack이 비워지면 Microtask Queue가 실행되어 `_broadcast()`가
+     * 정확히 한 번 호출되고 플래그가 `false`로 복원된다.
+     *
+     * ## 이벤트 루프 상의 위치
+     * ```
+     * [Call Stack 동기 코드]          → proxy.name = 'A', proxy.email = 'B', ...
+     *   ↓ Call Stack 비워짐
+     * [Microtask Queue]              → flush() → _broadcast() (1회)
+     *   ↓
+     * [Task Queue (렌더링, setTimeout)]
+     * ```
+     *
+     * ## `queueMicrotask` vs `Promise.resolve().then()`
+     * 두 방법 모두 Microtask Queue에 작업을 넣는다. `queueMicrotask()`를 선택한 이유:
+     * 1. `Promise` 객체 생성·GC 오버헤드가 없다.
+     * 2. 코드 의도("microtask에 작업을 직접 예약한다")가 명시적으로 드러난다.
+     *
+     * ## 배칭에서 제외되는 두 호출
+     * - `constructor` 초기 `_broadcast()` : 인스턴스 초기화 시점의 단발 스냅샷.
+     * - `save()` 완료 후 `_broadcast()`   : 서버 동기화 완료 이벤트. 즉시 반영 필요.
+     * 이 두 곳은 `onMutate` 경로가 아니므로 이 메서드를 거치지 않는다.
+     *
+     * @returns {void}
+     */
+    _scheduleFlush() {
+        if (this._pendingFlush) return;
+        this._pendingFlush = true;
+
+        queueMicrotask(() => {
+            // flush 실행 전 플래그를 먼저 초기화한다.
+            // _broadcast() 내부에서 추가 변경이 발생하는 극단적 케이스에서도
+            // 다음 flush가 정상적으로 예약될 수 있도록 순서를 보장한다.
+            this._pendingFlush = false;
+            if (this._debug) this._broadcast();
+        });
     }
 
     /**
