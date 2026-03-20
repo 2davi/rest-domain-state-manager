@@ -157,6 +157,7 @@ refactor(domain): replace direct _broadcast() with _scheduleFlush() in onMutate 
 
   - fromJSON(), fromVO() onMutate 콜백: _broadcast() → _scheduleFlush()
   - FormBinder.fromForm() onMutate 콜백 동일하게 교체
-  - constructor 초기 _broadcast(), save() 완료 후 _broadcast()는 배칭 대상 아님 — 유지
+  - constructor 초기 _broadcast(), save() 완료 후 _broadcast()는 유지
+    (배칭 대상 아님 — 각각 초기화 스냅샷, 서버 동기화 완료 이벤트)
   - 세 팩토리의 동작 변경 이유 각 JSDoc에 명시
 ```

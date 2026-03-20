@@ -352,8 +352,9 @@ export class DomainState {
         /** @type {DomainState|null} */
         let state = null;
         const wrapper = toDomain(jsonText, () => {
-            //Proxy 상태가 변경될 때마다 즉시 디버거 채털로 쏘는 onMutate 콜백을 주입
-            if(state?._debug) state._broadcast()
+            // _broadcast() 직접 호출 대신 배칭 스케줄러를 거친다.
+            // 동일 동기 블록 내 다중 변경이 단일 postMessage로 병합된다.
+            state?._scheduleFlush();
         });
 
         state   = new DomainState(wrapper, {
@@ -424,8 +425,8 @@ export class DomainState {
         /** @type {DomainState|null} */
         let state = null;
 
-        const wrapper  = createProxy(vo.toSkeleton(), () => {
-            if(state?._debug) state._broadcast();
+        const wrapper = createProxy(vo.toSkeleton(), () => {
+            state?._scheduleFlush();
         });
 
         state = new DomainState(wrapper, {
