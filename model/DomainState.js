@@ -281,6 +281,20 @@ export class DomainState {
         /** @type {() => void} */
         this._clearDirtyFields = proxyWrapper.clearDirtyFields;
         // ──────────────────────────────────────────────────────────────────────
+
+        /** @type {() => void} */
+        this._clearDirtyFields   = proxyWrapper.clearDirtyFields;
+
+        // ── Optimistic Update 롤백용 복원 메서드 ─────────────────────────────
+        // save() try 블록이 실패했을 때 _rollback()이 이 세 메서드를 호출하여
+        // domainObject, changeLog, dirtyFields를 save() 진입 이전 상태로 되돌린다.
+        /** @type {(data: object) => void} */
+        this._restoreTarget      = proxyWrapper.restoreTarget;
+        /** @type {(entries: import('../src/core/api-proxy.js').ChangeLogEntry[]) => void} */
+        this._restoreChangeLog   = proxyWrapper.restoreChangeLog;
+        /** @type {(fields: Set<string>) => void} */
+        this._restoreDirtyFields = proxyWrapper.restoreDirtyFields;
+        // ─────────────────────────────────────────────────────────────────────
         
         // ── 메타데이터 ────────────────────────────────────────────────────────
         /** @type {import('../src/handler/api-handler.js').ApiHandler|null} */
@@ -466,7 +480,7 @@ export class DomainState {
         return this._proxy;
     }
 
-/**
+    /**
      * 도메인 상태를 서버(DB)와 동기화한다.
      *
      * ## HTTP 메서드 분기 전략 (Dirty Checking 기반)
@@ -478,15 +492,22 @@ export class DomainState {
      * isNew === false
      *     dirtyRatio = dirtyFields.size / Object.keys(target).length
      *
-     *     dirtyFields.size === 0            → PUT   (변경 없는 의도적 재저장)
-     *     dirtyRatio >= DIRTY_THRESHOLD     → PUT   (변경 비율 70% 이상 — 전체 교체가 효율적)
-     *     dirtyRatio <  DIRTY_THRESHOLD     → PATCH (변경 부분만 RFC 6902 Patch 배열로 전송)
+     *     dirtyFields.size === 0           → PUT   (변경 없는 의도적 재저장)
+     *     dirtyRatio >= DIRTY_THRESHOLD    → PUT   (변경 비율 70% 이상 — 전체 교체가 효율적)
+     *     dirtyRatio <  DIRTY_THRESHOLD    → PATCH (변경 부분만 RFC 6902 Patch 배열로 전송)
      * ```
      *
-     * ## 기존 분기(changeLog.length 기반)와의 차이
-     * 이전 구현은 `changeLog.length === 0`이면 PUT을 선택했다.
-     * 이는 "이력 없음 = 전체 교체"라는 잘못된 의미론적 매핑이었다.
-     * 새 구현은 "변경된 필드의 비율"이라는 데이터 의미론에 기반한다.
+     * ## Optimistic Update 롤백
+     * `save()` 진입 직전 `structuredClone()`으로 현재 상태의 깊은 복사 스냅샷을 생성한다.
+     * HTTP 요청이 실패(`4xx` / `5xx` / 네트워크 오류)하면 `_rollback(snapshot)`을 호출하여
+     * `domainObject`, `changeLog`, `dirtyFields`, `_isNew` 4개 상태를 일관되게 복원한다.
+     * 복원 후 에러를 반드시 re-throw하여 호출자가 처리할 수 있게 한다.
+     *
+     * ## structuredClone 전제
+     * 스냅샷은 `structuredClone()`을 사용하므로 `domainObject` 내부에
+     * 함수, DOM 노드, Symbol 등 구조화된 복제가 불가능한 값이 있으면 throw된다.
+     * REST API JSON 응답 데이터(문자열, 숫자, 배열, 플레인 객체)만 담는
+     * 일반적인 DTO에서는 문제가 발생하지 않는다.
      *
      * ## 동기화 성공 후 처리
      * - PUT / PATCH 성공 → `clearChangeLog()` + `clearDirtyFields()` 동시 초기화
@@ -504,66 +525,86 @@ export class DomainState {
      * @throws {Error} URL을 확정할 수 없는 경우 (`buildURL`)
      * @throws {{ status: number, statusText: string, body: string }} HTTP 에러 (서버가 `4xx` / `5xx` 반환 시)
      *
-     * @example <caption>경로 명시</caption>
+     * @example <caption>기본 사용</caption>
      * await user.save('/api/users/user_001');
      *
-     * @example <caption>urlConfig 사용 (DomainVO.baseURL 자동 폴백)</caption>
-     * const newUser = DomainState.fromVO(new UserVO(), api);
-     * await newUser.save(); // → POST to UserVO.baseURL
-     *
-     * @example <caption>에러 처리</caption>
+     * @example <caption>에러 처리 및 롤백 확인</caption>
      * try {
      *     await user.save('/api/users/1');
      * } catch (err) {
-     *     if (err.status === 409) console.error('충돌 발생:', err.body);
+     *     // err: { status: 409, statusText: 'Conflict', body: '...' }
+     *     // 이 시점에 user.data는 save() 호출 이전 상태로 자동 복원되어 있다.
+     *     console.error('저장 실패, 상태 롤백 완료:', err.status);
+     * }
+     *
+     * @example <caption>재시도 패턴</caption>
+     * for (let attempt = 0; attempt < 3; attempt++) {
+     *     try {
+     *         await user.save('/api/users/1');
+     *         break;
+     *     } catch (err) {
+     *         if (attempt === 2) throw err; // 3회 실패 시 상위로 전파
+     *         // 롤백된 상태 그대로 재시도 가능
+     *     }
      * }
      */
     async save(requestPath) {
         const handler = this._assertHandler('save');
         const url     = this._resolveURL(requestPath);
 
-        if (this._isNew) {
-            // ── POST: 서버에 아직 존재하지 않는 신규 리소스 ─────────────────
-            await handler._fetch(url, {
-                method: 'POST',
-                body:   toPayload(this._getTarget),
-            });
-            this._isNew = false;
+        // ── 스냅샷 생성 — save() 진입 직전 상태를 깊은 복사로 보존 ──────────
+        // HTTP 요청 실패 시 _rollback()이 이 스냅샷으로 4개 상태를 복원한다.
+        // structuredClone은 동기 함수이므로 try 블록 진입 전에 완료된다.
+        const snapshot = {
+            data:        structuredClone(this._getTarget()),
+            changeLog:   this._getChangeLog(),      // 이미 얕은 복사본 반환
+            dirtyFields: this._getDirtyFields(),    // 이미 new Set 복사본 반환
+            isNew:       this._isNew,
+        };
 
-        } else {
-            // ── PUT / PATCH: Dirty Checking 기반 자동 분기 ───────────────────
-            //
-            // dirtyFields: 이번 save() 사이클에서 변경된 최상위 키 집합
-            // totalFields: 현재 도메인 객체의 최상위 키 수 (Object.keys 기준)
-            //
-            // dirtyRatio가 DIRTY_THRESHOLD(0.7) 이상이면,
-            // PATCH 배열을 생성하는 것보다 전체 객체를 PUT으로 보내는 것이 더 효율적이다.
-            const dirtyFields  = this._getDirtyFields();
-            const totalFields  = Object.keys(this._getTarget()).length;
-            const dirtyRatio   = totalFields > 0 ? dirtyFields.size / totalFields : 0;
-
-            if (dirtyFields.size === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
-                // PUT — 의도적 재저장이거나 대부분의 필드가 변경된 경우
+        try {
+            if (this._isNew) {
+                // ── POST: 서버에 아직 존재하지 않는 신규 리소스 ─────────────
                 await handler._fetch(url, {
-                    method: 'PUT',
+                    method: 'POST',
                     body:   toPayload(this._getTarget),
                 });
+                this._isNew = false;
+
             } else {
-                // PATCH — 변경된 부분만 RFC 6902 JSON Patch 배열로 전송
-                await handler._fetch(url, {
-                    method: 'PATCH',
-                    body:   JSON.stringify(toPatch(this._getChangeLog)),
-                });
+                // ── PUT / PATCH: Dirty Checking 기반 자동 분기 ──────────────
+                const dirtyFields = this._getDirtyFields();
+                const totalFields = Object.keys(this._getTarget()).length;
+                const dirtyRatio  = totalFields > 0 ? dirtyFields.size / totalFields : 0;
+
+                if (dirtyFields.size === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
+                    await handler._fetch(url, {
+                        method: 'PUT',
+                        body:   toPayload(this._getTarget),
+                    });
+                } else {
+                    await handler._fetch(url, {
+                        method: 'PATCH',
+                        body:   JSON.stringify(toPatch(this._getChangeLog)),
+                    });
+                }
             }
+
+            // ── 동기화 성공 후 상태 초기화 ──────────────────────────────────
+            this._clearChangeLog();
+            this._clearDirtyFields();
+            if (this._debug) this._broadcast();
+
+        } catch (err) {
+            // ── HTTP 오류 또는 네트워크 오류 — 상태 롤백 ────────────────────
+            // 어떤 이유로 서버 동기화가 실패했든 클라이언트 상태를 복원한다.
+            console.warn(ERR.SAVE_ROLLBACK(/** @type {any} */ (err)?.status ?? 0));
+            this._rollback(snapshot);
+
+            // 에러를 반드시 re-throw한다.
+            // 호출자의 try/catch가 HttpError를 받아 적절히 처리할 수 있어야 한다.
+            throw err;
         }
-
-        // ── 동기화 성공 후 상태 초기화 ──────────────────────────────────────
-        // changeLog와 dirtyFields는 반드시 쌍으로 초기화해야 한다.
-        // 둘 중 하나만 초기화하면 다음 save() 호출 시 분기 판단이 오염된다.
-        this._clearChangeLog();
-        this._clearDirtyFields();
-
-        if (this._debug) this._broadcast();
     }
 
     /**
@@ -653,6 +694,38 @@ export class DomainState {
     _resolveURL(requestPath) {
         const config = this._urlConfig ?? this._handler?.getUrlConfig() ?? /** @type {any} */ ({});
         return buildURL(config, requestPath ?? '');
+    }
+
+    /**
+     * `save()` 실패 시 도메인 상태를 save() 진입 이전 스냅샷으로 복원한다.
+     *
+     * ## 복원 대상 4가지
+     *
+     * | 대상              | 복원 이유                                                    |
+     * |------------------|--------------------------------------------------------------|
+     * | `domainObject`   | Proxy target이 이미 변경된 상태. 서버와 불일치 제거.         |
+     * | `changeLog`      | save() 재시도 시 올바른 PATCH payload 재생성 보장.           |
+     * | `dirtyFields`    | save() 재시도 시 올바른 PUT/PATCH 분기 판단 보장.            |
+     * | `this._isNew`    | POST 실패 후 isNew 플래그 일관성 유지.                       |
+     *
+     * ## Proxy 우회
+     * `restoreTarget()`은 Proxy가 아닌 원본 `domainObject`에 직접 접근하므로
+     * 복원 작업 자체가 `changeLog`나 `dirtyFields`에 기록되지 않는다.
+     *
+     * ## 디버그 채널 전파
+     * `debug: true`이면 롤백 완료 후 `_broadcast()`를 호출하여
+     * 디버그 패널이 롤백된 상태를 즉시 반영하도록 한다.
+     *
+     * @param {{ data: object, changeLog: import('../src/core/api-proxy.js').ChangeLogEntry[], dirtyFields: Set<string>, isNew: boolean }} snapshot
+     *   `save()` 진입 직전에 확보한 상태 스냅샷
+     * @returns {void}
+     */
+    _rollback(snapshot) {
+        this._restoreTarget(snapshot.data);
+        this._restoreChangeLog(snapshot.changeLog);
+        this._restoreDirtyFields(snapshot.dirtyFields);
+        this._isNew = snapshot.isNew;
+        if (this._debug) this._broadcast();
     }
 
     /**
