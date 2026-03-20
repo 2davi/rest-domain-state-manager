@@ -585,6 +585,7 @@ function createProxy(domainObject, onMutate = null) {
   const changeLog = [];
   const proxyCache = /* @__PURE__ */ new WeakMap();
   let isMuting = false;
+  const dirtyFields = /* @__PURE__ */ new Set();
   const ON_MUTATIONS = ["shift", "unshift", "splice", "sort", "reverse"];
   function record(op, path, oldValue, newValue) {
     if (isMuting) return;
@@ -592,6 +593,8 @@ function createProxy(domainObject, onMutate = null) {
     if (op !== OP.REMOVE) entry.newValue = newValue;
     if (op !== OP.ADD) entry.oldValue = oldValue;
     changeLog.push(entry);
+    const topLevelKey = path.split("/")[1];
+    if (topLevelKey) dirtyFields.add(topLevelKey);
     console.debug(formatMessage(LOG.proxy[op], { path, oldValue, newValue }));
     if (onMutate) onMutate();
   }
@@ -750,7 +753,25 @@ function createProxy(domainObject, onMutate = null) {
      * `void` 표현식으로 배열의 `length`를 0으로 리셋한다.
      * @type {() => void}
      */
-    clearChangeLog: () => void (changeLog.length = 0)
+    clearChangeLog: () => void (changeLog.length = 0),
+    /**
+     * 변경된 최상위 키(top-level key) 집합의 읽기 전용 뷰를 반환한다.
+     *
+     * `DomainState.save()`에서 `dirtyFields.size / totalFields` 비율로
+     * PUT / PATCH 분기를 결정하는 데 사용한다.
+     * 외부 변조를 막기 위해 원본 Set이 아닌 새 Set 복사본을 반환한다.
+     *
+     * @type {() => Set<string>}
+     */
+    getDirtyFields: () => new Set(dirtyFields),
+    /**
+     * 변경된 최상위 키 집합을 비운다.
+     * `clearChangeLog()`와 함께 `DomainState.save()` 성공 직후 반드시 쌍으로 호출해야 한다.
+     * 둘 중 하나만 초기화하면 다음 save() 호출 시 분기 판단이 오염된다.
+     *
+     * @type {() => void}
+     */
+    clearDirtyFields: () => dirtyFields.clear()
   };
 }
 function toDomain(jsonText, onMutate = null) {
@@ -1059,6 +1080,7 @@ class DomainVO {
     };
   }
 }
+const DIRTY_THRESHOLD = 0.7;
 const _DomainState = class _DomainState {
   /**
    * 플러그인을 `DomainState`에 등록한다.
@@ -1143,6 +1165,8 @@ const _DomainState = class _DomainState {
     this._getChangeLog = proxyWrapper.getChangeLog;
     this._getTarget = proxyWrapper.getTarget;
     this._clearChangeLog = proxyWrapper.clearChangeLog;
+    this._getDirtyFields = proxyWrapper.getDirtyFields;
+    this._clearDirtyFields = proxyWrapper.clearDirtyFields;
     this._handler = options.handler ?? null;
     this._urlConfig = options.urlConfig ?? null;
     this._isNew = options.isNew ?? false;
@@ -1296,67 +1320,84 @@ const _DomainState = class _DomainState {
     return this._proxy;
   }
   /**
-   * 도메인 상태를 서버(DB)와 동기화한다.
-   *
-   * ## HTTP 메서드 분기 전략 (A+C 혼합)
-   *
-   * ```
-   * isNew === true
-   *     → POST  (toPayload — 전체 객체 직렬화)
-   *
-   * isNew === false
-   *     changeLog.length > 0  → PATCH (toPatch — RFC 6902 JSON Patch 배열)
-   *     changeLog.length === 0 → PUT  (toPayload — 전체 객체 직렬화)
-   * ```
-   *
-   * ## 동기화 성공 후 처리
-   * - PATCH / PUT 성공 → `clearChangeLog()` 호출
-   * - POST 성공 → `isNew = false` 전환 후 `clearChangeLog()` 호출
-   * - `debug: true` → `_broadcast()` 호출
-   *
-   * ## `requestPath` 결정 순서
-   * 1. `requestPath` 인자 명시 → 그대로 사용
-   * 2. 없음 → `this._urlConfig` 또는 `handler.getUrlConfig()` 사용
-   * 3. 둘 다 없음 → `buildURL` 내부에서 `Error` throw
-   *
-   * @param {string} [requestPath] - 엔드포인트 경로 (예: `'/api/users/1'`). `urlConfig`와 조합된다.
-   * @returns {Promise<void>}
-   * @throws {Error} `handler`가 주입되지 않은 경우 (`_assertHandler`)
-   * @throws {Error} URL을 확정할 수 없는 경우 (`buildURL`)
-   * @throws {{ status: number, statusText: string, body: string }} HTTP 에러 (서버가 `4xx` / `5xx` 반환 시)
-   *
-   * @example <caption>경로 명시</caption>
-   * await user.save('/api/users/user_001');
-   *
-   * @example <caption>urlConfig 사용 (DomainVO.baseURL 자동 폴백)</caption>
-   * const newUser = DomainState.fromVO(new UserVO(), api); // UserVO.baseURL 자동 사용
-   * await newUser.save(); // → POST to UserVO.baseURL
-   *
-   * @example <caption>에러 처리</caption>
-   * try {
-   *     await user.save('/api/users/1');
-   * } catch (err) {
-   *     if (err.status === 409) console.error('충돌 발생:', err.body);
-   * }
-   */
+       * 도메인 상태를 서버(DB)와 동기화한다.
+       *
+       * ## HTTP 메서드 분기 전략 (Dirty Checking 기반)
+       *
+       * ```
+       * isNew === true
+       *     → POST  (toPayload — 전체 객체 직렬화)
+       *
+       * isNew === false
+       *     dirtyRatio = dirtyFields.size / Object.keys(target).length
+       *
+       *     dirtyFields.size === 0            → PUT   (변경 없는 의도적 재저장)
+       *     dirtyRatio >= DIRTY_THRESHOLD     → PUT   (변경 비율 70% 이상 — 전체 교체가 효율적)
+       *     dirtyRatio <  DIRTY_THRESHOLD     → PATCH (변경 부분만 RFC 6902 Patch 배열로 전송)
+       * ```
+       *
+       * ## 기존 분기(changeLog.length 기반)와의 차이
+       * 이전 구현은 `changeLog.length === 0`이면 PUT을 선택했다.
+       * 이는 "이력 없음 = 전체 교체"라는 잘못된 의미론적 매핑이었다.
+       * 새 구현은 "변경된 필드의 비율"이라는 데이터 의미론에 기반한다.
+       *
+       * ## 동기화 성공 후 처리
+       * - PUT / PATCH 성공 → `clearChangeLog()` + `clearDirtyFields()` 동시 초기화
+       * - POST 성공        → `isNew = false` 전환 후 동일하게 초기화
+       * - `debug: true`    → `_broadcast()` 호출
+       *
+       * ## `requestPath` 결정 순서
+       * 1. `requestPath` 인자 명시 → 그대로 사용
+       * 2. 없음 → `this._urlConfig` 또는 `handler.getUrlConfig()` 사용
+       * 3. 둘 다 없음 → `buildURL` 내부에서 `Error` throw
+       *
+       * @param {string} [requestPath] - 엔드포인트 경로 (예: `'/api/users/1'`). `urlConfig`와 조합된다.
+       * @returns {Promise<void>}
+       * @throws {Error} `handler`가 주입되지 않은 경우 (`_assertHandler`)
+       * @throws {Error} URL을 확정할 수 없는 경우 (`buildURL`)
+       * @throws {{ status: number, statusText: string, body: string }} HTTP 에러 (서버가 `4xx` / `5xx` 반환 시)
+       *
+       * @example <caption>경로 명시</caption>
+       * await user.save('/api/users/user_001');
+       *
+       * @example <caption>urlConfig 사용 (DomainVO.baseURL 자동 폴백)</caption>
+       * const newUser = DomainState.fromVO(new UserVO(), api);
+       * await newUser.save(); // → POST to UserVO.baseURL
+       *
+       * @example <caption>에러 처리</caption>
+       * try {
+       *     await user.save('/api/users/1');
+       * } catch (err) {
+       *     if (err.status === 409) console.error('충돌 발생:', err.body);
+       * }
+       */
   async save(requestPath) {
     const handler = this._assertHandler("save");
     const url = this._resolveURL(requestPath);
     if (this._isNew) {
-      await handler._fetch(url, { method: "POST", body: toPayload(this._getTarget) });
+      await handler._fetch(url, {
+        method: "POST",
+        body: toPayload(this._getTarget)
+      });
       this._isNew = false;
     } else {
-      const log = this._getChangeLog();
-      if (log.length > 0) {
+      const dirtyFields = this._getDirtyFields();
+      const totalFields = Object.keys(this._getTarget()).length;
+      const dirtyRatio = totalFields > 0 ? dirtyFields.size / totalFields : 0;
+      if (dirtyFields.size === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
+        await handler._fetch(url, {
+          method: "PUT",
+          body: toPayload(this._getTarget)
+        });
+      } else {
         await handler._fetch(url, {
           method: "PATCH",
           body: JSON.stringify(toPatch(this._getChangeLog))
         });
-      } else {
-        await handler._fetch(url, { method: "PUT", body: toPayload(this._getTarget) });
       }
     }
     this._clearChangeLog();
+    this._clearDirtyFields();
     if (this._debug) this._broadcast();
   }
   /**
@@ -1883,7 +1924,10 @@ const FormBinder = {
   }
 };
 function _resolveForm(formOrId) {
-  if (typeof formOrId === "string") document.getElementById(formOrId);
+  if (typeof formOrId === "string") return (
+    /** @type {HTMLFormElement | null} */
+    document.getElementById(formOrId)
+  );
   if (formOrId instanceof HTMLFormElement) return formOrId;
   return null;
 }

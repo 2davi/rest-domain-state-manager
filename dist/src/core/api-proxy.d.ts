@@ -6,8 +6,8 @@
  * - `op: 'remove'` : 기존 경로의 값이 삭제됨. `newValue` 없음.
  *
  * @typedef {object} ChangeLogEntry
- * @property {'add'|'replace'|'remove'} op        - RFC 6902 연산 종류
- * @property {string}                   path      - JSON Pointer 스타일 경로 (예: `/address/city`, `/items/0`)
+ * @property {'add'|'replace'|'remove'} op         - RFC 6902 연산 종류
+ * @property {string}                   path       - JSON Pointer 스타일 경로 (예: `/address/city`, `/items/0`)
  * @property {*}                        [newValue] - 새 값. `op: 'remove'` 시 존재하지 않음.
  * @property {*}                        [oldValue] - 이전 값. `op: 'add'` 시 존재하지 않음.
  */
@@ -22,6 +22,8 @@
  * @property {() => ChangeLogEntry[]}        getChangeLog   - 현재 변경 이력의 얕은 복사본을 반환한다. 외부 변조 방지.
  * @property {() => object}                  getTarget      - 변경이 누적된 원본 객체를 반환한다.
  * @property {() => void}                    clearChangeLog - 동기화 성공 후 변경 이력 전체를 초기화한다.
+ * @property {() => Set<string>}             getDirtyFields   - 변경된 최상위 키 집합의 복사본을 반환한다.
+ * @property {() => void}                    clearDirtyFields - 변경된 최상위 키 집합을 초기화한다.
  */
 /**
  * Proxy의 `set` / `deleteProperty` 트랩이 변경을 기록할 때마다 호출되는 콜백.
@@ -142,6 +144,14 @@ export type ProxyWrapper = {
      * - 동기화 성공 후 변경 이력 전체를 초기화한다.
      */
     clearChangeLog: () => void;
+    /**
+     * - 변경된 최상위 키 집합의 복사본을 반환한다.
+     */
+    getDirtyFields: () => Set<string>;
+    /**
+     * - 변경된 최상위 키 집합을 초기화한다.
+     */
+    clearDirtyFields: () => void;
 };
 /**
  * Proxy의 `set` / `deleteProperty` 트랩이 변경을 기록할 때마다 호출되는 콜백.

@@ -46,6 +46,16 @@
 
 ***
 
+### \_clearDirtyFields
+
+> **\_clearDirtyFields**: () => `void`
+
+#### Returns
+
+`void`
+
+***
+
 ### \_debug
 
 > **\_debug**: `boolean`
@@ -65,6 +75,16 @@
 #### Returns
 
 `ChangeLogEntry`[]
+
+***
+
+### \_getDirtyFields
+
+> **\_getDirtyFields**: () => `Set`\<`string`\>
+
+#### Returns
+
+`Set`\<`string`\>
 
 ***
 
@@ -317,21 +337,29 @@ await user.remove('/api/users/user_001');
 
 도메인 상태를 서버(DB)와 동기화한다.
 
-## HTTP 메서드 분기 전략 (A+C 혼합)
+## HTTP 메서드 분기 전략 (Dirty Checking 기반)
 
 ```
 isNew === true
     → POST  (toPayload — 전체 객체 직렬화)
 
 isNew === false
-    changeLog.length > 0  → PATCH (toPatch — RFC 6902 JSON Patch 배열)
-    changeLog.length === 0 → PUT  (toPayload — 전체 객체 직렬화)
+    dirtyRatio = dirtyFields.size / Object.keys(target).length
+
+    dirtyFields.size === 0            → PUT   (변경 없는 의도적 재저장)
+    dirtyRatio >= DIRTY_THRESHOLD     → PUT   (변경 비율 70% 이상 — 전체 교체가 효율적)
+    dirtyRatio <  DIRTY_THRESHOLD     → PATCH (변경 부분만 RFC 6902 Patch 배열로 전송)
 ```
 
+## 기존 분기(changeLog.length 기반)와의 차이
+이전 구현은 `changeLog.length === 0`이면 PUT을 선택했다.
+이는 "이력 없음 = 전체 교체"라는 잘못된 의미론적 매핑이었다.
+새 구현은 "변경된 필드의 비율"이라는 데이터 의미론에 기반한다.
+
 ## 동기화 성공 후 처리
-- PATCH / PUT 성공 → `clearChangeLog()` 호출
-- POST 성공 → `isNew = false` 전환 후 `clearChangeLog()` 호출
-- `debug: true` → `_broadcast()` 호출
+- PUT / PATCH 성공 → `clearChangeLog()` + `clearDirtyFields()` 동시 초기화
+- POST 성공        → `isNew = false` 전환 후 동일하게 초기화
+- `debug: true`    → `_broadcast()` 호출
 
 ## `requestPath` 결정 순서
 1. `requestPath` 인자 명시 → 그대로 사용
@@ -369,7 +397,7 @@ await user.save('/api/users/user_001');
 ```
 
 ```ts
-const newUser = DomainState.fromVO(new UserVO(), api); // UserVO.baseURL 자동 사용
+const newUser = DomainState.fromVO(new UserVO(), api);
 await newUser.save(); // → POST to UserVO.baseURL
 ```
 
