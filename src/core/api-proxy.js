@@ -490,7 +490,7 @@ export function createProxy(domainObject, onMutate = null) {
          * `length` 복원이 보장되지 않으므로 `splice(0)`으로 전체를 비운 뒤
          * `push(...data)`로 채운다.
          *
-         * @param {object|Array} data - `structuredClone(getTarget())` 로 만든 스냅샷 데이터
+         * @param {object|Array<any>} data - `structuredClone(getTarget())` 로 만든 스냅샷 데이터
          * @returns {void}
          */
         restoreTarget: (data) => {
@@ -501,7 +501,7 @@ export function createProxy(domainObject, onMutate = null) {
             } else {
                 // 플레인 객체: 기존 키 전부 삭제 후 스냅샷 키/값 복사
                 for (const key of Object.keys(domainObject)) {
-                    delete domainObject[key];
+                    Reflect.deleteProperty(domainObject, key);
                 }
                 Object.assign(domainObject, data);
             }
