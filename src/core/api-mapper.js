@@ -110,8 +110,9 @@ export function toDomain(jsonText, onMutate = null) {
  * `JSON.stringify()`로 직렬화한다. Proxy 자체를 직렬화하면 정상 동작하지 않는다.
  *
  * ## 호출 시점
- * - `DomainState.save()` 에서 `isNew === true` → POST
- * - `DomainState.save()` 에서 `changeLog.length === 0` → PUT (변경 없는 재저장)
+ * - `DomainState.save()` 에서 `isNew === true`                 → POST
+ * - `DomainState.save()` 에서 `dirtyFields.size === 0`         → PUT (변경 없는 의도적 재저장)
+ * - `DomainState.save()` 에서 `dirtyRatio >= DIRTY_THRESHOLD`  → PUT (변경 비율 70% 이상)
  *
  * @param {() => object} getTargetFn
  *   `createProxy()`의 반환값에서 꺼낸 `getTarget` 함수.
