@@ -150,7 +150,7 @@ feat(domain): add microtask-based flush scheduler for broadcast batching
   - DomainState constructor에 _pendingFlush: false 초기화 추가
   - _scheduleFlush() 메서드 신규 추가
   - 동일 동기 블록 내 다중 상태 변경을 단일 _broadcast() 호출로 병합
-  - queueMicrotask() 사용 이유 및 Promise.resolve() 대비 장점 JSDoc 문서화
+  - queueMicrotask() 선택 이유 및 배칭 제외 케이스 2가지 JSDoc 명시
 
 # 커밋 2 — onMutate 콜백 교체 (핵심 동선 변경)
 refactor(domain): replace direct _broadcast() with _scheduleFlush() in onMutate closures
