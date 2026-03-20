@@ -65,12 +65,15 @@ import { LOG, formatMessage }                             from '../constants/log
  * 나머지 세 함수는 `DomainState` 내부에서만 호출된다.
  *
  * @typedef {object} ProxyWrapper
- * @property {object}                        proxy          - 변경 추적이 활성화된 Proxy 객체. 유일한 외부 진입점.
- * @property {() => ChangeLogEntry[]}        getChangeLog   - 현재 변경 이력의 얕은 복사본을 반환한다. 외부 변조 방지.
- * @property {() => object}                  getTarget      - 변경이 누적된 원본 객체를 반환한다.
- * @property {() => void}                    clearChangeLog - 동기화 성공 후 변경 이력 전체를 초기화한다.
- * @property {() => Set<string>}             getDirtyFields   - 변경된 최상위 키 집합의 복사본을 반환한다.
- * @property {() => void}                    clearDirtyFields - 변경된 최상위 키 집합을 초기화한다.
+ * @property {object}                              proxy               - 변경 추적이 활성화된 Proxy 객체. 유일한 외부 진입점.
+ * @property {() => ChangeLogEntry[]}              getChangeLog        - 현재 변경 이력의 얕은 복사본을 반환한다. 외부 변조 방지.
+ * @property {() => object}                        getTarget           - 변경이 누적된 원본 객체를 반환한다.
+ * @property {() => void}                          clearChangeLog      - 동기화 성공 후 변경 이력 전체를 초기화한다.
+ * @property {() => Set<string>}                   getDirtyFields      - 변경된 최상위 키 집합의 복사본을 반환한다.
+ * @property {() => void}                          clearDirtyFields    - 변경된 최상위 키 집합을 초기화한다.
+ * @property {(data: object) => void}              restoreTarget       - domainObject를 스냅샷 데이터로 직접 복원한다. Proxy 우회.
+ * @property {(entries: ChangeLogEntry[]) => void} restoreChangeLog    - changeLog를 스냅샷 항목으로 교체한다.
+ * @property {(fields: Set<string>) => void}       restoreDirtyFields  - dirtyFields를 스냅샷 키 집합으로 교체한다.
  */
 
 /**
@@ -474,5 +477,59 @@ export function createProxy(domainObject, onMutate = null) {
          * @type {() => void}
          */
         clearDirtyFields: () => dirtyFields.clear(),
+
+        /**
+         * `domainObject`의 프로퍼티를 스냅샷 데이터로 직접 복원한다.
+         *
+         * Proxy 객체가 아닌 원본 `domainObject`에 직접 접근하여
+         * 이 복원 작업 자체가 `changeLog`나 `dirtyFields`에 기록되지 않도록 한다.
+         * `DomainState._rollback()` 에서만 호출한다.
+         *
+         * ## Array 루트 처리
+         * `domainObject`가 배열인 경우 `Object.keys` + `delete` + `Object.assign` 방식은
+         * `length` 복원이 보장되지 않으므로 `splice(0)`으로 전체를 비운 뒤
+         * `push(...data)`로 채운다.
+         *
+         * @param {object|Array} data - `structuredClone(getTarget())` 로 만든 스냅샷 데이터
+         * @returns {void}
+         */
+        restoreTarget: (data) => {
+            if (Array.isArray(domainObject)) {
+                // 배열 루트: splice로 비우고 스냅샷 항목 채우기
+                domainObject.splice(0);
+                domainObject.push(.../** @type {any[]} */ (data));
+            } else {
+                // 플레인 객체: 기존 키 전부 삭제 후 스냅샷 키/값 복사
+                for (const key of Object.keys(domainObject)) {
+                    delete domainObject[key];
+                }
+                Object.assign(domainObject, data);
+            }
+        },
+
+        /**
+         * `changeLog` 배열을 스냅샷 항목으로 통째로 교체한다.
+         *
+         * 길이를 0으로 리셋한 뒤 스냅샷의 항목들을 순서대로 다시 채운다.
+         * 배열 참조를 유지하면서 내용만 교체하는 방식이다.
+         *
+         * @param {ChangeLogEntry[]} entries - save() 진입 직전에 getChangeLog()로 확보한 얕은 복사본
+         * @returns {void}
+         */
+        restoreChangeLog: (entries) => {
+            changeLog.length = 0;
+            changeLog.push(...entries);
+        },
+
+        /**
+         * `dirtyFields` Set을 스냅샷 키 집합으로 통째로 교체한다.
+         *
+         * @param {Set<string>} fields - save() 진입 직전에 getDirtyFields()로 확보한 복사본
+         * @returns {void}
+         */
+        restoreDirtyFields: (fields) => {
+            dirtyFields.clear();
+            fields.forEach(k => dirtyFields.add(k));
+        },
     };
 }
