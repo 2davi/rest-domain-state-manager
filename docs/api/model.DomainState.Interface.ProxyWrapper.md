@@ -14,6 +14,18 @@
 
 ***
 
+### clearDirtyFields
+
+> **clearDirtyFields**: () => `void`
+
+변경된 최상위 키 집합을 초기화한다.
+
+#### Returns
+
+`void`
+
+***
+
 ### getChangeLog
 
 > **getChangeLog**: () => `ChangeLogEntry`[]
@@ -23,6 +35,18 @@
 #### Returns
 
 `ChangeLogEntry`[]
+
+***
+
+### getDirtyFields
+
+> **getDirtyFields**: () => `Set`\<`string`\>
+
+변경된 최상위 키 집합의 복사본을 반환한다.
+
+#### Returns
+
+`Set`\<`string`\>
 
 ***
 

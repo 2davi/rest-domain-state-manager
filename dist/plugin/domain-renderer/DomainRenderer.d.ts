@@ -23,7 +23,6 @@
  * 타입 참조 전용.
  *
  * @callback RenderToMethod
- * @this {import('../../model/DomainState.js').DomainState}
  * @param {string | HTMLElement} container
  *   렌더링 결과를 삽입할 컨테이너. CSS 셀렉터 형식 문자열(`'#id'` 또는 `'id'`) 또는 `HTMLElement`.
  * @param {RenderConfig} config - 렌더링 설정 옵션
@@ -81,4 +80,4 @@ export type RenderResult = HTMLSelectElement | HTMLInputElement[] | HTMLButtonEl
  * `DomainRenderer` 플러그인이 `DomainState.prototype`에 주입하는 `renderTo()` 메서드 시그니처.
  * 타입 참조 전용.
  */
-export type RenderToMethod = (this: import("../../model/DomainState.js").DomainState, container: string | HTMLElement, config: RenderConfig) => RenderResult;
+export type RenderToMethod = (container: string | HTMLElement, config: RenderConfig) => RenderResult;

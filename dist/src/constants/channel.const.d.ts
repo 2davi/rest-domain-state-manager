@@ -1,5 +1,5 @@
 /**
- * @fileoverview 디버그 BroadcastChannel 통신 상수
+ * 디버그 BroadcastChannel 통신 상수
  *
  * 라이브러리 내 모든 탭이 동일한 채널명으로 구독/발행하여
  * 디버그 팝업과 실시간 상태를 공유한다.

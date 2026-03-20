@@ -25,7 +25,6 @@
  * 타입 참조 전용 — 실제 구현은 `FormBinder.install()` 내부에 있다.
  *
  * @callback BindFormMethod
- * @this {import('../../model/DomainState.js').DomainState}
  * @param {string | HTMLFormElement} formOrId - HTML Form 요소의 `id` 문자열 또는 `HTMLFormElement` 직접 참조
  * @returns {import('../../model/DomainState.js').DomainState} 메서드 체이닝용 `this` 반환
  */
@@ -79,4 +78,4 @@ export type FromFormFactory = (formOrId: string | HTMLFormElement, handler: impo
  * `FormBinder` 플러그인이 `DomainState.prototype`에 주입하는 인스턴스 메서드 시그니처.
  * 타입 참조 전용 — 실제 구현은 `FormBinder.install()` 내부에 있다.
  */
-export type BindFormMethod = (this: import("../../model/DomainState.js").DomainState, formOrId: string | HTMLFormElement) => import("../../model/DomainState.js").DomainState;
+export type BindFormMethod = (formOrId: string | HTMLFormElement) => import("../../model/DomainState.js").DomainState;

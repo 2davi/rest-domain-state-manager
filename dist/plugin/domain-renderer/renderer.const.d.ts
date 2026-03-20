@@ -3,7 +3,7 @@
  */
 export type RENDERER_TYPE = RendererTypeValue;
 /**
- * @fileoverview DomainRenderer 플러그인 내부 상수 모음
+ * DomainRenderer 플러그인 내부 상수 모음
  *
  * `renderTo()` config의 `type` 식별자,
  * 폼 이벤트 추적 전략 분류,
