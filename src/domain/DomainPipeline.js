@@ -40,14 +40,14 @@
  * }
  * ```
  *
- * @module model/DomainPipeline
- * @see {@link module:model/DomainState DomainState}
+ * @module domain/DomainPipeline
+ * @see {@link module:domain/DomainState DomainState}
  * @see {@link https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled MDN — Promise.allSettled}
  */
 
-import { ERR }                from '../src/constants/error.messages.js';
-import { LOG, formatMessage } from '../src/constants/log.messages.js';
-import { broadcastError }     from '../src/debug/debug-channel.js';
+import { ERR }                from '../constants/error.messages.js';
+import { LOG, formatMessage } from '../constants/log.messages.js';
+import { broadcastError }     from '../debug/debug-channel.js';
 
 
 // ════════════════════════════════════════════════════════════════════════════════

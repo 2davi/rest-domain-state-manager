@@ -40,8 +40,8 @@
  * - `config.name` 명시 → 해당 값 사용
  * - `config.name` 미명시 → `valueField` 값 사용 (MyBatis ResultMap 필드명 자동 일치)
  *
- * @module plugin/domain-renderer/renderers/radio-checkbox.renderer
- * @see {@link module:plugin/domain-renderer/DomainRenderer DomainRenderer}
+ * @module plugins/domain-renderer/renderers/radio-checkbox.renderer
+ * @see {@link module:plugins/domain-renderer/DomainRenderer DomainRenderer}
  */
 
 

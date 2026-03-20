@@ -14,12 +14,12 @@
  * @module rest-domain-state-manager
  */
 
-import { DomainPipeline }    from './model/DomainPipeline.js';
-import { DomainState }       from './model/DomainState.js';
-import { DomainVO }          from './model/DomainVO.js';
-import { ApiHandler }        from './src/handler/api-handler.js';
-import { DomainRenderer }    from './plugin/domain-renderer/DomainRenderer.js';
-import { FormBinder}         from './plugin/form-binding/FormBinder.js';
+import { DomainPipeline }    from './src/domain/DomainPipeline.js';
+import { DomainState }       from './src/domain/DomainState.js';
+import { DomainVO }          from './src/domain/DomainVO.js';
+import { ApiHandler }        from './src/network/api-handler.js';
+import { DomainRenderer }    from './src/plugins/domain-renderer/DomainRenderer.js';
+import { FormBinder }        from './src/plugins/form-binder/FormBinder.js';
 import { closeDebugChannel } from './src/debug/debug-channel.js';
 
 // 의존성 주입: DomainState가 순환 참조 없이 DomainPipeline을 생성할 수 있도록 생성자를 넘겨준다.

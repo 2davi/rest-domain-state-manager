@@ -38,13 +38,13 @@
  * 코어 엔진(`api-proxy.js`, `DomainState.js`)은 DOM을 직접 참조하지 않으므로
  * Node.js 등 비(非)브라우저 환경에서도 코어를 독립적으로 사용할 수 있다.
  *
- * @module plugin/form-binding/FormBinder
- * @see {@link module:model/DomainState DomainState}
+ * @module plugins/form-binder/FormBinder
+ * @see {@link module:domain/DomainState DomainState}
  * @see {@link module:core/api-proxy createProxy}
  */
 
-import { _setNestedValue } from '../../src/common/js-object-util.js';
-import { createProxy }     from '../../src/core/api-proxy.js';
+import { _setNestedValue } from '../../common/js-object-util.js';
+import { createProxy }     from '../../core/api-proxy.js';
 
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -55,7 +55,7 @@ import { createProxy }     from '../../src/core/api-proxy.js';
  * `DomainState.fromForm()` (플러그인 주입 후 사용 가능) 의 `options` 파라미터.
  *
  * @typedef {object} FromFormOptions
- * @property {import('../../model/DomainState.js').NormalizedUrlConfig|null} [urlConfig]
+ * @property {import('../../domain/DomainState.js').NormalizedUrlConfig|null} [urlConfig]
  *   URL 설정 오버라이드. 미입력 시 `handler.getUrlConfig()` 폴백.
  * @property {boolean} [debug=false]
  *   디버그 모드 활성화. `true`이면 Proxy 변경 시마다 디버그 채널에 broadcast.
@@ -69,9 +69,9 @@ import { createProxy }     from '../../src/core/api-proxy.js';
  *
  * @callback FromFormFactory
  * @param {string | HTMLFormElement} formOrId - HTML Form 요소의 `id` 문자열 또는 `HTMLFormElement` 직접 참조
- * @param {import('../../src/handler/api-handler.js').ApiHandler} handler  - `ApiHandler` 인스턴스
+ * @param {import('../../network/api-handler.js').ApiHandler} handler  - `ApiHandler` 인스턴스
  * @param {FromFormOptions}          [options] - 추가 옵션
- * @returns {import('../../model/DomainState.js').DomainState} `isNew: true`인 새 `DomainState` 인스턴스
+ * @returns {import('../../domain/DomainState.js').DomainState} `isNew: true`인 새 `DomainState` 인스턴스
  * @throws {Error} `formOrId`로 유효한 `HTMLFormElement`를 찾을 수 없는 경우
  */
 
@@ -81,7 +81,7 @@ import { createProxy }     from '../../src/core/api-proxy.js';
  *
  * @callback BindFormMethod
  * @param {string | HTMLFormElement} formOrId - HTML Form 요소의 `id` 문자열 또는 `HTMLFormElement` 직접 참조
- * @returns {import('../../model/DomainState.js').DomainState} 메서드 체이닝용 `this` 반환
+ * @returns {import('../../domain/DomainState.js').DomainState} 메서드 체이닝용 `this` 반환
  */
 
 
@@ -96,7 +96,7 @@ import { createProxy }     from '../../src/core/api-proxy.js';
  * 설치 후 `DomainState.fromForm()` 정적 팩토리와
  * `domainState.bindForm()` 인스턴스 메서드가 활성화된다.
  *
- * @type {{ install: (DomainStateClass: typeof import('../../model/DomainState.js').DomainState) => void }}
+ * @type {{ install: (DomainStateClass: typeof import('../../domain/DomainState.js').DomainState) => void }}
  *
  * @example
  * import { DomainState, FormBinder } from './rest-domain-state-manager.js';
@@ -120,7 +120,7 @@ export const FormBinder = {
      * 1. `DomainStateClass.fromForm` — 정적 팩토리 메서드
      * 2. `DomainStateClass.prototype.bindForm` — 인스턴스 메서드
      *
-     * @param {typeof import('../../model/DomainState.js').DomainState} DomainStateClass
+     * @param {typeof import('../../domain/DomainState.js').DomainState} DomainStateClass
      *   `DomainState` 클래스 생성자. 정적 멤버와 prototype을 동적으로 확장한다.
      * @returns {void}
      */
@@ -146,7 +146,7 @@ export const FormBinder = {
          */
         /** @type {any} */ (DomainStateClass).fromForm = function(
                 /** @type {string | HTMLFormElement} */ formOrId,
-                /** @type {import('../../src/handler/api-handler.js').ApiHandler} */ handler, 
+                /** @type {import('../../network/api-handler.js').ApiHandler} */ handler, 
                 options = /** @type {FromFormOptions} */ ({})
             ) {
             const formEl = _resolveForm(formOrId);

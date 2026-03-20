@@ -25,8 +25,8 @@
  * 모든 `<button>` 요소에 `type="button"`을 강제한다.
  * `<form>` 안에 렌더링될 경우 기본값 `type="submit"`으로 인한 폼 제출을 방지한다.
  *
- * @module plugin/domain-renderer/renderers/button.renderer
- * @see {@link module:plugin/domain-renderer/DomainRenderer DomainRenderer}
+ * @module plugins/domain-renderer/renderers/button.renderer
+ * @see {@link module:plugins/domain-renderer/DomainRenderer DomainRenderer}
  */
 
 

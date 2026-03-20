@@ -38,11 +38,11 @@
  * `static fields`가 없으면 `toSkeleton()`은 인스턴스의 own property를 그대로 반환한다.
  * 이 경우 `getValidators()` / `getTransformers()` / `checkSchema()`는 빈 결과를 반환한다.
  *
- * @module model/DomainVO
- * @see {@link module:model/DomainState DomainState}
+ * @module domain/DomainVO
+ * @see {@link module:domain/DomainState DomainState}
  */
 
-import { ERR } from '../src/constants/error.messages.js';
+import { ERR } from '../constants/error.messages.js';
 
 
 // ════════════════════════════════════════════════════════════════════════════════

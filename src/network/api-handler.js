@@ -25,8 +25,8 @@
  * - `getUrlConfig()`         — `DomainState._resolveURL()` 에서 URL 설정 참조
  * - `isDebug()`              — 디버그 플래그 외부 노출
  *
- * @module handler/api-handler
- * @see {@link module:model/DomainState DomainState}
+ * @module network/api-handler
+ * @see {@link module:network/DomainState DomainState}
  * @see {@link module:core/url-resolver normalizeUrlConfig}
  *
  * @example <caption>기본 사용</caption>
@@ -45,7 +45,7 @@
  * await order.save('/api/orders/999'); // → order-service.com 으로 전송
  */
 
-import { DomainState }                  from '../../model/DomainState.js';
+import { DomainState }                  from '../domain/DomainState.js';
 import { normalizeUrlConfig, buildURL } from '../core/url-resolver.js';
 import { ERR }                          from '../constants/error.messages.js';
 

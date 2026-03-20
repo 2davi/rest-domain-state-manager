@@ -25,8 +25,8 @@
  * `disabled selected hidden` 속성이 적용되어 선택 안내 역할만 한다.
  * 선택 후에는 드롭다운에 나타나지 않는다.
  *
- * @module plugin/domain-renderer/renderers/select.renderer
- * @see {@link module:plugin/domain-renderer/DomainRenderer DomainRenderer}
+ * @module plugins/domain-renderer/renderers/select.renderer
+ * @see {@link module:plugins/domain-renderer/DomainRenderer DomainRenderer}
  */
 
 

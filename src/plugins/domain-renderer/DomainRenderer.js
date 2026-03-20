@@ -27,18 +27,18 @@
  * `renderTo()`를 같은 컨테이너에 여러 번 호출하면
  * 기존 자식 요소를 모두 제거(`innerHTML = ''`)하고 새로 렌더링한다.
  *
- * @module plugin/domain-renderer/DomainRenderer
- * @see {@link module:plugin/domain-renderer/renderers/select.renderer renderSelect}
- * @see {@link module:plugin/domain-renderer/renderers/radio-checkbox.renderer renderRadioCheckbox}
- * @see {@link module:plugin/domain-renderer/renderers/button.renderer renderButton}
- * @see {@link module:plugin/domain-renderer/renderer.const RENDERER_TYPE}
+ * @module plugins/domain-renderer/DomainRenderer
+ * @see {@link module:plugins/domain-renderer/renderers/select.renderer renderSelect}
+ * @see {@link module:plugins/domain-renderer/renderers/radio-checkbox.renderer renderRadioCheckbox}
+ * @see {@link module:plugins/domain-renderer/renderers/button.renderer renderButton}
+ * @see {@link module:plugins/domain-renderer/renderer.const RENDERER_TYPE}
  */
 
 import { renderSelect }        from './renderers/select.renderer.js';
 import { renderRadioCheckbox } from './renderers/radio-checkbox.renderer.js';
 import { renderButton }        from './renderers/button.renderer.js';
 import { RENDERER_TYPE }       from './renderer.const.js';
-import { ERR }                 from '../../src/constants/error.messages.js';
+import { ERR }                 from '../../constants/error.messages.js';
 
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -93,7 +93,7 @@ import { ERR }                 from '../../src/constants/error.messages.js';
  * `DomainState.use(DomainRenderer)` 한 번으로 설치한다.
  * 설치 후 모든 `DomainState` 인스턴스에서 `renderTo()`를 호출할 수 있다.
  *
- * @type {{ install: (DomainStateClass: typeof import('../../model/DomainState.js').DomainState) => void }}
+ * @type {{ install: (DomainStateClass: typeof import('../../domain/DomainState.js').DomainState) => void }}
  *
  * @example <caption>기본 설치 및 사용</caption>
  * import { DomainState, DomainRenderer } from './rest-domain-state-manager.js';
@@ -121,7 +121,7 @@ export const DomainRenderer = {
      * `DomainState.prototype.renderTo`에 함수를 직접 할당하여
      * 모든 인스턴스에서 메서드를 사용할 수 있도록 한다.
      *
-     * @param {typeof import('../../model/DomainState.js').DomainState} DomainStateClass
+     * @param {typeof import('../../domain/DomainState.js').DomainState} DomainStateClass
      *   `DomainState` 클래스 생성자. `prototype`을 통해 메서드를 확장한다.
      * @returns {void}
      */

@@ -17,7 +17,7 @@ export default defineConfig({
 
     nav: [
       { text: '가이드', link: '/guide/getting-started' },
-      { text: 'API 레퍼런스', link: '/api/model.DomainState.Class.DomainState' },
+      { text: 'API 레퍼런스', link: '/api/domain.DomainState.Class.DomainState' },
       { text: 'GitHub', link: 'https://github.com/2davi/rest-domain-state-manager' }
     ],
 
@@ -59,14 +59,14 @@ sidebar: {
           collapsed: false,
           items: [
             // 실제 생성된 파일명(점 포함)을 경로에 그대로 작성
-            { text: 'DomainState', link: '/api/model.DomainState.Class.DomainState' },
-            { text: 'ApiHandler', link: '/api/handler.api-handler.Class.ApiHandler' },
-            { text: 'DomainVO', link: '/api/model.DomainVO.Class.DomainVO' },
-            { text: 'DomainPipeline', link: '/api/model.DomainPipeline.Class.DomainPipeline' },
+            { text: 'DomainState', link: '/api/domain.DomainState.Class.DomainState' },
+            { text: 'ApiHandler', link: '/api/network.api-handler.Class.ApiHandler' },
+            { text: 'DomainVO', link: '/api/domain.DomainVO.Class.DomainVO' },
+            { text: 'DomainPipeline', link: '/api/domain.DomainPipeline.Class.DomainPipeline' },
             
             // 플러그인들은 Variable 타입으로 생성
-            { text: 'DomainRenderer', link: '/api/plugin.domain-renderer.DomainRenderer.Variable.DomainRenderer' },
-            { text: 'FormBinder', link: '/api/plugin.form-binding.FormBinder.Variable.FormBinder' }
+            { text: 'DomainRenderer', link: '/api/plugins.domain-renderer.DomainRenderer.Variable.DomainRenderer' },
+            { text: 'FormBinder', link: '/api/plugins.form-binder.FormBinder.Variable.FormBinder' }
           ]
         }
       ]

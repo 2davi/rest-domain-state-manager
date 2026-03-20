@@ -14,9 +14,9 @@
  * | `TRACK_EVENT`      | `FormBinder.js` (참고용)          | 이벤트 전략 분류 명시                     |
  * | `TEXT_LIKE_TYPES`  | `FormBinder.js`                   | text 계열 input 판별                     |
  *
- * @module plugin/domain-renderer/renderer.const
- * @see {@link module:plugin/domain-renderer/DomainRenderer DomainRenderer}
- * @see {@link module:plugin/form-binding/FormBinder FormBinder}
+ * @module plugins/domain-renderer/renderer.const
+ * @see {@link module:plugins/domain-renderer/DomainRenderer DomainRenderer}
+ * @see {@link module:plugins/form-binder/FormBinder FormBinder}
  */
 
 

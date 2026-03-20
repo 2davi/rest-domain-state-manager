@@ -34,19 +34,19 @@
  * 진입점(`rest-domain-state-manager.js`)에서
  * `DomainState.PipelineConstructor = DomainPipeline`으로 생성자를 주입한다.
  *
- * @module model/DomainState
- * @see {@link module:model/DomainVO DomainVO}
- * @see {@link module:model/DomainPipeline DomainPipeline}
- * @see {@link module:handler/api-handler ApiHandler}
+ * @module domain/DomainState
+ * @see {@link module:domain/DomainVO DomainVO}
+ * @see {@link module:domain/DomainPipeline DomainPipeline}
+ * @see {@link module:network/api-handler ApiHandler}
  */
 
-import { toDomain, toPayload, toPatch }          from '../src/core/api-mapper.js';
-import { createProxy }                           from '../src/core/api-proxy.js';
-import { normalizeUrlConfig, buildURL }          from '../src/core/url-resolver.js';
-import { ERR }                                   from '../src/constants/error.messages.js';
-import { broadcastUpdate, openDebugPopup }       from '../src/debug/debug-channel.js';
-import { DomainVO }                              from './DomainVO.js';
-import { DIRTY_THRESHOLD }                       from '../src/constants/dirty.const.js';
+import { toDomain, toPayload, toPatch }    from '../core/api-mapper.js';
+import { createProxy }                     from '../core/api-proxy.js';
+import { normalizeUrlConfig, buildURL }    from '../core/url-resolver.js';
+import { ERR }                             from '../constants/error.messages.js';
+import { DIRTY_THRESHOLD }                 from '../constants/dirty.const.js';
+import { broadcastUpdate, openDebugPopup } from '../debug/debug-channel.js';
+import { DomainVO }                        from './DomainVO.js';
 
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -57,7 +57,7 @@ import { DIRTY_THRESHOLD }                       from '../src/constants/dirty.co
  * `DomainState` 생성자에 전달하는 옵션 객체.
  *
  * @typedef {object} DomainStateOptions
- * @property {import('../src/handler/api-handler.js').ApiHandler|null}  [handler]      - `ApiHandler` 인스턴스. `save()` / `remove()` 호출에 필수.
+ * @property {import('../network/api-handler.js').ApiHandler|null}  [handler]      - `ApiHandler` 인스턴스. `save()` / `remove()` 호출에 필수.
  * @property {NormalizedUrlConfig|null} [urlConfig] - 정규화된 URL 설정. 미입력 시 `handler.getUrlConfig()` 폴백.
  * @property {boolean}      [isNew=false]  - `true`이면 `save()` 시 POST, `false`이면 PATCH/PUT.
  * @property {boolean}      [debug=false]  - `true`이면 `log()` / `openDebugger()` 활성화 및 디버그 채널 연결.
@@ -141,7 +141,7 @@ import { DIRTY_THRESHOLD }                       from '../src/constants/dirty.co
  * `createProxy()`가 반환하는 도개교 세트.
  * 외부에서는 `proxy`만 접근하고, 나머지는 `DomainState` 내부에서만 사용한다.
  *
- * @typedef {import('../src/core/api-proxy.js').ProxyWrapper} ProxyWrapper
+ * @typedef {import('../core/api-proxy.js').ProxyWrapper} ProxyWrapper
  */
 
 
@@ -258,7 +258,7 @@ export class DomainState {
         // ── 도개교 세트 — 클로저 세계의 출입문 네 개 ─────────────────────────
         /** @type {object} — 변경 추적 Proxy 객체 */
         this._proxy          = proxyWrapper.proxy;
-        /** @type {() => import('../src/core/api-proxy.js').ChangeLogEntry[]} */
+        /** @type {() => import('../core/api-proxy.js').ChangeLogEntry[]} */
         this._getChangeLog   = proxyWrapper.getChangeLog;
         /** @type {() => object} */
         this._getTarget      = proxyWrapper.getTarget;
@@ -290,14 +290,14 @@ export class DomainState {
         // domainObject, changeLog, dirtyFields를 save() 진입 이전 상태로 되돌린다.
         /** @type {(data: object) => void} */
         this._restoreTarget      = proxyWrapper.restoreTarget;
-        /** @type {(entries: import('../src/core/api-proxy.js').ChangeLogEntry[]) => void} */
+        /** @type {(entries: import('../core/api-proxy.js').ChangeLogEntry[]) => void} */
         this._restoreChangeLog   = proxyWrapper.restoreChangeLog;
         /** @type {(fields: Set<string>) => void} */
         this._restoreDirtyFields = proxyWrapper.restoreDirtyFields;
         // ─────────────────────────────────────────────────────────────────────
         
         // ── 메타데이터 ────────────────────────────────────────────────────────
-        /** @type {import('../src/handler/api-handler.js').ApiHandler|null} */
+        /** @type {import('../network/api-handler.js').ApiHandler|null} */
         this._handler      = options.handler      ?? null;
         /** @type {NormalizedUrlConfig|null} */
         this._urlConfig    = options.urlConfig     ?? null;
@@ -340,7 +340,7 @@ export class DomainState {
      * 클로저를 통해 자연스럽게 해소할 수 있다.
      *
      * @param {string}          jsonText          - `response.text()`로 읽은 JSON 문자열
-     * @param {import('../src/handler/api-handler.js').ApiHandler}          handler           - `ApiHandler` 인스턴스
+     * @param {import('../network/api-handler.js').ApiHandler}          handler           - `ApiHandler` 인스턴스
      * @param {FromJsonOptions} [options]          - 추가 옵션
      * @returns {DomainState} `isNew: false`인 새 `DomainState` 인스턴스
      * @throws {SyntaxError} `jsonText`가 유효하지 않은 JSON일 때
@@ -403,7 +403,7 @@ export class DomainState {
      * 3. 둘 다 없음 → `null` (save() 시 `handler.getUrlConfig()` 폴백)
      *
      * @param {DomainVO}      vo        - 기본값 / 검증 / 변환 규칙을 선언한 `DomainVO` 인스턴스
-     * @param {import('../src/handler/api-handler.js').ApiHandler}        handler   - `ApiHandler` 인스턴스
+     * @param {import('../network/api-handler.js').ApiHandler}        handler   - `ApiHandler` 인스턴스
      * @param {FromVoOptions} [options] - 추가 옵션
      * @returns {DomainState} `isNew: true`인 새 `DomainState` 인스턴스
      * @throws {TypeError} `vo`가 `DomainVO` 인스턴스가 아닐 때
@@ -672,7 +672,7 @@ export class DomainState {
      * `handler`가 주입되어 있는지 검사하고, 없으면 `Error`를 throw한다.
      *
      * @param {string} method - 호출한 메서드명 (에러 메시지 생성용)
-     * @returns {import('../src/handler/api-handler.js').ApiHandler} - 안전한 핸들러 반환!
+     * @returns {import('../network/api-handler.js').ApiHandler} - 안전한 핸들러 반환!
      */
     _assertHandler(method) {
         if (!this._handler) throw new Error(ERR.HANDLER_MISSING(method));
@@ -716,7 +716,7 @@ export class DomainState {
      * `debug: true`이면 롤백 완료 후 `_broadcast()`를 호출하여
      * 디버그 패널이 롤백된 상태를 즉시 반영하도록 한다.
      *
-     * @param {{ data: object, changeLog: import('../src/core/api-proxy.js').ChangeLogEntry[], dirtyFields: Set<string>, isNew: boolean }} snapshot
+     * @param {{ data: object, changeLog: import('../core/api-proxy.js').ChangeLogEntry[], dirtyFields: Set<string>, isNew: boolean }} snapshot
      *   `save()` 진입 직전에 확보한 상태 스냅샷
      * @returns {void}
      */
