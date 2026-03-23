@@ -1,3 +1,15 @@
+## [0.8.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.7.0...v0.8.0) (2026-03-23)
+
+### ⚠ BREAKING CHANGES
+
+* **core:** DomainState factory methods now require ApiHandler as second argument
+We redesigned proxy engine architecture.
+All factory methods, save() routing, and plugin system are finalized.
+
+### ✨ Features
+
+* **core:** v1.0.0 release — stable API ([115d370](https://github.com/2davi/rest-domain-state-manager/commit/115d370de329b17ae6138ebbce670568acb50ad8))
+
 ## [0.7.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.6.0...v0.7.0) (2026-03-23)
 
 ### ✨ Features
