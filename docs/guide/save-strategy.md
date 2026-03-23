@@ -112,4 +112,3 @@ await newUser.save('/api/users/user_001')
 `save()` 가 실패했을 때 `domainObject` 가 어떻게 자동 복원되는지 직접 확인해보세요. '실패로 저장'을 클릭하면 HTTP 409를 시뮬레이션하고, '성공으로 저장'을 클릭하면 성공 흐름을 확인할 수 있습니다.
 
 <PlaygroundRollback />
-
