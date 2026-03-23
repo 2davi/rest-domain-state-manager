@@ -12,5 +12,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "rest-domain-state-manager.js", "model/**/*", "plugin/**/*"]
+  "include": ["src/**/*", "index.js"]
 }

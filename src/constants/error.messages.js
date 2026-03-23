@@ -47,6 +47,11 @@ export const ERR = Object.freeze({
     FORM_NOT_FOUND: (id) =>
         `${PREFIX} DomainState.fromForm(): id="${id}"인 form 요소를 찾을 수 없습니다.`,
 
+    // ── DomainState 동기화 ─────────────────────────────────────────────────
+    /** @param {number} status */
+    SAVE_ROLLBACK: (status) =>
+        `${PREFIX} save() HTTP ${status} 오류 — 서버 동기화 실패. 도메인 상태를 save() 호출 이전으로 롤백합니다.`,
+
     // ── DomainVO 정합성 ────────────────────────────────────────────────────
     /** @param {string} key */
     VO_SCHEMA_MISSING_KEY: (key) =>

@@ -23,6 +23,9 @@ const ERR = Object.freeze({
   FROM_FORM_TYPE: `${PREFIX} DomainState.fromForm(): HTMLFormElement 또는 form id 문자열을 전달해야 합니다.`,
   /** @param {string} id */
   FORM_NOT_FOUND: (id) => `${PREFIX} DomainState.fromForm(): id="${id}"인 form 요소를 찾을 수 없습니다.`,
+  // ── DomainState 동기화 ─────────────────────────────────────────────────
+  /** @param {number} status */
+  SAVE_ROLLBACK: (status) => `${PREFIX} save() HTTP ${status} 오류 — 서버 동기화 실패. 도메인 상태를 save() 호출 이전으로 롤백합니다.`,
   // ── DomainVO 정합성 ────────────────────────────────────────────────────
   /** @param {string} key */
   VO_SCHEMA_MISSING_KEY: (key) => `${PREFIX} DomainVO 정합성 오류: 응답 데이터에 VO 스키마의 "${key}" 필드가 없습니다.`,
@@ -585,6 +588,7 @@ function createProxy(domainObject, onMutate = null) {
   const changeLog = [];
   const proxyCache = /* @__PURE__ */ new WeakMap();
   let isMuting = false;
+  const dirtyFields = /* @__PURE__ */ new Set();
   const ON_MUTATIONS = ["shift", "unshift", "splice", "sort", "reverse"];
   function record(op, path, oldValue, newValue) {
     if (isMuting) return;
@@ -592,6 +596,8 @@ function createProxy(domainObject, onMutate = null) {
     if (op !== OP.REMOVE) entry.newValue = newValue;
     if (op !== OP.ADD) entry.oldValue = oldValue;
     changeLog.push(entry);
+    const topLevelKey = path.split("/")[1];
+    if (topLevelKey) dirtyFields.add(topLevelKey);
     console.debug(formatMessage(LOG.proxy[op], { path, oldValue, newValue }));
     if (onMutate) onMutate();
   }
@@ -750,7 +756,75 @@ function createProxy(domainObject, onMutate = null) {
      * `void` 표현식으로 배열의 `length`를 0으로 리셋한다.
      * @type {() => void}
      */
-    clearChangeLog: () => void (changeLog.length = 0)
+    clearChangeLog: () => void (changeLog.length = 0),
+    /**
+     * 변경된 최상위 키(top-level key) 집합의 읽기 전용 뷰를 반환한다.
+     *
+     * `DomainState.save()`에서 `dirtyFields.size / totalFields` 비율로
+     * PUT / PATCH 분기를 결정하는 데 사용한다.
+     * 외부 변조를 막기 위해 원본 Set이 아닌 새 Set 복사본을 반환한다.
+     *
+     * @type {() => Set<string>}
+     */
+    getDirtyFields: () => new Set(dirtyFields),
+    /**
+     * 변경된 최상위 키 집합을 비운다.
+     * `clearChangeLog()`와 함께 `DomainState.save()` 성공 직후 반드시 쌍으로 호출해야 한다.
+     * 둘 중 하나만 초기화하면 다음 save() 호출 시 분기 판단이 오염된다.
+     *
+     * @type {() => void}
+     */
+    clearDirtyFields: () => dirtyFields.clear(),
+    /**
+     * `domainObject`의 프로퍼티를 스냅샷 데이터로 직접 복원한다.
+     *
+     * Proxy 객체가 아닌 원본 `domainObject`에 직접 접근하여
+     * 이 복원 작업 자체가 `changeLog`나 `dirtyFields`에 기록되지 않도록 한다.
+     * `DomainState._rollback()` 에서만 호출한다.
+     *
+     * ## Array 루트 처리
+     * `domainObject`가 배열인 경우 `Object.keys` + `delete` + `Object.assign` 방식은
+     * `length` 복원이 보장되지 않으므로 `splice(0)`으로 전체를 비운 뒤
+     * `push(...data)`로 채운다.
+     *
+     * @param {object|Array<any>} data - `structuredClone(getTarget())` 로 만든 스냅샷 데이터
+     * @returns {void}
+     */
+    restoreTarget: (data) => {
+      if (Array.isArray(domainObject)) {
+        domainObject.splice(0);
+        domainObject.push(.../** @type {any[]} */
+        data);
+      } else {
+        for (const key of Object.keys(domainObject)) {
+          Reflect.deleteProperty(domainObject, key);
+        }
+        Object.assign(domainObject, data);
+      }
+    },
+    /**
+     * `changeLog` 배열을 스냅샷 항목으로 통째로 교체한다.
+     *
+     * 길이를 0으로 리셋한 뒤 스냅샷의 항목들을 순서대로 다시 채운다.
+     * 배열 참조를 유지하면서 내용만 교체하는 방식이다.
+     *
+     * @param {ChangeLogEntry[]} entries - save() 진입 직전에 getChangeLog()로 확보한 얕은 복사본
+     * @returns {void}
+     */
+    restoreChangeLog: (entries) => {
+      changeLog.length = 0;
+      changeLog.push(...entries);
+    },
+    /**
+     * `dirtyFields` Set을 스냅샷 키 집합으로 통째로 교체한다.
+     *
+     * @param {Set<string>} fields - save() 진입 직전에 getDirtyFields()로 확보한 복사본
+     * @returns {void}
+     */
+    restoreDirtyFields: (fields) => {
+      dirtyFields.clear();
+      fields.forEach((k) => dirtyFields.add(k));
+    }
   };
 }
 function toDomain(jsonText, onMutate = null) {
@@ -854,6 +928,7 @@ function normalizePath(path = "") {
   const withoutTrailing = withLeading.endsWith("/") ? withLeading.slice(0, -1) : withLeading;
   return withoutTrailing;
 }
+const DIRTY_THRESHOLD = 0.7;
 class DomainVO {
   /**
    * 서브클래스에서 선언한 `static fields`를 기반으로 기본값 골격 객체를 생성한다.
@@ -1143,6 +1218,13 @@ const _DomainState = class _DomainState {
     this._getChangeLog = proxyWrapper.getChangeLog;
     this._getTarget = proxyWrapper.getTarget;
     this._clearChangeLog = proxyWrapper.clearChangeLog;
+    this._pendingFlush = false;
+    this._getDirtyFields = proxyWrapper.getDirtyFields;
+    this._clearDirtyFields = proxyWrapper.clearDirtyFields;
+    this._clearDirtyFields = proxyWrapper.clearDirtyFields;
+    this._restoreTarget = proxyWrapper.restoreTarget;
+    this._restoreChangeLog = proxyWrapper.restoreChangeLog;
+    this._restoreDirtyFields = proxyWrapper.restoreDirtyFields;
     this._handler = options.handler ?? null;
     this._urlConfig = options.urlConfig ?? null;
     this._isNew = options.isNew ?? false;
@@ -1173,7 +1255,7 @@ const _DomainState = class _DomainState {
    * 클로저를 통해 자연스럽게 해소할 수 있다.
    *
    * @param {string}          jsonText          - `response.text()`로 읽은 JSON 문자열
-   * @param {import('../src/handler/api-handler.js').ApiHandler}          handler           - `ApiHandler` 인스턴스
+   * @param {import('../network/api-handler.js').ApiHandler}          handler           - `ApiHandler` 인스턴스
    * @param {FromJsonOptions} [options]          - 추가 옵션
    * @returns {DomainState} `isNew: false`인 새 `DomainState` 인스턴스
    * @throws {SyntaxError} `jsonText`가 유효하지 않은 JSON일 때
@@ -1198,7 +1280,7 @@ const _DomainState = class _DomainState {
   } = {}) {
     let state = null;
     const wrapper = toDomain(jsonText, () => {
-      if (state == null ? void 0 : state._debug) state._broadcast();
+      state == null ? void 0 : state._scheduleFlush();
     });
     state = new _DomainState(wrapper, {
       handler,
@@ -1228,7 +1310,7 @@ const _DomainState = class _DomainState {
    * 3. 둘 다 없음 → `null` (save() 시 `handler.getUrlConfig()` 폴백)
    *
    * @param {DomainVO}      vo        - 기본값 / 검증 / 변환 규칙을 선언한 `DomainVO` 인스턴스
-   * @param {import('../src/handler/api-handler.js').ApiHandler}        handler   - `ApiHandler` 인스턴스
+   * @param {import('../network/api-handler.js').ApiHandler}        handler   - `ApiHandler` 인스턴스
    * @param {FromVoOptions} [options] - 추가 옵션
    * @returns {DomainState} `isNew: true`인 새 `DomainState` 인스턴스
    * @throws {TypeError} `vo`가 `DomainVO` 인스턴스가 아닐 때
@@ -1260,7 +1342,7 @@ const _DomainState = class _DomainState {
     const resolvedUrlConfig = urlConfig ?? (vo.getBaseURL() ? normalizeUrlConfig({ baseURL: vo.getBaseURL() ?? void 0, debug }) : null);
     let state = null;
     const wrapper = createProxy(vo.toSkeleton(), () => {
-      if (state == null ? void 0 : state._debug) state._broadcast();
+      state == null ? void 0 : state._scheduleFlush();
     });
     state = new _DomainState(wrapper, {
       handler,
@@ -1298,21 +1380,36 @@ const _DomainState = class _DomainState {
   /**
    * 도메인 상태를 서버(DB)와 동기화한다.
    *
-   * ## HTTP 메서드 분기 전략 (A+C 혼합)
+   * ## HTTP 메서드 분기 전략 (Dirty Checking 기반)
    *
    * ```
    * isNew === true
    *     → POST  (toPayload — 전체 객체 직렬화)
    *
    * isNew === false
-   *     changeLog.length > 0  → PATCH (toPatch — RFC 6902 JSON Patch 배열)
-   *     changeLog.length === 0 → PUT  (toPayload — 전체 객체 직렬화)
+   *     dirtyRatio = dirtyFields.size / Object.keys(target).length
+   *
+   *     dirtyFields.size === 0           → PUT   (변경 없는 의도적 재저장)
+   *     dirtyRatio >= DIRTY_THRESHOLD    → PUT   (변경 비율 70% 이상 — 전체 교체가 효율적)
+   *     dirtyRatio <  DIRTY_THRESHOLD    → PATCH (변경 부분만 RFC 6902 Patch 배열로 전송)
    * ```
    *
+   * ## Optimistic Update 롤백
+   * `save()` 진입 직전 `structuredClone()`으로 현재 상태의 깊은 복사 스냅샷을 생성한다.
+   * HTTP 요청이 실패(`4xx` / `5xx` / 네트워크 오류)하면 `_rollback(snapshot)`을 호출하여
+   * `domainObject`, `changeLog`, `dirtyFields`, `_isNew` 4개 상태를 일관되게 복원한다.
+   * 복원 후 에러를 반드시 re-throw하여 호출자가 처리할 수 있게 한다.
+   *
+   * ## structuredClone 전제
+   * 스냅샷은 `structuredClone()`을 사용하므로 `domainObject` 내부에
+   * 함수, DOM 노드, Symbol 등 구조화된 복제가 불가능한 값이 있으면 throw된다.
+   * REST API JSON 응답 데이터(문자열, 숫자, 배열, 플레인 객체)만 담는
+   * 일반적인 DTO에서는 문제가 발생하지 않는다.
+   *
    * ## 동기화 성공 후 처리
-   * - PATCH / PUT 성공 → `clearChangeLog()` 호출
-   * - POST 성공 → `isNew = false` 전환 후 `clearChangeLog()` 호출
-   * - `debug: true` → `_broadcast()` 호출
+   * - PUT / PATCH 성공 → `clearChangeLog()` + `clearDirtyFields()` 동시 초기화
+   * - POST 성공        → `isNew = false` 전환 후 동일하게 초기화
+   * - `debug: true`    → `_broadcast()` 호출
    *
    * ## `requestPath` 결정 순서
    * 1. `requestPath` 인자 명시 → 그대로 사용
@@ -1325,39 +1422,74 @@ const _DomainState = class _DomainState {
    * @throws {Error} URL을 확정할 수 없는 경우 (`buildURL`)
    * @throws {{ status: number, statusText: string, body: string }} HTTP 에러 (서버가 `4xx` / `5xx` 반환 시)
    *
-   * @example <caption>경로 명시</caption>
+   * @example <caption>기본 사용</caption>
    * await user.save('/api/users/user_001');
    *
-   * @example <caption>urlConfig 사용 (DomainVO.baseURL 자동 폴백)</caption>
-   * const newUser = DomainState.fromVO(new UserVO(), api); // UserVO.baseURL 자동 사용
-   * await newUser.save(); // → POST to UserVO.baseURL
-   *
-   * @example <caption>에러 처리</caption>
+   * @example <caption>에러 처리 및 롤백 확인</caption>
    * try {
    *     await user.save('/api/users/1');
    * } catch (err) {
-   *     if (err.status === 409) console.error('충돌 발생:', err.body);
+   *     // err: { status: 409, statusText: 'Conflict', body: '...' }
+   *     // 이 시점에 user.data는 save() 호출 이전 상태로 자동 복원되어 있다.
+   *     console.error('저장 실패, 상태 롤백 완료:', err.status);
+   * }
+   *
+   * @example <caption>재시도 패턴</caption>
+   * for (let attempt = 0; attempt < 3; attempt++) {
+   *     try {
+   *         await user.save('/api/users/1');
+   *         break;
+   *     } catch (err) {
+   *         if (attempt === 2) throw err; // 3회 실패 시 상위로 전파
+   *         // 롤백된 상태 그대로 재시도 가능
+   *     }
    * }
    */
   async save(requestPath) {
     const handler = this._assertHandler("save");
     const url = this._resolveURL(requestPath);
-    if (this._isNew) {
-      await handler._fetch(url, { method: "POST", body: toPayload(this._getTarget) });
-      this._isNew = false;
-    } else {
-      const log = this._getChangeLog();
-      if (log.length > 0) {
+    const snapshot = {
+      data: structuredClone(this._getTarget()),
+      changeLog: this._getChangeLog(),
+      // 이미 얕은 복사본 반환
+      dirtyFields: this._getDirtyFields(),
+      // 이미 new Set 복사본 반환
+      isNew: this._isNew
+    };
+    try {
+      if (this._isNew) {
         await handler._fetch(url, {
-          method: "PATCH",
-          body: JSON.stringify(toPatch(this._getChangeLog))
+          method: "POST",
+          body: toPayload(this._getTarget)
         });
+        this._isNew = false;
       } else {
-        await handler._fetch(url, { method: "PUT", body: toPayload(this._getTarget) });
+        const dirtyFields = this._getDirtyFields();
+        const totalFields = Object.keys(this._getTarget()).length;
+        const dirtyRatio = totalFields > 0 ? dirtyFields.size / totalFields : 0;
+        if (dirtyFields.size === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
+          await handler._fetch(url, {
+            method: "PUT",
+            body: toPayload(this._getTarget)
+          });
+        } else {
+          await handler._fetch(url, {
+            method: "PATCH",
+            body: JSON.stringify(toPatch(this._getChangeLog))
+          });
+        }
       }
+      this._clearChangeLog();
+      this._clearDirtyFields();
+      if (this._debug) this._broadcast();
+    } catch (err) {
+      console.warn(ERR.SAVE_ROLLBACK(
+        /** @type {any} */
+        (err == null ? void 0 : err.status) ?? 0
+      ));
+      this._rollback(snapshot);
+      throw err;
     }
-    this._clearChangeLog();
-    if (this._debug) this._broadcast();
   }
   /**
    * 해당 리소스를 서버에서 삭제한다. (HTTP DELETE)
@@ -1419,7 +1551,7 @@ const _DomainState = class _DomainState {
    * `handler`가 주입되어 있는지 검사하고, 없으면 `Error`를 throw한다.
    *
    * @param {string} method - 호출한 메서드명 (에러 메시지 생성용)
-   * @returns {import('../src/handler/api-handler.js').ApiHandler} - 안전한 핸들러 반환!
+   * @returns {import('../network/api-handler.js').ApiHandler} - 안전한 핸들러 반환!
    */
   _assertHandler(method) {
     if (!this._handler) throw new Error(ERR.HANDLER_MISSING(method));
@@ -1442,6 +1574,78 @@ const _DomainState = class _DomainState {
     const config = this._urlConfig ?? ((_a2 = this._handler) == null ? void 0 : _a2.getUrlConfig()) ?? /** @type {any} */
     {};
     return buildURL(config, requestPath ?? "");
+  }
+  /**
+   * `save()` 실패 시 도메인 상태를 save() 진입 이전 스냅샷으로 복원한다.
+   *
+   * ## 복원 대상 4가지
+   *
+   * | 대상              | 복원 이유                                                    |
+   * |------------------|--------------------------------------------------------------|
+   * | `domainObject`   | Proxy target이 이미 변경된 상태. 서버와 불일치 제거.         |
+   * | `changeLog`      | save() 재시도 시 올바른 PATCH payload 재생성 보장.           |
+   * | `dirtyFields`    | save() 재시도 시 올바른 PUT/PATCH 분기 판단 보장.            |
+   * | `this._isNew`    | POST 실패 후 isNew 플래그 일관성 유지.                       |
+   *
+   * ## Proxy 우회
+   * `restoreTarget()`은 Proxy가 아닌 원본 `domainObject`에 직접 접근하므로
+   * 복원 작업 자체가 `changeLog`나 `dirtyFields`에 기록되지 않는다.
+   *
+   * ## 디버그 채널 전파
+   * `debug: true`이면 롤백 완료 후 `_broadcast()`를 호출하여
+   * 디버그 패널이 롤백된 상태를 즉시 반영하도록 한다.
+   *
+   * @param {{ data: object, changeLog: import('../core/api-proxy.js').ChangeLogEntry[], dirtyFields: Set<string>, isNew: boolean }} snapshot
+   *   `save()` 진입 직전에 확보한 상태 스냅샷
+   * @returns {void}
+   */
+  _rollback(snapshot) {
+    this._restoreTarget(snapshot.data);
+    this._restoreChangeLog(snapshot.changeLog);
+    this._restoreDirtyFields(snapshot.dirtyFields);
+    this._isNew = snapshot.isNew;
+    if (this._debug) this._broadcast();
+  }
+  /**
+   * 동일 동기 블록 내 다중 상태 변경을 단일 `_broadcast()` 호출로 병합하는
+   * 마이크로태스크(Microtask) 배칭 스케줄러.
+   *
+   * ## 동작 원리
+   * `onMutate` 콜백이 `_broadcast()`를 직접 호출하는 대신 이 메서드를 거친다.
+   * `_pendingFlush`가 `false`일 때만 `queueMicrotask()`로 flush를 예약하고
+   * 플래그를 `true`로 세운다. 이후 동일 동기 블록에서 발생하는 추가 변경은
+   * 플래그 체크에서 걸러져 중복 예약 없이 차단된다.
+   * 현재 Call Stack이 비워지면 Microtask Queue가 실행되어 `_broadcast()`가
+   * 정확히 한 번 호출되고 플래그가 `false`로 복원된다.
+   *
+   * ## 이벤트 루프 상의 위치
+   * ```
+   * [Call Stack 동기 코드]          → proxy.name = 'A', proxy.email = 'B', ...
+   *   ↓ Call Stack 비워짐
+   * [Microtask Queue]              → flush() → _broadcast() (1회)
+   *   ↓
+   * [Task Queue (렌더링, setTimeout)]
+   * ```
+   *
+   * ## `queueMicrotask` vs `Promise.resolve().then()`
+   * 두 방법 모두 Microtask Queue에 작업을 넣는다. `queueMicrotask()`를 선택한 이유:
+   * 1. `Promise` 객체 생성·GC 오버헤드가 없다.
+   * 2. 코드 의도("microtask에 작업을 직접 예약한다")가 명시적으로 드러난다.
+   *
+   * ## 배칭에서 제외되는 두 호출
+   * - `constructor` 초기 `_broadcast()` : 인스턴스 초기화 시점의 단발 스냅샷.
+   * - `save()` 완료 후 `_broadcast()`   : 서버 동기화 완료 이벤트. 즉시 반영 필요.
+   * 이 두 곳은 `onMutate` 경로가 아니므로 이 메서드를 거치지 않는다.
+   *
+   * @returns {void}
+   */
+  _scheduleFlush() {
+    if (this._pendingFlush) return;
+    this._pendingFlush = true;
+    queueMicrotask(() => {
+      this._pendingFlush = false;
+      if (this._debug) this._broadcast();
+    });
   }
   /**
    * 현재 `DomainState`의 스냅샷을 디버그 `BroadcastChannel`에 전파한다.
@@ -1804,7 +2008,7 @@ const DomainRenderer = {
    * `DomainState.prototype.renderTo`에 함수를 직접 할당하여
    * 모든 인스턴스에서 메서드를 사용할 수 있도록 한다.
    *
-   * @param {typeof import('../../model/DomainState.js').DomainState} DomainStateClass
+   * @param {typeof import('../../domain/DomainState.js').DomainState} DomainStateClass
    *   `DomainState` 클래스 생성자. `prototype`을 통해 메서드를 확장한다.
    * @returns {void}
    */
@@ -1847,7 +2051,7 @@ const FormBinder = {
    * 1. `DomainStateClass.fromForm` — 정적 팩토리 메서드
    * 2. `DomainStateClass.prototype.bindForm` — 인스턴스 메서드
    *
-   * @param {typeof import('../../model/DomainState.js').DomainState} DomainStateClass
+   * @param {typeof import('../../domain/DomainState.js').DomainState} DomainStateClass
    *   `DomainState` 클래스 생성자. 정적 멤버와 prototype을 동적으로 확장한다.
    * @returns {void}
    */
@@ -1861,7 +2065,7 @@ const FormBinder = {
       let state = null;
       const skeleton = _formToSkeleton(formEl);
       const wrapper = createProxy(skeleton, () => {
-        if (state == null ? void 0 : state._debug) state._broadcast();
+        state == null ? void 0 : state._scheduleFlush();
       });
       state = new DomainStateClass(wrapper, {
         handler,
@@ -1883,7 +2087,10 @@ const FormBinder = {
   }
 };
 function _resolveForm(formOrId) {
-  if (typeof formOrId === "string") document.getElementById(formOrId);
+  if (typeof formOrId === "string") return (
+    /** @type {HTMLFormElement | null} */
+    document.getElementById(formOrId)
+  );
   if (formOrId instanceof HTMLFormElement) return formOrId;
   return null;
 }

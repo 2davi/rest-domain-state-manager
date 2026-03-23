@@ -17,6 +17,8 @@ export const ERR: Readonly<{
     FROM_FORM_TYPE: "[DSM] DomainState.fromForm(): HTMLFormElement 또는 form id 문자열을 전달해야 합니다.";
     /** @param {string} id */
     FORM_NOT_FOUND: (id: string) => string;
+    /** @param {number} status */
+    SAVE_ROLLBACK: (status: number) => string;
     /** @param {string} key */
     VO_SCHEMA_MISSING_KEY: (key: string) => string;
     /** @param {string} key */

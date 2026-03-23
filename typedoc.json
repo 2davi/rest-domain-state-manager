@@ -1,13 +1,7 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": [
-    "src/handler/api-handler.js",
-    "model/DomainState.js",
-    "model/DomainVO.js",
-    "model/DomainPipeline.js",
-    "plugin/domain-renderer/DomainRenderer.js",
-    "plugin/form-binding/FormBinder.js"
-  ],
+  "entryPoints": ["index.js", "./src/**/*.js"],
+  "entryPointStrategy": "expand",
   "out": "docs/api",
   "plugin": ["typedoc-plugin-markdown"],
   "hideBreadcrumbs": true,
