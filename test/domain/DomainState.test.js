@@ -161,12 +161,28 @@ describe('DomainState.save() — Optimistic Update 롤백 (1-D)', () => {
         state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
     });
 
-    it('TC-DS-006: HTTP 4xx → domainObject가 save() 이전 값으로 복원', async () => {
-        const originalName = state._getTarget().name; // 'Davi'
-        state.data.name = 'Lee';
+    it('TC-DS-006: HTTP 4xx → save() 진입 시점 상태가 오염되지 않음', async () => {
+        // ── Arrange: 복수 필드 mutation (2/5 = 40% → PATCH 분기)
+        state.data.name  = 'Lee';
+        state.data.email = 'lee@example.com';
 
+        // save() 진입 직전 상태를 기준점으로 캡처
+        const changeLogCountBefore  = state._getChangeLog().length;   // 2
+        const dirtyFieldsCountBefore = state._getDirtyFields().size;  // 2
+
+        // ── Act: save() 실패
         await expect(state.save('/api/users/1')).rejects.toBeDefined();
-        expect(state._getTarget().name).toBe(originalName);
+
+        // ── Assert ①: domainObject — mutation 값이 그대로 살아있음
+        // (rollback은 save() 진입 시점으로 복원. mutation은 그 이전이므로 유지됨)
+        expect(state._getTarget().name).toBe('Lee');
+        expect(state._getTarget().email).toBe('lee@example.com');
+
+        // ── Assert ②: changeLog — save() 진입 시점 이력 intact (2건)
+        expect(state._getChangeLog()).toHaveLength(changeLogCountBefore);
+
+        // ── Assert ③: dirtyFields — save() 진입 시점 집합 intact (2개)
+        expect(state._getDirtyFields().size).toBe(dirtyFieldsCountBefore);
     });
 
     it('TC-DS-007: HTTP 오류 → changeLog가 save() 이전 상태로 복원', async () => {

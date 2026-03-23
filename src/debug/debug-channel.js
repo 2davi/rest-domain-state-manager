@@ -34,9 +34,16 @@
  * SPA 환경에서 컴포넌트가 언마운트될 때 `closeDebugChannel()`을 호출하여
  * `BroadcastChannel`을 명시적으로 닫고 GC 대상이 되도록 해야 한다.
  *
- * ## 모듈 로드 시 사이드 이펙트
- * 이 모듈은 import 시 자동으로 아래 동작을 수행한다:
- * 1. `getChannel()`을 통해 채널 인스턴스를 초기화
+ * ## 초기화 전략 — Lazy Initialization
+ * 이 모듈은 import 시 브라우저 전용 사이드 이펙트를 즉시 실행하지 않는다.
+ * `broadcastUpdate()`가 최초 호출되는 시점, 즉 `debug: true`인 `DomainState`가
+ * 처음으로 상태를 broadcast하는 순간에 `initDebugChannel()`이 lazy하게 실행된다.
+ *
+ * 이 구조를 통해 Node.js / Vitest 테스트 환경에서 `window`, `location` 등
+ * 브라우저 전용 전역 객체에 대한 `ReferenceError` 없이 모듈을 안전하게 import할 수 있다.
+ *
+ * 초기화 순서:
+ * 1. `broadcastUpdate()` 최초 호출 → `initDebugChannel()` 실행
  * 2. `TAB_PING` 수신 시 `registerTab()` 응답 리스너 등록
  * 3. `beforeunload` 시 `TAB_UNREGISTER` 전송 리스너 등록
  * 4. 초기 `registerTab()` 호출 (페이지 로드 직후 자기 등록)
@@ -211,26 +218,64 @@ function registerTab() {
 
 
 // ════════════════════════════════════════════════════════════════════════════════
-// 모듈 로드 시 사이드 이펙트 초기화
+// 지연 초기화 (Lazy Initialization)
 // ════════════════════════════════════════════════════════════════════════════════
 
-// TAB_PING 수신 시 registerTab()으로 응답
-getChannel()?.addEventListener('message', ({ data }) => {
-    if (data?.type === MSG_TYPE.TAB_PING) registerTab();
-});
+/**
+ * 초기화 완료 여부를 기록하는 모듈 수준 플래그.
+ *
+ * ES Module은 싱글톤이므로, 이 플래그는 같은 출처(Origin) 내에서
+ * `initDebugChannel()`이 단 한 번만 실행됨을 보장한다.
+ *
+ * @type {boolean}
+ */
+let _initialized = false;
 
-// 탭/창이 닫히거나 새로고침될 때 팝업에 해제 신호 전송
-// 단, 모바일 브라우저나 강제 종료 시에는 이 이벤트가 발생하지 않을 수 있다.
-// 이 경우 팝업의 Heartbeat GC 로직이 5초 후 해당 탭을 자동으로 제거한다.
-window.addEventListener('beforeunload', () => {
-    getChannel()?.postMessage(/** @type {TabUnregisterMessage} */ ({
-        type:  MSG_TYPE.TAB_UNREGISTER,
-        tabId: TAB_ID,
-    }));
-});
+/**
+ * 디버그 채널의 브라우저 전용 사이드 이펙트를 초기화한다.
+ *
+ * 아래 세 가지 동작을 수행하며, 브라우저 환경에서 단 한 번만 실행된다:
+ * 1. `TAB_PING` 수신 시 `registerTab()`으로 응답하는 채널 리스너 등록
+ * 2. `beforeunload` 시 `TAB_UNREGISTER` 전송 리스너 등록
+ * 3. 초기 `registerTab()` 호출 (팝업이 이미 열려있다면 즉시 이 탭을 인식함)
+ *
+ * `broadcastUpdate()` 내부에서 lazy하게 호출되므로,
+ * 실제로 `debug: true`인 `DomainState` 인스턴스가 상태 변경을 일으키기 전까지는
+ * 실행되지 않는다.
+ *
+ * `window`가 존재하지 않는 환경(Node.js, Vitest node environment)에서는
+ * 즉시 반환하여 아무 동작도 하지 않는다 (no-op).
+ *
+ * @returns {void}
+ */
+export function initDebugChannel() {
+    // Node.js / Vitest(node) 환경에서는 window가 없으므로 no-op으로 처리한다.
+    // BroadcastChannel, location 등 브라우저 전용 API 접근을 차단하는 유일한 관문.
+    if (typeof window === 'undefined') return;
 
-// 페이지 로드 직후 자기 등록 (팝업이 이미 열려있다면 즉시 이 탭을 인식함)
-registerTab();
+    // _initialized 플래그로 중복 실행을 차단한다.
+    // SPA에서 핫 리로드 등으로 모듈이 재평가되는 경우에도 이벤트 리스너 중복 등록을 막는다.
+    if (_initialized) return;
+    _initialized = true;
+
+    // TAB_PING 수신 시 registerTab()으로 응답
+    getChannel()?.addEventListener('message', ({ data }) => {
+        if (data?.type === MSG_TYPE.TAB_PING) registerTab();
+    });
+
+    // 탭/창이 닫히거나 새로고침될 때 팝업에 해제 신호 전송
+    // 단, 모바일 브라우저나 강제 종료 시에는 이 이벤트가 발생하지 않을 수 있다.
+    // 이 경우 팝업의 Heartbeat GC 로직이 5초 후 해당 탭을 자동으로 제거한다.
+    window.addEventListener('beforeunload', () => {
+        getChannel()?.postMessage(/** @type {TabUnregisterMessage} */ ({
+            type:  MSG_TYPE.TAB_UNREGISTER,
+            tabId: TAB_ID,
+        }));
+    });
+
+    // 페이지 로드 직후 자기 등록 (팝업이 이미 열려있다면 즉시 이 탭을 인식함)
+    registerTab();
+}
 
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -294,6 +339,12 @@ export function closeDebugChannel() {
  * }
  */
 export function broadcastUpdate(label, snapshot) {
+    // debug: true인 DomainState가 최초로 상태를 broadcast하는 시점에
+    // 채널 초기화를 수행한다. 브라우저 환경이 아니면 no-op.
+    // Node.js / Vitest(node) 환경에서는 no-op으로 처리한다.
+    if(typeof window === 'undefined') return;
+    initDebugChannel();
+
     _stateRegistry.set(label, { label, ...snapshot });
     getChannel()?.postMessage(/** @type {DsUpdateMessage} */ ({
         type:    MSG_TYPE.DS_UPDATE,
@@ -325,6 +376,9 @@ export function broadcastUpdate(label, snapshot) {
  * }
  */
 export function broadcastError(key, error) {
+    // Node.js / Vitest(node) 환경에서는 no-op으로 처리한다.
+    if(typeof window === 'undefined') return;
+    
     getChannel()?.postMessage(/** @type {DsErrorMessage} */ ({
         type:   MSG_TYPE.DS_ERROR,
         tabId:  TAB_ID,
