@@ -180,7 +180,7 @@ export class DomainState {
      * const user = DomainState.fromJSON(jsonText, api);
      * user.bindForm('userForm'); // FormBinder.bindForm() 호출
      */
-    static fromJSON(jsonText: string, handler: import("../network/api-handler.js").ApiHandler, { urlConfig, debug, label, vo, }?: FromJsonOptions): DomainState;
+    static fromJSON(jsonText: string, handler: import("../network/api-handler.js").ApiHandler, { urlConfig, debug, label, vo }?: FromJsonOptions): DomainState;
     /**
      * `DomainVO` 인스턴스로부터 기본값 골격 `DomainState`를 생성한다. (`isNew: true`)
      *
@@ -216,7 +216,7 @@ export class DomainState {
      *     urlConfig: { host: 'staging.server.com', basePath: '/api' },
      * });
      */
-    static fromVO(vo: DomainVO, handler: import("../network/api-handler.js").ApiHandler, { urlConfig, debug, label, }?: FromVoOptions): DomainState;
+    static fromVO(vo: DomainVO, handler: import("../network/api-handler.js").ApiHandler, { urlConfig, debug, label }?: FromVoOptions): DomainState;
     /**
      * `DomainState` 인스턴스를 생성한다.
      *

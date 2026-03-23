@@ -1,0 +1,12 @@
+src/
+test/
+docs/
+.github/
+*.config.js
+*.config.ts
+.releaserc.json
+.prettierrc
+commitlint.config.js
+vitest.config.js
+CHANGELOG.md
+tsconfig.json

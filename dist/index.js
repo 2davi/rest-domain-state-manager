@@ -7,7 +7,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
 var __accessCheck = (obj, member, msg) => member.has(obj) || __typeError("Cannot " + msg);
 var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
 var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-var _a, _installedPlugins;
+var _installedPlugins;
 const PREFIX = "[DSM]";
 const ERR = Object.freeze({
   // ── URL ────────────────────────────────────────────────────────────────
@@ -114,8 +114,8 @@ function getChannel() {
   return _channel;
 }
 function registerTab() {
-  var _a2;
-  (_a2 = getChannel()) == null ? void 0 : _a2.postMessage(
+  var _a;
+  (_a = getChannel()) == null ? void 0 : _a.postMessage(
     /** @type {TabRegisterMessage} */
     {
       type: MSG_TYPE.TAB_REGISTER,
@@ -125,20 +125,27 @@ function registerTab() {
     }
   );
 }
-(_a = getChannel()) == null ? void 0 : _a.addEventListener("message", ({ data }) => {
-  if ((data == null ? void 0 : data.type) === MSG_TYPE.TAB_PING) registerTab();
-});
-window.addEventListener("beforeunload", () => {
-  var _a2;
-  (_a2 = getChannel()) == null ? void 0 : _a2.postMessage(
-    /** @type {TabUnregisterMessage} */
-    {
-      type: MSG_TYPE.TAB_UNREGISTER,
-      tabId: TAB_ID
-    }
-  );
-});
-registerTab();
+let _initialized = false;
+function initDebugChannel() {
+  var _a;
+  if (typeof window === "undefined") return;
+  if (_initialized) return;
+  _initialized = true;
+  (_a = getChannel()) == null ? void 0 : _a.addEventListener("message", ({ data }) => {
+    if ((data == null ? void 0 : data.type) === MSG_TYPE.TAB_PING) registerTab();
+  });
+  window.addEventListener("beforeunload", () => {
+    var _a2;
+    (_a2 = getChannel()) == null ? void 0 : _a2.postMessage(
+      /** @type {TabUnregisterMessage} */
+      {
+        type: MSG_TYPE.TAB_UNREGISTER,
+        tabId: TAB_ID
+      }
+    );
+  });
+  registerTab();
+}
 function closeDebugChannel() {
   if (_channel) {
     _channel.postMessage(
@@ -154,9 +161,11 @@ function closeDebugChannel() {
   }
 }
 function broadcastUpdate(label, snapshot) {
-  var _a2;
+  var _a;
+  if (typeof window === "undefined") return;
+  initDebugChannel();
   _stateRegistry.set(label, { label, ...snapshot });
-  (_a2 = getChannel()) == null ? void 0 : _a2.postMessage(
+  (_a = getChannel()) == null ? void 0 : _a.postMessage(
     /** @type {DsUpdateMessage} */
     {
       type: MSG_TYPE.DS_UPDATE,
@@ -168,8 +177,9 @@ function broadcastUpdate(label, snapshot) {
   );
 }
 function broadcastError(key, error) {
-  var _a2;
-  (_a2 = getChannel()) == null ? void 0 : _a2.postMessage(
+  var _a;
+  if (typeof window === "undefined") return;
+  (_a = getChannel()) == null ? void 0 : _a.postMessage(
     /** @type {DsErrorMessage} */
     {
       type: MSG_TYPE.DS_ERROR,
@@ -486,9 +496,7 @@ class DomainPipeline {
     const keys = Object.keys(this._resourceMap);
     const errors = [];
     console.debug(formatMessage(LOG.pipeline.fetchStart, { keys: keys.join(", ") }));
-    const settled = await Promise.allSettled(
-      keys.map((k) => this._resourceMap[k])
-    );
+    const settled = await Promise.allSettled(keys.map((k) => this._resourceMap[k]));
     const resolved = {};
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
@@ -680,16 +688,31 @@ function createProxy(domainObject, onMutate = null) {
                   record(OP.ADD, `${basePath}/${idx}`, void 0, el);
                 });
                 break;
-              case "splice":
+              case "splice": {
                 const startIdx = args[0] < 0 ? Math.max(oldArray.length + args[0], 0) : Math.min(args[0], oldArray.length);
-                result.forEach((deletedItem) => {
-                  record(OP.REMOVE, `${basePath}/${startIdx}`, deletedItem, void 0);
-                });
+                result.forEach(
+                  (deletedItem) => {
+                    record(
+                      OP.REMOVE,
+                      `${basePath}/${startIdx}`,
+                      deletedItem,
+                      void 0
+                    );
+                  }
+                );
                 const addedItems = args.slice(2);
-                addedItems.forEach((addedItem, idx) => {
-                  record(OP.ADD, `${basePath}/${startIdx + idx}`, void 0, addedItem);
-                });
+                addedItems.forEach(
+                  (addedItem, idx) => {
+                    record(
+                      OP.ADD,
+                      `${basePath}/${startIdx + idx}`,
+                      void 0,
+                      addedItem
+                    );
+                  }
+                );
                 break;
+              }
               case "sort":
               case "reverse":
                 record(OP.REPLACE, basePath, oldArray, [...target]);
@@ -909,12 +932,9 @@ function buildURL(normalized, requestPath = "") {
     console.debug(formatMessage(LOG.url.resolved, { url: requestPath }));
     return requestPath;
   }
-  const parts = [
-    protocol,
-    host,
-    normalizePath(basePath),
-    normalizePath(requestPath)
-  ].filter(Boolean);
+  const parts = [protocol, host, normalizePath(basePath), normalizePath(requestPath)].filter(
+    Boolean
+  );
   const url = parts.map((p, i) => {
     if (i === 0) return p.replace(/\/$/, "");
     return p.replace(/^\//, "").replace(/\/$/, "");
@@ -1195,7 +1215,9 @@ const _DomainState = class _DomainState {
    */
   static all(resourceMap, options = {}) {
     if (!_DomainState.PipelineConstructor) {
-      throw new Error("[DSM] DomainPipeline이 주입되지 않았습니다. rest-domain-state-manager.js 진입점을 사용하세요.");
+      throw new Error(
+        "[DSM] DomainPipeline이 주입되지 않았습니다. rest-domain-state-manager.js 진입점을 사용하세요."
+      );
     }
     return new _DomainState.PipelineConstructor(resourceMap, options);
   }
@@ -1220,7 +1242,6 @@ const _DomainState = class _DomainState {
     this._clearChangeLog = proxyWrapper.clearChangeLog;
     this._pendingFlush = false;
     this._getDirtyFields = proxyWrapper.getDirtyFields;
-    this._clearDirtyFields = proxyWrapper.clearDirtyFields;
     this._clearDirtyFields = proxyWrapper.clearDirtyFields;
     this._restoreTarget = proxyWrapper.restoreTarget;
     this._restoreChangeLog = proxyWrapper.restoreChangeLog;
@@ -1272,12 +1293,7 @@ const _DomainState = class _DomainState {
    * const user = DomainState.fromJSON(jsonText, api);
    * user.bindForm('userForm'); // FormBinder.bindForm() 호출
    */
-  static fromJSON(jsonText, handler, {
-    urlConfig = null,
-    debug = false,
-    label = null,
-    vo = null
-  } = {}) {
+  static fromJSON(jsonText, handler, { urlConfig = null, debug = false, label = null, vo = null } = {}) {
     let state = null;
     const wrapper = toDomain(jsonText, () => {
       state == null ? void 0 : state._scheduleFlush();
@@ -1333,11 +1349,7 @@ const _DomainState = class _DomainState {
    *     urlConfig: { host: 'staging.server.com', basePath: '/api' },
    * });
    */
-  static fromVO(vo, handler, {
-    urlConfig = null,
-    debug = false,
-    label = null
-  } = {}) {
+  static fromVO(vo, handler, { urlConfig = null, debug = false, label = null } = {}) {
     if (!(vo instanceof DomainVO)) throw new TypeError(ERR.FROM_VO_TYPE);
     const resolvedUrlConfig = urlConfig ?? (vo.getBaseURL() ? normalizeUrlConfig({ baseURL: vo.getBaseURL() ?? void 0, debug }) : null);
     let state = null;
@@ -1526,7 +1538,7 @@ const _DomainState = class _DomainState {
     if (!this._debug) return;
     const log = this._getChangeLog();
     console.group(`[DSM][${this._label}] changeLog`);
-    log.length ? console.table(log) : console.log("(변경 이력 없음)");
+    log.length ? console.table(log) : console.debug("(변경 이력 없음)");
     console.groupEnd();
   }
   /**
@@ -1570,8 +1582,8 @@ const _DomainState = class _DomainState {
    * @throws {Error} URL을 확정할 수 없는 경우 (`buildURL` 내부에서 throw)
    */
   _resolveURL(requestPath) {
-    var _a2;
-    const config = this._urlConfig ?? ((_a2 = this._handler) == null ? void 0 : _a2.getUrlConfig()) ?? /** @type {any} */
+    var _a;
+    const config = this._urlConfig ?? ((_a = this._handler) == null ? void 0 : _a.getUrlConfig()) ?? /** @type {any} */
     {};
     return buildURL(config, requestPath ?? "");
   }
@@ -1998,7 +2010,18 @@ const RENDERER_TYPE = Object.freeze(
   }
 );
 Object.freeze(
-  /* @__PURE__ */ new Set(["text", "email", "password", "number", "tel", "url", "search", "date", "time", "textarea"])
+  /* @__PURE__ */ new Set([
+    "text",
+    "email",
+    "password",
+    "number",
+    "tel",
+    "url",
+    "search",
+    "date",
+    "time",
+    "textarea"
+  ])
 );
 const DomainRenderer = {
   /**
@@ -2087,10 +2110,11 @@ const FormBinder = {
   }
 };
 function _resolveForm(formOrId) {
-  if (typeof formOrId === "string") return (
-    /** @type {HTMLFormElement | null} */
-    document.getElementById(formOrId)
-  );
+  if (typeof formOrId === "string")
+    return (
+      /** @type {HTMLFormElement | null} */
+      document.getElementById(formOrId)
+    );
   if (formOrId instanceof HTMLFormElement) return formOrId;
   return null;
 }
@@ -2122,7 +2146,8 @@ function _syncToForm(formEl, targetObj) {
       val[k];
     }
     if (val !== void 0 && val !== null) {
-      if (el.type === "checkbox" || el.type === "radio") el.checked = el.value === String(val);
+      if (el.type === "checkbox" || el.type === "radio")
+        el.checked = el.value === String(val);
       else el.value = val;
     }
   }
