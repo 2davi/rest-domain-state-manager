@@ -1,3 +1,9 @@
+## [0.9.1](https://github.com/2davi/rest-domain-state-manager/compare/v0.9.0...v0.9.1) (2026-03-23)
+
+### 🐛 Bug Fixes
+
+* **npm:** add publishConfig access public for scoped package ([ac75bd9](https://github.com/2davi/rest-domain-state-manager/commit/ac75bd91931573804bcaaf849bce1b477dfedd18))
+
 ## [0.9.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.8.0...v0.9.0) (2026-03-23)
 
 ### ✨ Features
