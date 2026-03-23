@@ -16,10 +16,10 @@
  * @enum {string}
  */
 export const PROTOCOL = Object.freeze({
-    HTTP:  'http://',
+    HTTP: 'http://',
     HTTPS: 'https://',
-    FILE:  'file:///',
-    SSH:   'ssh://',
+    FILE: 'file:///',
+    SSH: 'ssh://',
 });
 
 /**
@@ -29,7 +29,7 @@ export const PROTOCOL = Object.freeze({
  */
 export const ENV = Object.freeze({
     DEVELOPMENT: 'development',
-    PRODUCTION:  'production',
+    PRODUCTION: 'production',
 });
 
 /**
@@ -39,7 +39,7 @@ export const ENV = Object.freeze({
  */
 export const DEFAULT_PROTOCOL = Object.freeze({
     [ENV.DEVELOPMENT]: PROTOCOL.HTTP,
-    [ENV.PRODUCTION]:  PROTOCOL.HTTPS,
+    [ENV.PRODUCTION]: PROTOCOL.HTTPS,
 });
 
 /**

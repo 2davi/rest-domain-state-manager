@@ -18,14 +18,12 @@ const PREFIX = '[DSM]';
  * @namespace
  */
 export const ERR = Object.freeze({
-
     // ── URL ────────────────────────────────────────────────────────────────
     /** @param {string} host @param {string} baseURL */
     URL_CONFLICT: (host, baseURL) =>
         `${PREFIX} host("${host}")와 baseURL("${baseURL}")이 충돌합니다. 둘 중 하나만 사용하세요.`,
 
-    URL_MISSING:
-        `${PREFIX} URL을 특정할 수 없습니다. save(path) 또는 baseURL/host를 설정하세요.`,
+    URL_MISSING: `${PREFIX} URL을 특정할 수 없습니다. save(path) 또는 baseURL/host를 설정하세요.`,
 
     /** @param {string} val */
     PROTOCOL_INVALID: (val) =>
@@ -37,11 +35,9 @@ export const ERR = Object.freeze({
         `${PREFIX} DomainState.${method}(): ApiHandler가 주입되지 않았습니다. ` +
         'fromJSON / fromForm / fromVO의 두 번째 인자로 api를 전달하세요.',
 
-    FROM_VO_TYPE:
-        `${PREFIX} DomainState.fromVO(): DomainVO 인스턴스를 전달해야 합니다.`,
+    FROM_VO_TYPE: `${PREFIX} DomainState.fromVO(): DomainVO 인스턴스를 전달해야 합니다.`,
 
-    FROM_FORM_TYPE:
-        `${PREFIX} DomainState.fromForm(): HTMLFormElement 또는 form id 문자열을 전달해야 합니다.`,
+    FROM_FORM_TYPE: `${PREFIX} DomainState.fromForm(): HTMLFormElement 또는 form id 문자열을 전달해야 합니다.`,
 
     /** @param {string} id */
     FORM_NOT_FOUND: (id) =>
@@ -62,8 +58,7 @@ export const ERR = Object.freeze({
         `${PREFIX} DomainVO 정합성 경고: 응답 데이터에 VO 스키마에 없는 "${key}" 필드가 포함되어 있습니다.`,
 
     // ── 플러그인 ───────────────────────────────────────────────────────────
-    PLUGIN_NO_INSTALL:
-        `${PREFIX} DomainState.use(): 플러그인은 install(DomainState) 메서드를 가져야 합니다.`,
+    PLUGIN_NO_INSTALL: `${PREFIX} DomainState.use(): 플러그인은 install(DomainState) 메서드를 가져야 합니다.`,
 
     // ── DomainPipeline ─────────────────────────────────────────────────────
     /** @param {string} key */
@@ -84,11 +79,9 @@ export const ERR = Object.freeze({
     RENDERER_TYPE_UNKNOWN: (type) =>
         `${PREFIX} renderTo(): 지원하지 않는 type="${type}"입니다. select | radio | checkbox | button 중 하나를 사용하세요.`,
 
-    RENDERER_VALUE_FIELD_MISSING:
-        `${PREFIX} renderTo(): valueField는 필수 옵션입니다.`,
+    RENDERER_VALUE_FIELD_MISSING: `${PREFIX} renderTo(): valueField는 필수 옵션입니다.`,
 
-    RENDERER_LABEL_FIELD_MISSING:
-        `${PREFIX} renderTo(): labelField는 필수 옵션입니다.`,
+    RENDERER_LABEL_FIELD_MISSING: `${PREFIX} renderTo(): labelField는 필수 옵션입니다.`,
 
     /** @param {string} key */
     RENDERER_DATA_NOT_ARRAY: (key) =>
@@ -102,7 +95,6 @@ export const ERR = Object.freeze({
  * @namespace
  */
 export const WARN = Object.freeze({
-
     // ── URL 충돌 해소 ──────────────────────────────────────────────────────
     /** @param {string} host @param {string} baseURL */
     URL_HOST_IGNORED: (host, baseURL) =>

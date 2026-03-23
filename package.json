@@ -6,6 +6,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,10 +24,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && tsc --emitDeclarationOnly",
-    "lint": "eslint src",
-    "format": "prettier --write \"src/**/*.{js,ts,html,css}\"",
+    "lint": "eslint src index.js",
+    "lint:fix": "eslint src index.js --fix",
+    "format": "prettier --write \"src/**/*.js\" \"index.js\" \"test/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"index.js\" \"test/**/*.js\"",
     "test": "vitest run",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
     "docs:dev": "vitepress dev docs",
     "docs:build": "npm run docs:api && vitepress build docs",
     "docs:api": "typedoc"
@@ -39,6 +44,8 @@
   "author": "2davi",
   "license": "ISC",
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "eslint": "^9.0.0",
     "jsdom": "^29.0.1",
     "prettier": "^3.5.0",
@@ -49,5 +56,12 @@
     "vite": "^6.0.0",
     "vitepress": "^1.6.4",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@semantic-release/git": "^10.0.1",
+    "conventional-changelog-conventionalcommits": "^9.3.0",
+    "eslint-plugin-jsdoc": "^62.8.0",
+    "globals": "^17.4.0",
+    "semantic-release": "^25.0.3"
   }
 }

@@ -28,11 +28,11 @@ export const DEBUG_CHANNEL_NAME = 'dsm_debug';
  * @enum {string}
  */
 export const MSG_TYPE = Object.freeze({
-    TAB_REGISTER:   'TAB_REGISTER',
+    TAB_REGISTER: 'TAB_REGISTER',
     TAB_UNREGISTER: 'TAB_UNREGISTER',
-    TAB_PING:       'TAB_PING',
-    DS_UPDATE:      'DS_UPDATE',
-    DS_ERROR:       'DS_ERROR',
+    TAB_PING: 'TAB_PING',
+    DS_UPDATE: 'DS_UPDATE',
+    DS_ERROR: 'DS_ERROR',
 });
 
 /**

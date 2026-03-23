@@ -36,9 +36,8 @@
  */
 
 import { shouldBypassDeepProxy, isPlainObject, isArray } from '../common/js-object-util.js';
-import { OP }                                             from '../constants/op.const.js';
-import { LOG, formatMessage }                             from '../constants/log.messages.js';
-
+import { OP } from '../constants/op.const.js';
+import { LOG, formatMessage } from '../constants/log.messages.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -90,9 +89,6 @@ import { LOG, formatMessage }                             from '../constants/log
  *
  * @typedef {unknown} ArrayMutationResult
  */
-
-
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 공개 API
@@ -156,7 +152,6 @@ import { LOG, formatMessage }                             from '../constants/log
  * // changeLog: [REMOVE /items/1, ADD /items/1, ADD /items/2]
  */
 export function createProxy(domainObject, onMutate = null) {
-
     // ── 클로저 — 이 인스턴스 전용 변경 이력. 외부에서는 getChangeLog()로만 접근 ──
     /** @type {ChangeLogEntry[]} */
     const changeLog = [];
@@ -194,7 +189,6 @@ export function createProxy(domainObject, onMutate = null) {
     /** @type {ReadonlyArray<string>} */
     const ON_MUTATIONS = ['shift', 'unshift', 'splice', 'sort', 'reverse'];
 
-
     // ════════════════════════════════════════════════════════════════════════════
     // 내부 함수
     // ════════════════════════════════════════════════════════════════════════════
@@ -214,12 +208,12 @@ export function createProxy(domainObject, onMutate = null) {
      * @returns {void}
      */
     function record(op, path, oldValue, newValue) {
-        if(isMuting) return;
+        if (isMuting) return;
 
         /** @type {ChangeLogEntry} */
         const entry = { op, path };
         if (op !== OP.REMOVE) entry.newValue = newValue;
-        if (op !== OP.ADD)    entry.oldValue = oldValue;
+        if (op !== OP.ADD) entry.oldValue = oldValue;
         changeLog.push(entry);
 
         // ── Dirty Tracking ────────────────────────────────────────────────────
@@ -233,7 +227,7 @@ export function createProxy(domainObject, onMutate = null) {
 
         console.debug(formatMessage(LOG.proxy[op], { path, oldValue, newValue }));
 
-        if(onMutate) onMutate();
+        if (onMutate) onMutate();
     }
 
     /**
@@ -252,7 +246,6 @@ export function createProxy(domainObject, onMutate = null) {
      */
     function makeHandler(basePath) {
         return {
-
             /**
              * `set` 트랩 — 프로퍼티 신규 추가(`add`) 또는 값 교체(`replace`)를 기록한다.
              *
@@ -275,15 +268,15 @@ export function createProxy(domainObject, onMutate = null) {
                 const currentValue = Reflect.get(target, prop, receiver);
 
                 // No-op: 값이 완전히 동일하면 changeLog에 기록하지 않는다
-                if(currentValue === value) return true;
+                if (currentValue === value) return true;
 
-                const path     = `${basePath}/${String(prop)}`;
-                const hasOwn   = Object.prototype.hasOwnProperty.call(target, prop);
+                const path = `${basePath}/${String(prop)}`;
+                const hasOwn = Object.prototype.hasOwnProperty.call(target, prop);
                 const oldValue = hasOwn ? currentValue : undefined;
-                const op       = hasOwn ? OP.REPLACE : OP.ADD;
+                const op = hasOwn ? OP.REPLACE : OP.ADD;
 
                 // 배열의 length 변경은 ON_MUTATIONS 래퍼가 별도로 제어하므로 무시
-                if(Array.isArray(target) && prop === 'length') {
+                if (Array.isArray(target) && prop === 'length') {
                     return Reflect.set(target, prop, value, receiver);
                 }
 
@@ -316,7 +309,7 @@ export function createProxy(domainObject, onMutate = null) {
                 if (shouldBypassDeepProxy(prop)) return Reflect.get(target, prop, receiver);
 
                 // ON_MUTATIONS 하이재킹: O(N) 배열 변이 메서드를 래퍼로 교체한다
-                if(Array.isArray(target) && ON_MUTATIONS.includes(/** @type {string} */ (prop))) {
+                if (Array.isArray(target) && ON_MUTATIONS.includes(/** @type {string} */ (prop))) {
                     /**
                      * 배열 변이 메서드 래퍼 함수.
                      *
@@ -339,10 +332,12 @@ export function createProxy(domainObject, onMutate = null) {
                         const oldArray = [...target];
 
                         isMuting = true;
-                        const result = /** @type {any} */ (Array.prototype)[/** @type {any} */ (prop)].apply(target, args);
+                        const result = /** @type {any} */ (Array.prototype)[
+                            /** @type {any} */ (prop)
+                        ].apply(target, args);
                         isMuting = false;
 
-                        switch(prop) {
+                        switch (prop) {
                             case 'shift':
                                 // 항상 인덱스 0에서 첫 번째 요소가 제거된다
                                 record(OP.REMOVE, `${basePath}/0`, oldArray[0], undefined);
@@ -354,42 +349,57 @@ export function createProxy(domainObject, onMutate = null) {
                                     record(OP.ADD, `${basePath}/${idx}`, undefined, el);
                                 });
                                 break;
-                            case 'splice':
+
+                            case 'splice': {
                                 // args[0]: 시작 인덱스(음수 허용), args[1]: 삭제 개수, args[2~]: 추가 요소
-                                const startIdx = args[0] < 0
-                                      ? Math.max(oldArray.length + args[0], 0)
-                                      : Math.min(args[0], oldArray.length);
+                                const startIdx =
+                                    args[0] < 0
+                                        ? Math.max(oldArray.length + args[0], 0)
+                                        : Math.min(args[0], oldArray.length);
 
                                 // 삭제(REMOVE): JSON Patch 관점에서 요소가 제거되면 뒤 인덱스가 앞으로 당겨지므로
                                 // 삭제된 모든 요소를 동일한 startIdx를 향해 연속 REMOVE로 기록한다
-                                /** @type {any[]} */ (result).forEach((/** @type {any} */ deletedItem) => {
-                                    record(OP.REMOVE, `${basePath}/${startIdx}`, deletedItem, undefined);
-                                });
-                                
+                                /** @type {any[]} */ (result).forEach(
+                                    (/** @type {any} */ deletedItem) => {
+                                        record(
+                                            OP.REMOVE,
+                                            `${basePath}/${startIdx}`,
+                                            deletedItem,
+                                            undefined
+                                        );
+                                    }
+                                );
+
                                 // 추가(ADD): args[2]부터가 새로 삽입할 요소들이다
                                 const addedItems = args.slice(2);
-                                addedItems.forEach((/** @type {any} */ addedItem, /** @type {number} */ idx) => {
-                                    record(OP.ADD, `${basePath}/${startIdx + idx}`, undefined, addedItem);
-                                });
+                                addedItems.forEach(
+                                    (/** @type {any} */ addedItem, /** @type {number} */ idx) => {
+                                        record(
+                                            OP.ADD,
+                                            `${basePath}/${startIdx + idx}`,
+                                            undefined,
+                                            addedItem
+                                        );
+                                    }
+                                );
                                 break;
-
+                            }
                             case 'sort':
                             case 'reverse':
                                 // 정렬/역순은 인덱스 단위 추적이 불가능하므로 배열 전체를 단일 REPLACE로 기록
                                 record(OP.REPLACE, basePath, oldArray, [...target]);
-                                break;   
+                                break;
                         }
 
                         return result;
                     };
                 }
 
-
                 const value = Reflect.get(target, prop, receiver);
 
                 // plain object 또는 배열: Lazy Proxying & WeakMap 캐싱
                 if (isPlainObject(value) || isArray(value)) {
-                    if(proxyCache.has(value)) {
+                    if (proxyCache.has(value)) {
                         return proxyCache.get(value);
                     }
 
@@ -416,10 +426,10 @@ export function createProxy(domainObject, onMutate = null) {
             deleteProperty(target, prop) {
                 if (!Object.prototype.hasOwnProperty.call(target, prop)) return true;
 
-                const path   = `${basePath}/${String(prop)}`;
+                const path = `${basePath}/${String(prop)}`;
                 //[refactor/core-engine(2026-03-18)] 삭제 과정에서 값을 읽을 때도 Reflect API로 교체
                 const oldVal = Reflect.get(target, prop);
-                const ok     = Reflect.deleteProperty(target, prop);
+                const ok = Reflect.deleteProperty(target, prop);
 
                 if (ok) record(OP.REMOVE, path, oldVal, undefined);
                 return ok;
@@ -529,7 +539,7 @@ export function createProxy(domainObject, onMutate = null) {
          */
         restoreDirtyFields: (fields) => {
             dirtyFields.clear();
-            fields.forEach(k => dirtyFields.add(k));
+            fields.forEach((k) => dirtyFields.add(k));
         },
     };
 }

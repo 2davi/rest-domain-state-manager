@@ -4,22 +4,21 @@ import { DomainVO } from '../../src/domain/DomainVO.js';
 // ── 테스트용 서브클래스 정의 ──────────────────────────────────────────────────
 class UserVO extends DomainVO {
     static baseURL = 'localhost:8080/api/users';
-    static fields  = {
-        userId:  { default: '' },
-        name:    { default: '', validate: v => v.trim().length > 0 },
-        age:     { default: 0,  validate: v => v >= 0, transform: Number },
+    static fields = {
+        userId: { default: '' },
+        name: { default: '', validate: (v) => v.trim().length > 0 },
+        age: { default: 0, validate: (v) => v >= 0, transform: Number },
         address: { default: { city: '', zip: '' } },
     };
 }
 
-class EmptyVO extends DomainVO {}  // static fields 없음
+class EmptyVO extends DomainVO {} // static fields 없음
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TC-V-001 ~ TC-V-002  toSkeleton()
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainVO — toSkeleton()', () => {
-
     it('TC-V-001: static fields default 값으로 골격 객체 생성', () => {
         const skeleton = new UserVO().toSkeleton();
         expect(skeleton).toMatchObject({ userId: '', name: '', age: 0 });
@@ -33,7 +32,9 @@ describe('DomainVO — toSkeleton()', () => {
     });
 
     it('default 미선언 필드 → 빈 문자열로 초기화', () => {
-        class MinVO extends DomainVO { static fields = { title: {} }; }
+        class MinVO extends DomainVO {
+            static fields = { title: {} };
+        }
         expect(new MinVO().toSkeleton()).toMatchObject({ title: '' });
     });
 
@@ -42,7 +43,6 @@ describe('DomainVO — toSkeleton()', () => {
         vo.customProp = 'test';
         expect(new EmptyVO().toSkeleton()).toEqual({});
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -50,7 +50,6 @@ describe('DomainVO — toSkeleton()', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainVO — checkSchema()', () => {
-
     it('TC-V-003: 응답 데이터에 VO 키 누락 → valid:false, missingKeys 포함', () => {
         const result = new UserVO().checkSchema({ userId: 'u1', name: 'Davi', age: 30 });
         // address 누락
@@ -77,7 +76,6 @@ describe('DomainVO — checkSchema()', () => {
         const result = new EmptyVO().checkSchema({ anything: 1 });
         expect(result.valid).toBe(true);
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -85,7 +83,6 @@ describe('DomainVO — checkSchema()', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainVO — getValidators()', () => {
-
     it('validate 함수 있는 필드만 맵에 포함', () => {
         const validators = new UserVO().getValidators();
         expect(validators).toHaveProperty('name');
@@ -97,21 +94,17 @@ describe('DomainVO — getValidators()', () => {
     it('static fields 미선언 → 빈 객체 반환', () => {
         expect(new EmptyVO().getValidators()).toEqual({});
     });
-
 });
 
 describe('DomainVO — getTransformers()', () => {
-
     it('transform 함수 있는 필드만 맵에 포함', () => {
         const transformers = new UserVO().getTransformers();
         expect(transformers).toHaveProperty('age'); // transform: Number
         expect(transformers).not.toHaveProperty('name');
     });
-
 });
 
 describe('DomainVO — getBaseURL()', () => {
-
     it('static baseURL 선언 → 해당 값 반환', () => {
         expect(new UserVO().getBaseURL()).toBe('localhost:8080/api/users');
     });
@@ -119,5 +112,4 @@ describe('DomainVO — getBaseURL()', () => {
     it('static baseURL 미선언 → null 반환', () => {
         expect(new EmptyVO().getBaseURL()).toBeNull();
     });
-
 });

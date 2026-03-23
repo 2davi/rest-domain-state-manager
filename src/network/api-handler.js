@@ -45,10 +45,9 @@
  * await order.save('/api/orders/999'); // → order-service.com 으로 전송
  */
 
-import { DomainState }                  from '../domain/DomainState.js';
+import { DomainState } from '../domain/DomainState.js';
 import { normalizeUrlConfig, buildURL } from '../core/url-resolver.js';
-import { ERR }                          from '../constants/error.messages.js';
-
+//import { ERR }                          from '../constants/error.messages.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -88,13 +87,11 @@ import { ERR }                          from '../constants/error.messages.js';
  * @typedef {import('../core/url-resolver.js').UrlConfig} UrlConfig
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // ApiHandler 클래스
 // ════════════════════════════════════════════════════════════════════════════════
 
 class ApiHandler {
-
     /**
      * `ApiHandler` 인스턴스를 생성한다.
      *
@@ -139,7 +136,6 @@ class ApiHandler {
          */
         this._headers = { 'Content-Type': 'application/json' };
     }
-
 
     // ════════════════════════════════════════════════════════════════════════════
     // 공개 API
@@ -188,17 +184,16 @@ class ApiHandler {
      */
     async get(requestPath, { urlConfig } = {}) {
         const resolved = urlConfig ? normalizeUrlConfig(urlConfig) : this._urlConfig;
-        const url      = buildURL(resolved, requestPath);
-        const text     = await this._fetch(url, { method: 'GET' });
+        const url = buildURL(resolved, requestPath);
+        const text = await this._fetch(url, { method: 'GET' });
 
-        if(text === null) throw new Error('[DSM] GET 응답 본문이 비어있습니다');
+        if (text === null) throw new Error('[DSM] GET 응답 본문이 비어있습니다');
 
         return DomainState.fromJSON(text, this, {
             urlConfig: resolved,
-            debug:     this._debug,
+            debug: this._debug,
         });
     }
-
 
     // ════════════════════════════════════════════════════════════════════════════
     // 내부 전용 메서드 (DomainState가 위임 호출)
@@ -241,7 +236,7 @@ class ApiHandler {
      * // 204 No Content → null 반환
      */
     async _fetch(url, options = {}) {
-        const res  = await fetch(url, {
+        const res = await fetch(url, {
             ...options,
             headers: {
                 ...this._headers,
@@ -252,9 +247,9 @@ class ApiHandler {
 
         if (!res.ok) {
             throw /** @type {HttpError} */ ({
-                status:     res.status,
+                status: res.status,
                 statusText: res.statusText,
-                body:       text,
+                body: text,
             });
         }
 
@@ -299,6 +294,5 @@ class ApiHandler {
         return this._debug;
     }
 }
-
 
 export { ApiHandler };

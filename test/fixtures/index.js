@@ -14,10 +14,10 @@
  */
 export function makeUserDto() {
     return {
-        userId:  'user_001',
-        name:    'Davi',
-        email:   'davi@example.com',
-        role:    'admin',
+        userId: 'user_001',
+        name: 'Davi',
+        email: 'davi@example.com',
+        role: 'admin',
         address: { city: 'Seoul', zip: '04524' },
     };
 }
@@ -49,7 +49,7 @@ export function makeMockHandler(options = {}) {
         getUrlConfig: () => ({ protocol: 'http://', host: 'localhost:8080', basePath: '' }),
         isDebug: () => false,
         _status: status,
-        _body:   body,
+        _body: body,
     };
 }
 

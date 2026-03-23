@@ -15,29 +15,28 @@ import { OP } from './op.const.js';
  * @namespace
  */
 export const LOG = Object.freeze({
-
     proxy: Object.freeze({
         /** Proxy set 트랩 — add / replace / remove 공통 */
-        [OP.ADD]:     '[DSM][Proxy][add]     path: {path} | newValue: {newValue}',
+        [OP.ADD]: '[DSM][Proxy][add]     path: {path} | newValue: {newValue}',
         [OP.REPLACE]: '[DSM][Proxy][replace] path: {path} | oldValue: {oldValue} → {newValue}',
-        [OP.REMOVE]:  '[DSM][Proxy][remove]  path: {path} | oldValue: {oldValue}',
+        [OP.REMOVE]: '[DSM][Proxy][remove]  path: {path} | oldValue: {oldValue}',
 
         /** get 트랩 — deep proxy 진입 */
         deepProxy: '[DSM][Proxy][get]     deep proxy 진입 | path: {path}',
     }),
 
     url: Object.freeze({
-        resolved:      '[DSM][URL] 최종 URL → {url}',
-        hostIgnored:   '[DSM][URL] host 무시, baseURL 우선 → {url}',
+        resolved: '[DSM][URL] 최종 URL → {url}',
+        hostIgnored: '[DSM][URL] host 무시, baseURL 우선 → {url}',
         basePathFixed: '[DSM][URL] baseURL → basePath 해석 | basePath: {basePath}',
     }),
 
     pipeline: Object.freeze({
-        fetchStart:    '[DSM][Pipeline] 병렬 fetch 시작 | keys: {keys}',
-        fetchDone:     '[DSM][Pipeline] 병렬 fetch 완료',
-        afterStart:    '[DSM][Pipeline] after 핸들러 실행 | key: {key}',
-        afterDone:     '[DSM][Pipeline] after 핸들러 완료 | key: {key}',
-        afterError:    '[DSM][Pipeline] after 핸들러 실패 | key: {key} | error: {error}',
+        fetchStart: '[DSM][Pipeline] 병렬 fetch 시작 | keys: {keys}',
+        fetchDone: '[DSM][Pipeline] 병렬 fetch 완료',
+        afterStart: '[DSM][Pipeline] after 핸들러 실행 | key: {key}',
+        afterDone: '[DSM][Pipeline] after 핸들러 완료 | key: {key}',
+        afterError: '[DSM][Pipeline] after 핸들러 실패 | key: {key} | error: {error}',
     }),
 });
 

@@ -1,5 +1,5 @@
 /**
- * @fileoverview rest-domain-state-manager — 단일 진입점
+ * @file rest-domain-state-manager — 단일 진입점
  *
  * 라이브러리의 모든 공개 API를 이 파일 하나에서 import한다.
  * 외부 개발자는 이 파일만 알면 된다.
@@ -14,15 +14,23 @@
  * @module rest-domain-state-manager
  */
 
-import { DomainPipeline }    from './src/domain/DomainPipeline.js';
-import { DomainState }       from './src/domain/DomainState.js';
-import { DomainVO }          from './src/domain/DomainVO.js';
-import { ApiHandler }        from './src/network/api-handler.js';
-import { DomainRenderer }    from './src/plugins/domain-renderer/DomainRenderer.js';
-import { FormBinder }        from './src/plugins/form-binder/FormBinder.js';
+import { DomainPipeline } from './src/domain/DomainPipeline.js';
+import { DomainState } from './src/domain/DomainState.js';
+import { DomainVO } from './src/domain/DomainVO.js';
+import { ApiHandler } from './src/network/api-handler.js';
+import { DomainRenderer } from './src/plugins/domain-renderer/DomainRenderer.js';
+import { FormBinder } from './src/plugins/form-binder/FormBinder.js';
 import { closeDebugChannel } from './src/debug/debug-channel.js';
 
 // 의존성 주입: DomainState가 순환 참조 없이 DomainPipeline을 생성할 수 있도록 생성자를 넘겨준다.
 DomainState.PipelineConstructor = DomainPipeline;
 
-export { ApiHandler, DomainState, DomainVO, DomainPipeline, DomainRenderer, FormBinder, closeDebugChannel };
+export {
+    ApiHandler,
+    DomainState,
+    DomainVO,
+    DomainPipeline,
+    DomainRenderer,
+    FormBinder,
+    closeDebugChannel,
+};

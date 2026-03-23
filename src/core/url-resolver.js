@@ -37,10 +37,14 @@
  * @see {@link module:network/api-handler ApiHandler}
  */
 
-import { PROTOCOL, ENV, DEFAULT_PROTOCOL, VALID_PROTOCOL_KEYS } from '../constants/protocol.const.js';
-import { ERR, WARN }                                             from '../constants/error.messages.js';
-import { LOG, formatMessage }                                    from '../constants/log.messages.js';
-
+import {
+    PROTOCOL,
+    ENV,
+    DEFAULT_PROTOCOL,
+    VALID_PROTOCOL_KEYS,
+} from '../constants/protocol.const.js';
+import { ERR, WARN } from '../constants/error.messages.js';
+import { LOG, formatMessage } from '../constants/log.messages.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -115,7 +119,6 @@ import { LOG, formatMessage }                                    from '../consta
  * @property {string} body       - 응답 본문 텍스트 (서버가 내려준 에러 메시지 포함)
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 공개 API
 // ════════════════════════════════════════════════════════════════════════════════
@@ -171,13 +174,11 @@ export function normalizeUrlConfig(config = {}) {
             const extracted = baseURL.slice(host.length) || '/';
             console.warn(WARN.URL_BASE_PATH_FIXED(baseURL, extracted));
             basePath = extracted;
-            baseURL  = undefined;
-
+            baseURL = undefined;
         } else if (baseURL.includes(host)) {
             // 케이스 B: baseURL 안에 host가 포함된 형태 (프로토콜이 앞에 붙은 full URL 등) → host 무시
             console.warn(WARN.URL_HOST_IGNORED(host, baseURL));
             host = undefined;
-
         } else {
             // 케이스 C: 두 값이 완전히 무관 → 자동 해소 불가, Error throw
             throw new Error(ERR.URL_CONFLICT(host, baseURL));
@@ -188,15 +189,15 @@ export function normalizeUrlConfig(config = {}) {
     if (baseURL && !host) {
         // 프로토콜 접두사(예: 'http://', 'https://')가 포함된 경우 제거
         const withoutProto = baseURL.replace(/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//, '');
-        const slashIdx     = withoutProto.indexOf('/');
+        const slashIdx = withoutProto.indexOf('/');
 
         if (slashIdx === -1) {
             // 슬래시 없음 → 전체가 host
-            host     = withoutProto;
+            host = withoutProto;
             basePath = '';
         } else {
             // 첫 번째 슬래시 기준으로 host / basePath 분리
-            host     = withoutProto.slice(0, slashIdx);
+            host = withoutProto.slice(0, slashIdx);
             basePath = withoutProto.slice(slashIdx);
         }
     }
@@ -206,7 +207,7 @@ export function normalizeUrlConfig(config = {}) {
 
     return {
         protocol: resolvedProtocol,
-        host:     host     ?? '',
+        host: host ?? '',
         basePath: normalizePath(basePath),
     };
 }
@@ -311,19 +312,16 @@ export function buildURL(normalized, requestPath = '') {
         return requestPath;
     }
 
-    const parts = [
-        protocol,
-        host,
-        normalizePath(basePath),
-        normalizePath(requestPath),
-    ].filter(Boolean);
+    const parts = [protocol, host, normalizePath(basePath), normalizePath(requestPath)].filter(
+        Boolean
+    );
 
     // 슬래시 중복 제거:
     // - protocol(index 0): 끝 슬래시만 제거 ('http://' → 끝 슬래시 없음, 이미 정상)
     // - 나머지: 앞·끝 슬래시 모두 제거 후 '/'로 연결
     const url = parts
         .map((p, i) => {
-            if (i === 0) return p.replace(/\/$/, '');    // protocol: 끝 슬래시 제거
+            if (i === 0) return p.replace(/\/$/, ''); // protocol: 끝 슬래시 제거
             return p.replace(/^\//, '').replace(/\/$/, ''); // 나머지: 양끝 슬래시 제거
         })
         .filter(Boolean)
@@ -332,7 +330,6 @@ export function buildURL(normalized, requestPath = '') {
     console.debug(formatMessage(LOG.url.resolved, { url }));
     return url;
 }
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 내부 유틸리티
@@ -361,7 +358,7 @@ export function buildURL(normalized, requestPath = '') {
 function normalizePath(path = '') {
     if (!path) return '';
     // 앞에 슬래시가 없으면 추가, 뒤 슬래시는 제거
-    const withLeading    = path.startsWith('/') ? path : `/${path}`;
+    const withLeading = path.startsWith('/') ? path : `/${path}`;
     const withoutTrailing = withLeading.endsWith('/') ? withLeading.slice(0, -1) : withLeading;
     return withoutTrailing;
 }

@@ -19,7 +19,6 @@
  * @see {@link module:plugins/form-binder/FormBinder FormBinder}
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
 // ════════════════════════════════════════════════════════════════════════════════
@@ -36,7 +35,6 @@
  *
  * @typedef {'blur'|'change'} TrackEventValue
  */
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 공개 상수
@@ -65,16 +63,18 @@
  *     case RENDERER_TYPE.BUTTON:   return renderButton(...);
  * }
  */
-export const RENDERER_TYPE = Object.freeze(/** @type {const} */ ({
-    /** `<select>` 드롭다운 렌더러를 사용한다. */
-    SELECT:   'select',
-    /** `<input type="radio">` 그룹 렌더러를 사용한다. */
-    RADIO:    'radio',
-    /** `<input type="checkbox">` 그룹 렌더러를 사용한다. */
-    CHECKBOX: 'checkbox',
-    /** `<button>` 그룹 렌더러를 사용한다. */
-    BUTTON:   'button',
-}));
+export const RENDERER_TYPE = Object.freeze(
+    /** @type {const} */ ({
+        /** `<select>` 드롭다운 렌더러를 사용한다. */
+        SELECT: 'select',
+        /** `<input type="radio">` 그룹 렌더러를 사용한다. */
+        RADIO: 'radio',
+        /** `<input type="checkbox">` 그룹 렌더러를 사용한다. */
+        CHECKBOX: 'checkbox',
+        /** `<button>` 그룹 렌더러를 사용한다. */
+        BUTTON: 'button',
+    })
+);
 
 /**
  * 폼 요소의 값 변경을 추적할 때 사용하는 DOM 이벤트 전략 분류 상수.
@@ -98,20 +98,22 @@ export const RENDERER_TYPE = Object.freeze(/** @type {const} */ ({
  * const event = TEXT_LIKE_TYPES.has(el.type) ? TRACK_EVENT.TEXT : TRACK_EVENT.SELECT;
  * el.addEventListener(event, handler);
  */
-export const TRACK_EVENT = Object.freeze(/** @type {const} */ ({
-    /**
-     * 텍스트 계열 input 추적 이벤트.
-     * `input[type=text|email|password|...]`, `textarea` 에 적용된다.
-     * `blur` — 포커스를 잃는 시점에 1회 기록.
-     */
-    TEXT:   'blur',
-    /**
-     * select 계열 요소 추적 이벤트.
-     * `select`, `input[type=radio|checkbox]` 에 적용된다.
-     * `change` — 선택이 확정되는 즉시 기록.
-     */
-    SELECT: 'change',
-}));
+export const TRACK_EVENT = Object.freeze(
+    /** @type {const} */ ({
+        /**
+         * 텍스트 계열 input 추적 이벤트.
+         * `input[type=text|email|password|...]`, `textarea` 에 적용된다.
+         * `blur` — 포커스를 잃는 시점에 1회 기록.
+         */
+        TEXT: 'blur',
+        /**
+         * select 계열 요소 추적 이벤트.
+         * `select`, `input[type=radio|checkbox]` 에 적용된다.
+         * `change` — 선택이 확정되는 즉시 기록.
+         */
+        SELECT: 'change',
+    })
+);
 
 /**
  * `TRACK_EVENT.TEXT` 전략(`blur` 이벤트)을 적용할 텍스트 계열 input type 집합.
@@ -135,5 +137,16 @@ export const TRACK_EVENT = Object.freeze(/** @type {const} */ ({
  * }
  */
 export const TEXT_LIKE_TYPES = Object.freeze(
-    new Set(['text', 'email', 'password', 'number', 'tel', 'url', 'search', 'date', 'time', 'textarea'])
+    new Set([
+        'text',
+        'email',
+        'password',
+        'number',
+        'tel',
+        'url',
+        'search',
+        'date',
+        'time',
+        'textarea',
+    ])
 );

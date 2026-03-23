@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DomainState }    from '../../src/domain/DomainState.js';
+import { DomainState } from '../../src/domain/DomainState.js';
 import { DomainPipeline } from '../../src/domain/DomainPipeline.js';
-import { makeUserDto }    from '../fixtures/index.js';
+import { makeUserDto } from '../fixtures/index.js';
 
 // DomainState.PipelineConstructor 주입 (진입점 없이 직접 테스트 시 필요)
 DomainState.PipelineConstructor = DomainPipeline;
 
 function makeDomainState() {
     return DomainState.fromJSON(JSON.stringify(makeUserDto()), {
-        _fetch:       vi.fn().mockResolvedValue(null),
+        _fetch: vi.fn().mockResolvedValue(null),
         getUrlConfig: () => ({ protocol: 'http://', host: 'localhost:8080', basePath: '' }),
-        isDebug:      () => false,
+        isDebug: () => false,
     });
 }
 
@@ -19,7 +19,6 @@ function makeDomainState() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainPipeline.after()', () => {
-
     it('TC-P-001: 존재하지 않는 key → 즉시 Error throw', () => {
         const pipeline = new DomainPipeline({ user: Promise.resolve(makeDomainState()) });
         expect(() => pipeline.after('nonExistent', () => {})).toThrow();
@@ -32,10 +31,9 @@ describe('DomainPipeline.after()', () => {
 
     it('체이닝 가능 (this 반환)', () => {
         const pipeline = new DomainPipeline({ user: Promise.resolve(makeDomainState()) });
-        const result   = pipeline.after('user', () => {});
+        const result = pipeline.after('user', () => {});
         expect(result).toBe(pipeline);
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -43,12 +41,14 @@ describe('DomainPipeline.after()', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainPipeline.run() — strict:false', () => {
-
     it('TC-P-002: fetch 실패 → _errors 기록, 나머지 계속 진행', async () => {
-        const result = await new DomainPipeline({
-            user:  Promise.resolve(makeDomainState()),
-            role:  Promise.reject({ status: 500 }),
-        }, { strict: false }).run();
+        const result = await new DomainPipeline(
+            {
+                user: Promise.resolve(makeDomainState()),
+                role: Promise.reject({ status: 500 }),
+            },
+            { strict: false }
+        ).run();
 
         expect(result.user).toBeDefined();
         expect(result._errors).toHaveLength(1);
@@ -61,24 +61,30 @@ describe('DomainPipeline.run() — strict:false', () => {
             a: Promise.resolve(makeDomainState()),
             b: Promise.resolve(makeDomainState()),
         })
-        .after('a', () => { callOrder.push('a'); })
-        .after('b', () => { callOrder.push('b'); })
-        .run();
+            .after('a', () => {
+                callOrder.push('a');
+            })
+            .after('b', () => {
+                callOrder.push('b');
+            })
+            .run();
 
         expect(callOrder).toEqual(['a', 'b']);
     });
 
     it('fetch 실패한 키의 after() 핸들러는 건너뜀', async () => {
         const handler = vi.fn();
-        await new DomainPipeline({
-            user: Promise.reject({ status: 404 }),
-        }, { strict: false })
-        .after('user', handler)
-        .run();
+        await new DomainPipeline(
+            {
+                user: Promise.reject({ status: 404 }),
+            },
+            { strict: false }
+        )
+            .after('user', handler)
+            .run();
 
         expect(handler).not.toHaveBeenCalled();
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -86,23 +92,29 @@ describe('DomainPipeline.run() — strict:false', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainPipeline.run() — strict:true', () => {
-
     it('TC-P-003: fetch 실패 시 즉시 reject', async () => {
         await expect(
-            new DomainPipeline({
-                user: Promise.reject({ status: 500 }),
-            }, { strict: true }).run()
+            new DomainPipeline(
+                {
+                    user: Promise.reject({ status: 500 }),
+                },
+                { strict: true }
+            ).run()
         ).rejects.toBeDefined();
     });
 
     it('after() 핸들러 실패 시 즉시 reject', async () => {
         await expect(
-            new DomainPipeline({
-                user: Promise.resolve(makeDomainState()),
-            }, { strict: true })
-            .after('user', () => { throw new Error('handler error'); })
-            .run()
+            new DomainPipeline(
+                {
+                    user: Promise.resolve(makeDomainState()),
+                },
+                { strict: true }
+            )
+                .after('user', () => {
+                    throw new Error('handler error');
+                })
+                .run()
         ).rejects.toThrow('handler error');
     });
-
 });

@@ -29,7 +29,6 @@
  * @see {@link module:plugins/domain-renderer/DomainRenderer DomainRenderer}
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
 // ════════════════════════════════════════════════════════════════════════════════
@@ -76,7 +75,6 @@
  *
  * @typedef {Record<string, *>} SelectItem
  */
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 공개 API
@@ -156,15 +154,15 @@ export function renderSelect(container, dataArray, config) {
     const {
         valueField,
         labelField,
-        class:       cls       = '',
-        css:         cssObj    = {},
-        events:      evtMap    = {},
+        class: cls = '',
+        css: cssObj = {},
+        events: evtMap = {},
         placeholder,
-        multiple    = false,
+        multiple = false,
     } = config;
 
-    const select    = document.createElement('select');
-    select.name     = valueField;  // MyBatis form submit 자동 매핑 기준
+    const select = document.createElement('select');
+    select.name = valueField; // MyBatis form submit 자동 매핑 기준
     select.multiple = multiple;
 
     if (cls) select.className = cls;
@@ -172,19 +170,19 @@ export function renderSelect(container, dataArray, config) {
 
     // placeholder option: 안내 텍스트 역할만 하며 선택 후에는 드롭다운에 나타나지 않는다
     if (placeholder) {
-        const ph       = document.createElement('option');
-        ph.value       = '';
+        const ph = document.createElement('option');
+        ph.value = '';
         ph.textContent = placeholder;
-        ph.disabled    = true;
-        ph.selected    = true;
-        ph.hidden      = true;
+        ph.disabled = true;
+        ph.selected = true;
+        ph.hidden = true;
         select.appendChild(ph);
     }
 
     // 데이터 항목 → <option> 생성
     for (const item of dataArray) {
-        const opt       = document.createElement('option');
-        opt.value       = String(item[valueField] ?? '');
+        const opt = document.createElement('option');
+        opt.value = String(item[valueField] ?? '');
         opt.textContent = String(item[labelField] ?? '');
         select.appendChild(opt);
     }
@@ -193,7 +191,6 @@ export function renderSelect(container, dataArray, config) {
     container.appendChild(select);
     return select;
 }
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 내부 유틸리티

@@ -40,14 +40,13 @@
  * @see {@link module:network/api-handler ApiHandler}
  */
 
-import { toDomain, toPayload, toPatch }    from '../core/api-mapper.js';
-import { createProxy }                     from '../core/api-proxy.js';
-import { normalizeUrlConfig, buildURL }    from '../core/url-resolver.js';
-import { ERR }                             from '../constants/error.messages.js';
-import { DIRTY_THRESHOLD }                 from '../constants/dirty.const.js';
+import { toDomain, toPayload, toPatch } from '../core/api-mapper.js';
+import { createProxy } from '../core/api-proxy.js';
+import { normalizeUrlConfig, buildURL } from '../core/url-resolver.js';
+import { ERR } from '../constants/error.messages.js';
+import { DIRTY_THRESHOLD } from '../constants/dirty.const.js';
 import { broadcastUpdate, openDebugPopup } from '../debug/debug-channel.js';
-import { DomainVO }                        from './DomainVO.js';
-
+import { DomainVO } from './DomainVO.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -144,13 +143,11 @@ import { DomainVO }                        from './DomainVO.js';
  * @typedef {import('../core/api-proxy.js').ProxyWrapper} ProxyWrapper
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // DomainState 클래스
 // ════════════════════════════════════════════════════════════════════════════════
 
 export class DomainState {
-
     // ── 플러그인 레지스트리 ────────────────────────────────────────────────────
     /**
      * 등록된 플러그인 집합. 중복 등록 방지용.
@@ -232,12 +229,13 @@ export class DomainState {
      * if (result._errors?.length) console.warn(result._errors);
      */
     static all(resourceMap, options = {}) {
-        if(!DomainState.PipelineConstructor) {
-            throw new Error('[DSM] DomainPipeline이 주입되지 않았습니다. rest-domain-state-manager.js 진입점을 사용하세요.');
+        if (!DomainState.PipelineConstructor) {
+            throw new Error(
+                '[DSM] DomainPipeline이 주입되지 않았습니다. rest-domain-state-manager.js 진입점을 사용하세요.'
+            );
         }
         return new DomainState.PipelineConstructor(resourceMap, options);
     }
-
 
     // ════════════════════════════════════════════════════════════════════════════
     // 생성자 (직접 호출 금지 — 팩토리 메서드 사용)
@@ -257,11 +255,11 @@ export class DomainState {
     constructor(proxyWrapper, options = {}) {
         // ── 도개교 세트 — 클로저 세계의 출입문 네 개 ─────────────────────────
         /** @type {object} — 변경 추적 Proxy 객체 */
-        this._proxy          = proxyWrapper.proxy;
+        this._proxy = proxyWrapper.proxy;
         /** @type {() => import('../core/api-proxy.js').ChangeLogEntry[]} */
-        this._getChangeLog   = proxyWrapper.getChangeLog;
+        this._getChangeLog = proxyWrapper.getChangeLog;
         /** @type {() => object} */
-        this._getTarget      = proxyWrapper.getTarget;
+        this._getTarget = proxyWrapper.getTarget;
         /** @type {() => void} */
         this._clearChangeLog = proxyWrapper.clearChangeLog;
 
@@ -277,7 +275,7 @@ export class DomainState {
 
         // ── Dirty Tracking 클로저 연결 ────────────────────────────────────────
         /** @type {() => Set<string>} */
-        this._getDirtyFields   = proxyWrapper.getDirtyFields;
+        this._getDirtyFields = proxyWrapper.getDirtyFields;
         /** @type {() => void} */
         this._clearDirtyFields = proxyWrapper.clearDirtyFields;
         // ──────────────────────────────────────────────────────────────────────
@@ -286,35 +284,34 @@ export class DomainState {
         // save() try 블록이 실패했을 때 _rollback()이 이 세 메서드를 호출하여
         // domainObject, changeLog, dirtyFields를 save() 진입 이전 상태로 되돌린다.
         /** @type {(data: object) => void} */
-        this._restoreTarget      = proxyWrapper.restoreTarget;
+        this._restoreTarget = proxyWrapper.restoreTarget;
         /** @type {(entries: import('../core/api-proxy.js').ChangeLogEntry[]) => void} */
-        this._restoreChangeLog   = proxyWrapper.restoreChangeLog;
+        this._restoreChangeLog = proxyWrapper.restoreChangeLog;
         /** @type {(fields: Set<string>) => void} */
         this._restoreDirtyFields = proxyWrapper.restoreDirtyFields;
         // ─────────────────────────────────────────────────────────────────────
-        
+
         // ── 메타데이터 ────────────────────────────────────────────────────────
         /** @type {import('../network/api-handler.js').ApiHandler|null} */
-        this._handler      = options.handler      ?? null;
+        this._handler = options.handler ?? null;
         /** @type {NormalizedUrlConfig|null} */
-        this._urlConfig    = options.urlConfig     ?? null;
+        this._urlConfig = options.urlConfig ?? null;
         /** @type {boolean} — true이면 save() 시 POST로 분기 */
-        this._isNew        = options.isNew         ?? false;
+        this._isNew = options.isNew ?? false;
         /** @type {boolean} — true이면 log() / openDebugger() 활성화 */
-        this._debug        = options.debug         ?? false;
+        this._debug = options.debug ?? false;
         /** @type {string} — 디버그 팝업 식별 레이블 */
-        this._label        = options.label         ?? `ds_${Date.now()}`;
+        this._label = options.label ?? `ds_${Date.now()}`;
         /** @type {ValidatorMap} */
-        this._validators   = options.validators    ?? {};
+        this._validators = options.validators ?? {};
         /** @type {TransformerMap} */
-        this._transformers = options.transformers  ?? {};
+        this._transformers = options.transformers ?? {};
         /** @type {Array<*>} — 인스턴스 수준 에러 목록 */
-        this._errors       = [];
+        this._errors = [];
 
         // 생성 직후 디버그 채널에 초기 상태를 broadcast한다
         if (this._debug) this._broadcast();
     }
-
 
     // ════════════════════════════════════════════════════════════════════════════
     // 팩토리 메서드
@@ -354,12 +351,11 @@ export class DomainState {
      * const user = DomainState.fromJSON(jsonText, api);
      * user.bindForm('userForm'); // FormBinder.bindForm() 호출
      */
-    static fromJSON(jsonText, handler, {
-        urlConfig   = null,
-        debug       = false,
-        label       = null,
-        vo          = null,
-    } = {}) {
+    static fromJSON(
+        jsonText,
+        handler,
+        { urlConfig = null, debug = false, label = null, vo = null } = {}
+    ) {
         /** @type {DomainState|null} */
         let state = null;
         const wrapper = toDomain(jsonText, () => {
@@ -368,19 +364,19 @@ export class DomainState {
             state?._scheduleFlush();
         });
 
-        state   = new DomainState(wrapper, {
+        state = new DomainState(wrapper, {
             handler,
             urlConfig,
-            isNew:  false,
+            isNew: false,
             debug,
-            label:  label ?? `json_${Date.now()}`,
+            label: label ?? `json_${Date.now()}`,
         });
 
         // DomainVO 스키마 검증 및 validators / transformers 주입
         if (vo instanceof DomainVO) {
             const { valid } = vo.checkSchema(wrapper.getTarget());
             if (valid) {
-                state._validators   = vo.getValidators();
+                state._validators = vo.getValidators();
                 state._transformers = vo.getTransformers();
             }
         }
@@ -423,16 +419,15 @@ export class DomainState {
      *     urlConfig: { host: 'staging.server.com', basePath: '/api' },
      * });
      */
-    static fromVO(vo, handler, {
-        urlConfig = null,
-        debug     = false,
-        label     = null,
-    } = {}) {
+    static fromVO(vo, handler, { urlConfig = null, debug = false, label = null } = {}) {
         if (!(vo instanceof DomainVO)) throw new TypeError(ERR.FROM_VO_TYPE);
 
-        const resolvedUrlConfig = urlConfig
-            ?? (vo.getBaseURL() ? normalizeUrlConfig({ baseURL: vo.getBaseURL() ?? undefined, debug }) : null);
-        
+        const resolvedUrlConfig =
+            urlConfig ??
+            (vo.getBaseURL()
+                ? normalizeUrlConfig({ baseURL: vo.getBaseURL() ?? undefined, debug })
+                : null);
+
         /** @type {DomainState|null} */
         let state = null;
 
@@ -442,16 +437,15 @@ export class DomainState {
 
         state = new DomainState(wrapper, {
             handler,
-            urlConfig:    resolvedUrlConfig,
-            isNew:        true,
+            urlConfig: resolvedUrlConfig,
+            isNew: true,
             debug,
-            label:        label ?? vo.constructor.name,
-            validators:   vo.getValidators(),
+            label: label ?? vo.constructor.name,
+            validators: vo.getValidators(),
             transformers: vo.getTransformers(),
         });
         return state;
     }
-
 
     // ════════════════════════════════════════════════════════════════════════════
     // 외부 인터페이스
@@ -547,16 +541,16 @@ export class DomainState {
      */
     async save(requestPath) {
         const handler = this._assertHandler('save');
-        const url     = this._resolveURL(requestPath);
+        const url = this._resolveURL(requestPath);
 
         // ── 스냅샷 생성 — save() 진입 직전 상태를 깊은 복사로 보존 ──────────
         // HTTP 요청 실패 시 _rollback()이 이 스냅샷으로 4개 상태를 복원한다.
         // structuredClone은 동기 함수이므로 try 블록 진입 전에 완료된다.
         const snapshot = {
-            data:        structuredClone(this._getTarget()),
-            changeLog:   this._getChangeLog(),      // 이미 얕은 복사본 반환
-            dirtyFields: this._getDirtyFields(),    // 이미 new Set 복사본 반환
-            isNew:       this._isNew,
+            data: structuredClone(this._getTarget()),
+            changeLog: this._getChangeLog(), // 이미 얕은 복사본 반환
+            dirtyFields: this._getDirtyFields(), // 이미 new Set 복사본 반환
+            isNew: this._isNew,
         };
 
         try {
@@ -564,25 +558,24 @@ export class DomainState {
                 // ── POST: 서버에 아직 존재하지 않는 신규 리소스 ─────────────
                 await handler._fetch(url, {
                     method: 'POST',
-                    body:   toPayload(this._getTarget),
+                    body: toPayload(this._getTarget),
                 });
                 this._isNew = false;
-
             } else {
                 // ── PUT / PATCH: Dirty Checking 기반 자동 분기 ──────────────
                 const dirtyFields = this._getDirtyFields();
                 const totalFields = Object.keys(this._getTarget()).length;
-                const dirtyRatio  = totalFields > 0 ? dirtyFields.size / totalFields : 0;
+                const dirtyRatio = totalFields > 0 ? dirtyFields.size / totalFields : 0;
 
                 if (dirtyFields.size === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
                     await handler._fetch(url, {
                         method: 'PUT',
-                        body:   toPayload(this._getTarget),
+                        body: toPayload(this._getTarget),
                     });
                 } else {
                     await handler._fetch(url, {
                         method: 'PATCH',
-                        body:   JSON.stringify(toPatch(this._getChangeLog)),
+                        body: JSON.stringify(toPatch(this._getChangeLog)),
                     });
                 }
             }
@@ -591,7 +584,6 @@ export class DomainState {
             this._clearChangeLog();
             this._clearDirtyFields();
             if (this._debug) this._broadcast();
-
         } catch (err) {
             // ── HTTP 오류 또는 네트워크 오류 — 상태 롤백 ────────────────────
             // 어떤 이유로 서버 동기화가 실패했든 클라이언트 상태를 복원한다.
@@ -640,7 +632,7 @@ export class DomainState {
         if (!this._debug) return;
         const log = this._getChangeLog();
         console.group(`[DSM][${this._label}] changeLog`);
-        log.length ? console.table(log) : console.log('(변경 이력 없음)');
+        log.length ? console.table(log) : console.debug('(변경 이력 없음)');
         console.groupEnd();
     }
 
@@ -659,7 +651,6 @@ export class DomainState {
     openDebugger() {
         if (this._debug) openDebugPopup();
     }
-
 
     // ════════════════════════════════════════════════════════════════════════════
     // 내부 유틸 메서드
@@ -784,10 +775,10 @@ export class DomainState {
      */
     _broadcast() {
         broadcastUpdate(this._label, {
-            data:      this._getTarget(),
+            data: this._getTarget(),
             changeLog: this._getChangeLog(),
-            isNew:     this._isNew,
-            errors:    this._errors,
+            isNew: this._isNew,
+            errors: this._errors,
         });
     }
 }

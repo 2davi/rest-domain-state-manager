@@ -22,8 +22,7 @@
  */
 
 import { createProxy } from './api-proxy.js';
-import { OP }          from '../constants/op.const.js';
-
+import { OP } from '../constants/op.const.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -60,7 +59,6 @@ import { OP }          from '../constants/op.const.js';
  *
  * @typedef {import('./api-proxy.js').OnMutateCallback} OnMutateCallback
  */
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 공개 API

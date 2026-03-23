@@ -15,13 +15,13 @@
  */
 export const TYPEOF = Object.freeze({
     UNDEFINED: 'undefined',
-    OBJECT:    'object',
-    BOOLEAN:   'boolean',
-    NUMBER:    'number',
-    BIGINT:    'bigint',
-    STRING:    'string',
-    SYMBOL:    'symbol',
-    FUNCTION:  'function',
+    OBJECT: 'object',
+    BOOLEAN: 'boolean',
+    NUMBER: 'number',
+    BIGINT: 'bigint',
+    STRING: 'string',
+    SYMBOL: 'symbol',
+    FUNCTION: 'function',
 });
 
 /**
@@ -30,19 +30,19 @@ export const TYPEOF = Object.freeze({
  * @enum {string}
  */
 export const TOSTRING_TAG = Object.freeze({
-    OBJECT:    '[object Object]',
-    ARRAY:     '[object Array]',
-    DATE:      '[object Date]',
-    REGEXP:    '[object RegExp]',
-    MAP:       '[object Map]',
-    SET:       '[object Set]',
-    PROMISE:   '[object Promise]',
-    FUNCTION:  '[object Function]',
-    NULL:      '[object Null]',
+    OBJECT: '[object Object]',
+    ARRAY: '[object Array]',
+    DATE: '[object Date]',
+    REGEXP: '[object RegExp]',
+    MAP: '[object Map]',
+    SET: '[object Set]',
+    PROMISE: '[object Promise]',
+    FUNCTION: '[object Function]',
+    NULL: '[object Null]',
     UNDEFINED: '[object Undefined]',
-    NUMBER:    '[object Number]',
-    STRING:    '[object String]',
-    BOOLEAN:   '[object Boolean]',
+    NUMBER: '[object Number]',
+    STRING: '[object String]',
+    BOOLEAN: '[object Boolean]',
 });
 
 /**
@@ -87,7 +87,7 @@ export const isArray = (value) => Array.isArray(value);
  */
 export const isPlainObject = (value) => {
     if (value === null || typeof value !== TYPEOF.OBJECT) return false;
-    if (getToStringTag(value) !== TOSTRING_TAG.OBJECT)   return false;
+    if (getToStringTag(value) !== TOSTRING_TAG.OBJECT) return false;
     const proto = Object.getPrototypeOf(value);
     return proto === Object.prototype || proto === null;
 };
@@ -116,13 +116,12 @@ export const isThenable = (value) =>
  * @see https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toPrimitive
  */
 export const shouldBypassDeepProxy = (prop) => {
-    if (typeof prop === TYPEOF.SYMBOL)  return true;
-    if (prop === 'toJSON')              return true;
-    if (prop === 'then')                return true;
-    if (prop === 'valueOf')             return true;
+    if (typeof prop === TYPEOF.SYMBOL) return true;
+    if (prop === 'toJSON') return true;
+    if (prop === 'then') return true;
+    if (prop === 'valueOf') return true;
     return false;
 };
-
 
 /**
  * 점(dot) 분해된 키 배열로 중첩 객체에 값을 설정한다.

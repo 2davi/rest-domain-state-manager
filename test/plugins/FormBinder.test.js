@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DomainState } from '../../src/domain/DomainState.js';
-import { FormBinder }  from '../../src/plugins/form-binder/FormBinder.js';
+import { FormBinder } from '../../src/plugins/form-binder/FormBinder.js';
 
 DomainState.use(FormBinder);
 
 function mockHandler() {
     return {
-        _fetch:       () => Promise.resolve(null),
+        _fetch: () => Promise.resolve(null),
         getUrlConfig: () => ({ protocol: 'http://', host: 'localhost:8080', basePath: '' }),
-        isDebug:      () => false,
+        isDebug: () => false,
     };
 }
 
@@ -33,8 +33,9 @@ function createForm(id = 'testForm') {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('FormBinder — fromForm()', () => {
-
-    beforeEach(() => { createForm(); });
+    beforeEach(() => {
+        createForm();
+    });
 
     it('TC-FB-001: 폼 현재 값으로 DomainState 생성 (isNew:true)', () => {
         const state = DomainState.fromForm('testForm', mockHandler());
@@ -46,7 +47,6 @@ describe('FormBinder — fromForm()', () => {
     it('유효하지 않은 formOrId → Error throw', () => {
         expect(() => DomainState.fromForm('nonExistentForm', mockHandler())).toThrow();
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -54,8 +54,9 @@ describe('FormBinder — fromForm()', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('FormBinder — 이벤트 추적', () => {
-
-    beforeEach(() => { createForm(); });
+    beforeEach(() => {
+        createForm();
+    });
 
     it('TC-FB-002: text input blur → data 갱신', () => {
         const state = DomainState.fromForm('testForm', mockHandler());
@@ -68,7 +69,7 @@ describe('FormBinder — 이벤트 추적', () => {
     });
 
     it('select change → data 즉시 갱신', () => {
-        const state  = DomainState.fromForm('testForm', mockHandler());
+        const state = DomainState.fromForm('testForm', mockHandler());
         const select = document.querySelector('select[name="role"]');
 
         select.value = 'user';
@@ -76,7 +77,6 @@ describe('FormBinder — 이벤트 추적', () => {
 
         expect(state.data.role).toBe('user');
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -84,7 +84,6 @@ describe('FormBinder — 이벤트 추적', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('FormBinder — bindForm()', () => {
-
     it('TC-FB-003: DomainState.data → 폼 필드 역동기화', () => {
         document.body.innerHTML = `
             <form id="bindForm">
@@ -100,5 +99,4 @@ describe('FormBinder — bindForm()', () => {
         const input = document.querySelector('input[name="name"]');
         expect(input.value).toBe('Davi');
     });
-
 });

@@ -44,7 +44,6 @@
 
 import { ERR } from '../constants/error.messages.js';
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
 // ════════════════════════════════════════════════════════════════════════════════
@@ -100,13 +99,11 @@ import { ERR } from '../constants/error.messages.js';
  * @typedef {Record<string, (value: *) => *>} TransformerMap
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // DomainVO 클래스
 // ════════════════════════════════════════════════════════════════════════════════
 
 export class DomainVO {
-
     /**
      * 서브클래스에서 선언한 `static fields`를 기반으로 기본값 골격 객체를 생성한다.
      *
@@ -141,7 +138,9 @@ export class DomainVO {
      */
     toSkeleton() {
         // this.constructor를 any로 캐스팅해서 fields에 접근!
-        const schema = /** @type {FieldsSchema | undefined} */ (/** @type {any} */ (this.constructor).fields);
+        const schema = /** @type {FieldsSchema | undefined} */ (
+            /** @type {any} */ (this.constructor).fields
+        );
 
         if (!schema) {
             // static fields 미선언 → 인스턴스 own property를 얕은 복사로 반환
@@ -153,9 +152,9 @@ export class DomainVO {
                 const val = def.default ?? '';
                 return [
                     key,
-                    (val !== null && typeof val === 'object')
-                        ? JSON.parse(JSON.stringify(val))  // 객체/배열: deep copy
-                        : val,                             // 원시값: 그대로
+                    val !== null && typeof val === 'object'
+                        ? JSON.parse(JSON.stringify(val)) // 객체/배열: deep copy
+                        : val, // 원시값: 그대로
                 ];
             })
         );
@@ -181,15 +180,19 @@ export class DomainVO {
      * // → { name: [Function], price: [Function] }
      */
     getValidators() {
-        const schema = /** @type {FieldsSchema | undefined} */ (/** @type {any} */ (this.constructor).fields);
+        const schema = /** @type {FieldsSchema | undefined} */ (
+            /** @type {any} */ (this.constructor).fields
+        );
         if (!schema) return {};
 
         // 최종 Object.fromEntries 결과를 ValidatorMap으로 강제 캐스팅!
-        return /** @type {ValidatorMap} */ (Object.fromEntries(
-            Object.entries(schema)
-                .filter(([, def]) => typeof def.validate === 'function')
-                .map(([key, def]) => [key, def.validate])
-        ));
+        return /** @type {ValidatorMap} */ (
+            Object.fromEntries(
+                Object.entries(schema)
+                    .filter(([, def]) => typeof def.validate === 'function')
+                    .map(([key, def]) => [key, def.validate])
+            )
+        );
     }
 
     /**
@@ -213,15 +216,19 @@ export class DomainVO {
      * // → { quantity: [Function: Number], note: [Function] }
      */
     getTransformers() {
-        const schema = /** @type {FieldsSchema | undefined} */ (/** @type {any} */ (this.constructor).fields);
+        const schema = /** @type {FieldsSchema | undefined} */ (
+            /** @type {any} */ (this.constructor).fields
+        );
         if (!schema) return {};
 
         // 최종 Object.fromEntries 결과를 TransformerMap으로 강제 캐스팅!
-        return /** @type {TransformerMap} */ (Object.fromEntries(
-            Object.entries(schema)
-                .filter(([, def]) => typeof def.transform === 'function')
-                .map(([key, def]) => [key, def.transform])
-        ));
+        return /** @type {TransformerMap} */ (
+            Object.fromEntries(
+                Object.entries(schema)
+                    .filter(([, def]) => typeof def.transform === 'function')
+                    .map(([key, def]) => [key, def.transform])
+            )
+        );
     }
 
     /**
@@ -287,17 +294,19 @@ export class DomainVO {
      * // → { valid: true, missingKeys: [], extraKeys: [] }  (검증 스킵)
      */
     checkSchema(data) {
-        const schema = /** @type {FieldsSchema | undefined} */ (/** @type {any} */ (this.constructor).fields);
+        const schema = /** @type {FieldsSchema | undefined} */ (
+            /** @type {any} */ (this.constructor).fields
+        );
         if (!schema) return { valid: true, missingKeys: [], extraKeys: [] };
 
         const schemaKeys = Object.keys(schema);
-        const dataKeys   = Object.keys(data);
+        const dataKeys = Object.keys(data);
 
-        const missingKeys = schemaKeys.filter(k => !dataKeys.includes(k));
-        const extraKeys   = dataKeys.filter(k   => !schemaKeys.includes(k));
+        const missingKeys = schemaKeys.filter((k) => !dataKeys.includes(k));
+        const extraKeys = dataKeys.filter((k) => !schemaKeys.includes(k));
 
-        missingKeys.forEach(k => console.error(ERR.VO_SCHEMA_MISSING_KEY(k)));
-        extraKeys.forEach(k   => console.warn(ERR.VO_SCHEMA_EXTRA_KEY(k)));
+        missingKeys.forEach((k) => console.error(ERR.VO_SCHEMA_MISSING_KEY(k)));
+        extraKeys.forEach((k) => console.warn(ERR.VO_SCHEMA_EXTRA_KEY(k)));
 
         return {
             valid: missingKeys.length === 0,

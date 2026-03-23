@@ -44,7 +44,6 @@
  * @see {@link module:plugins/domain-renderer/DomainRenderer DomainRenderer}
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
 // ════════════════════════════════════════════════════════════════════════════════
@@ -101,7 +100,6 @@
  *
  * @typedef {Record<string, *>} RadioCheckboxItem
  */
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 공개 API
@@ -181,14 +179,14 @@ export function renderRadioCheckbox(container, dataArray, config) {
         type,
         valueField,
         labelField,
-        name:           inputName    = valueField,  // 미명시 시 valueField를 name으로 사용 (MyBatis 자동 매핑)
-        class:          inputCls     = '',
-        css:            inputCss     = {},
-        events:         evtMap       = {},
-        containerClass: conCls       = '',
-        containerCss:   conCss       = {},
-        labelClass:     lblCls       = '',
-        labelCss:       lblCss       = {},
+        name: inputName = valueField, // 미명시 시 valueField를 name으로 사용 (MyBatis 자동 매핑)
+        class: inputCls = '',
+        css: inputCss = {},
+        events: evtMap = {},
+        containerClass: conCls = '',
+        containerCss: conCss = {},
+        labelClass: lblCls = '',
+        labelCss: lblCss = {},
     } = config;
 
     /** @type {HTMLInputElement[]} */
@@ -197,7 +195,7 @@ export function renderRadioCheckbox(container, dataArray, config) {
     // prefix를 forEach 바깥에서 한 번만 생성한다.
     // 같은 그룹 내 모든 항목이 동일한 prefix를 공유해야 id 충돌이 발생하지 않는다.
     // container.id가 없으면 Date.now() + random으로 유일한 값을 생성한다.
-    const prefix  = container.id || `dsm_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const prefix = container.id || `dsm_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
     dataArray.forEach((item, idx) => {
         const itemValue = item[valueField] ?? '';
@@ -208,23 +206,23 @@ export function renderRadioCheckbox(container, dataArray, config) {
         const inputId = `${prefix}_${inputName}_${idx}`;
 
         // ── wrapper div ──────────────────────────────────────────────────────
-        const wrapper     = document.createElement('div');
+        const wrapper = document.createElement('div');
         if (conCls) wrapper.className = conCls;
         _applyCSS(wrapper, conCss);
 
         // ── input ─────────────────────────────────────────────────────────────
-        const input     = document.createElement('input');
-        input.type      = type;
-        input.id        = inputId;
-        input.name      = inputName;
-        input.value     = itemValue;
+        const input = document.createElement('input');
+        input.type = type;
+        input.id = inputId;
+        input.name = inputName;
+        input.value = itemValue;
         if (inputCls) input.className = inputCls;
         _applyCSS(input, inputCss);
         _bindEvents(input, evtMap);
 
         // ── label ─────────────────────────────────────────────────────────────
-        const label     = document.createElement('label');
-        label.htmlFor   = inputId;
+        const label = document.createElement('label');
+        label.htmlFor = inputId;
         label.textContent = itemLabel;
         if (lblCls) label.className = lblCls;
         _applyCSS(label, lblCss);
@@ -238,7 +236,6 @@ export function renderRadioCheckbox(container, dataArray, config) {
 
     return inputs;
 }
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 내부 유틸리티

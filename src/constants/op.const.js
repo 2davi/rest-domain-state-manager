@@ -14,9 +14,9 @@
  */
 export const OP = Object.freeze({
     /** 프로퍼티 신규 추가 */
-    ADD:     'add',
+    ADD: 'add',
     /** 기존 프로퍼티 값 교체 */
     REPLACE: 'replace',
     /** 프로퍼티 삭제 */
-    REMOVE:  'remove',
+    REMOVE: 'remove',
 });

@@ -6,10 +6,10 @@ import { makeUserDto } from '../fixtures/index.js';
 // ── global.fetch Mock 유틸 ─────────────────────────────────────────────────────
 function mockFetch(status, text) {
     return vi.fn().mockResolvedValue({
-        ok:       status >= 200 && status < 300,
+        ok: status >= 200 && status < 300,
         status,
         statusText: status === 200 ? 'OK' : 'Error',
-        text:     () => Promise.resolve(text),
+        text: () => Promise.resolve(text),
     });
 }
 
@@ -26,10 +26,9 @@ afterEach(() => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('ApiHandler._fetch()', () => {
-
     it('TC-N-001: response.ok=true → 응답 텍스트 반환', async () => {
         const handler = new ApiHandler({ host: 'localhost:8080' });
-        const result  = await handler._fetch('/api/test', { method: 'GET' });
+        const result = await handler._fetch('/api/test', { method: 'GET' });
         expect(typeof result).toBe('string');
     });
 
@@ -50,7 +49,7 @@ describe('ApiHandler._fetch()', () => {
     it('TC-N-003: 204 No Content → null 반환', async () => {
         global.fetch = mockFetch(204, '');
         const handler = new ApiHandler({ host: 'localhost:8080' });
-        const result  = await handler._fetch('/api/test', { method: 'DELETE' });
+        const result = await handler._fetch('/api/test', { method: 'DELETE' });
         expect(result).toBeNull();
     });
 
@@ -63,14 +62,12 @@ describe('ApiHandler._fetch()', () => {
         const sentHeaders = global.fetch.mock.calls[0][1].headers;
         expect(sentHeaders['Content-Type']).toBe('text/plain');
     });
-
 });
 
 describe('ApiHandler.get()', () => {
-
     it('TC-N-004: GET 성공 → DomainState(isNew:false) 반환', async () => {
         const handler = new ApiHandler({ host: 'localhost:8080', debug: false });
-        const state   = await handler.get('/api/users/1');
+        const state = await handler.get('/api/users/1');
         expect(state).toBeInstanceOf(DomainState);
         expect(state._isNew).toBe(false);
     });
@@ -81,5 +78,4 @@ describe('ApiHandler.get()', () => {
         const handler = new ApiHandler({ host: 'localhost:8080' });
         await expect(handler.get('/api/users/1')).rejects.toThrow();
     });
-
 });

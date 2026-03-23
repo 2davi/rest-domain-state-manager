@@ -34,12 +34,11 @@
  * @see {@link module:plugins/domain-renderer/renderer.const RENDERER_TYPE}
  */
 
-import { renderSelect }        from './renderers/select.renderer.js';
+import { renderSelect } from './renderers/select.renderer.js';
 import { renderRadioCheckbox } from './renderers/radio-checkbox.renderer.js';
-import { renderButton }        from './renderers/button.renderer.js';
-import { RENDERER_TYPE }       from './renderer.const.js';
-import { ERR }                 from '../../constants/error.messages.js';
-
+import { renderButton } from './renderers/button.renderer.js';
+import { RENDERER_TYPE } from './renderer.const.js';
+import { ERR } from '../../constants/error.messages.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -82,7 +81,6 @@ import { ERR }                 from '../../constants/error.messages.js';
  * @throws {Error} `DomainState`의 데이터가 배열이 아닌 경우
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 플러그인 객체
 // ════════════════════════════════════════════════════════════════════════════════
@@ -113,7 +111,6 @@ import { ERR }                 from '../../constants/error.messages.js';
  * DomainState.use(DomainRenderer).use(FormBinder);
  */
 export const DomainRenderer = {
-
     /**
      * `DomainState` 클래스에 `renderTo()` 메서드를 주입한다.
      * `DomainState.use(DomainRenderer)` 호출 시 자동으로 실행된다.
@@ -126,7 +123,6 @@ export const DomainRenderer = {
      * @returns {void}
      */
     install(DomainStateClass) {
-
         /**
          * `DomainState`의 배열 데이터를 DOM 요소로 렌더링한다.
          *
@@ -203,15 +199,15 @@ export const DomainRenderer = {
          * roles.renderTo(el, { type: 'select', valueField: 'roleId', labelField: 'roleName' });
          */
         /** @type {any} */ (DomainStateClass).prototype.renderTo = function renderTo(
-            /** @type {string | HTMLElement} */ container, 
+            /** @type {string | HTMLElement} */ container,
             /** @type {RenderConfig} */ config
         ) {
-
             // ── 1. 컨테이너 resolve ──────────────────────────────────────────
             // '#roleSelect' → 'roleSelect' 로 '#' 접두사를 제거한 뒤 getElementById 호출
-            const el = (container instanceof HTMLElement)
-                ? container
-                : document.getElementById(/** @type {string} */ (container).replace(/^#/, ''));
+            const el =
+                container instanceof HTMLElement
+                    ? container
+                    : document.getElementById(/** @type {string} */ (container).replace(/^#/, ''));
 
             // ts 컴파일 에러를 피하기 위해 String(container)로 대충 퉁치고 넘김
             // if container instanceof HTMLElement -> "[object HTMLDivElement]를 찾을 수 없습니다"

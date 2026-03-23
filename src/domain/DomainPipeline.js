@@ -45,10 +45,9 @@
  * @see {@link https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled MDN — Promise.allSettled}
  */
 
-import { ERR }                from '../constants/error.messages.js';
+import { ERR } from '../constants/error.messages.js';
 import { LOG, formatMessage } from '../constants/log.messages.js';
-import { broadcastError }     from '../debug/debug-channel.js';
-
+import { broadcastError } from '../debug/debug-channel.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -101,13 +100,11 @@ import { broadcastError }     from '../debug/debug-channel.js';
  * @typedef {Record<string, import('./DomainState.js').DomainState> & { _errors?: PipelineError[] }} PipelineResult
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // DomainPipeline 클래스
 // ════════════════════════════════════════════════════════════════════════════════
 
 export class DomainPipeline {
-
     /**
      * `DomainPipeline` 인스턴스를 생성한다.
      *
@@ -153,7 +150,6 @@ export class DomainPipeline {
          */
         this._queue = [];
     }
-
 
     // ════════════════════════════════════════════════════════════════════════════
     // 체이닝 API
@@ -258,22 +254,20 @@ export class DomainPipeline {
      * await user.save('/api/users/1');
      */
     async run() {
-        const keys   = Object.keys(this._resourceMap);
+        const keys = Object.keys(this._resourceMap);
         /** @type {PipelineError[]} */
         const errors = [];
 
         // ── 1단계: 병렬 fetch ─────────────────────────────────────────────────
         console.debug(formatMessage(LOG.pipeline.fetchStart, { keys: keys.join(', ') }));
 
-        const settled = await Promise.allSettled(
-            keys.map(k => this._resourceMap[k])
-        );
+        const settled = await Promise.allSettled(keys.map((k) => this._resourceMap[k]));
 
         /** @type {Record<string, import('./DomainState.js').DomainState>} */
         const resolved = {};
 
         for (let i = 0; i < keys.length; i++) {
-            const key    = keys[i];
+            const key = keys[i];
             const result = settled[i];
 
             if (result.status === 'fulfilled') {

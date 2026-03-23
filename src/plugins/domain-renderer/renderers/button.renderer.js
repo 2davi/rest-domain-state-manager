@@ -29,7 +29,6 @@
  * @see {@link module:plugins/domain-renderer/DomainRenderer DomainRenderer}
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
 // ════════════════════════════════════════════════════════════════════════════════
@@ -68,7 +67,6 @@
  *
  * @typedef {Record<string, *>} ButtonItem
  */
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 공개 API
@@ -153,18 +151,18 @@ export function renderButton(container, dataArray, config) {
     const {
         valueField,
         labelField,
-        class:  cls    = '',
-        css:    cssObj = {},
+        class: cls = '',
+        css: cssObj = {},
         events: evtMap = {},
     } = config;
 
-    return dataArray.map(item => {
+    return dataArray.map((item) => {
         const btn = document.createElement('button');
 
         // type="button" 고정: form 내부에서 의도치 않은 submit 방지
-        btn.type          = 'button';
+        btn.type = 'button';
         btn.dataset.value = String(item[valueField] ?? '');
-        btn.textContent   = String(item[labelField] ?? '');
+        btn.textContent = String(item[labelField] ?? '');
 
         if (cls) btn.className = cls;
 

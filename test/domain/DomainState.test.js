@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DomainState } from '../../src/domain/DomainState.js';
-import { DomainVO }    from '../../src/domain/DomainVO.js';
+import { DomainVO } from '../../src/domain/DomainVO.js';
 import { makeUserDto, makeHttpError } from '../fixtures/index.js';
 
 // ── Mock ApiHandler 팩토리 ─────────────────────────────────────────────────────
@@ -22,10 +22,10 @@ function mockHandler({ fetchResult = null, fetchError = null } = {}) {
 // ── 테스트용 DomainVO ──────────────────────────────────────────────────────────
 class UserVO extends DomainVO {
     static fields = {
-        userId:  { default: '' },
-        name:    { default: '' },
-        email:   { default: '' },
-        role:    { default: '' },
+        userId: { default: '' },
+        name: { default: '' },
+        email: { default: '' },
+        role: { default: '' },
         address: { default: { city: '', zip: '' } },
     };
 }
@@ -35,7 +35,6 @@ class UserVO extends DomainVO {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainState.fromJSON()', () => {
-
     it('isNew가 false로 생성된다', () => {
         const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
         expect(state._isNew).toBe(false);
@@ -48,11 +47,9 @@ describe('DomainState.fromJSON()', () => {
         state.data.name = 'Test';
         expect(state._getChangeLog()).toHaveLength(1);
     });
-
 });
 
 describe('DomainState.fromVO()', () => {
-
     it('isNew가 true로 생성된다', () => {
         const state = DomainState.fromVO(new UserVO(), mockHandler());
         expect(state._isNew).toBe(true);
@@ -63,7 +60,6 @@ describe('DomainState.fromVO()', () => {
         // UserVO에는 필드가 5개인데 validate는 없으므로 validators는 빈 객체
         expect(state._validators).toBeDefined();
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -71,10 +67,9 @@ describe('DomainState.fromVO()', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainState.save() — HTTP 메서드 분기', () => {
-
     it('TC-DS-001: isNew===true → POST', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromVO(new UserVO(), handler);
+        const state = DomainState.fromVO(new UserVO(), handler);
         await state.save('/api/users');
         expect(handler._fetch).toHaveBeenCalledWith(
             expect.any(String),
@@ -84,14 +79,14 @@ describe('DomainState.save() — HTTP 메서드 분기', () => {
 
     it('TC-DS-002: POST 성공 후 isNew가 false로 전환', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromVO(new UserVO(), handler);
+        const state = DomainState.fromVO(new UserVO(), handler);
         await state.save('/api/users');
         expect(state._isNew).toBe(false);
     });
 
     it('TC-DS-003: dirtyFields.size===0 → PUT (변경 없음)', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
         // 아무 변경 없이 save
         await state.save('/api/users/1');
         expect(handler._fetch).toHaveBeenCalledWith(
@@ -102,11 +97,11 @@ describe('DomainState.save() — HTTP 메서드 분기', () => {
 
     it('TC-DS-004: dirtyRatio >= 0.7 → PUT (5개 중 4개 = 80% 변경)', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
         // 5개 필드 중 4개 변경 (80%)
-        state.data.name    = 'Lee';
-        state.data.email   = 'lee@example.com';
-        state.data.role    = 'user';
+        state.data.name = 'Lee';
+        state.data.email = 'lee@example.com';
+        state.data.role = 'user';
         state.data.address = { city: 'Busan', zip: '12345' };
         await state.save('/api/users/1');
         expect(handler._fetch).toHaveBeenCalledWith(
@@ -117,7 +112,7 @@ describe('DomainState.save() — HTTP 메서드 분기', () => {
 
     it('TC-DS-005: dirtyRatio < 0.7 → PATCH + RFC 6902 형식 payload', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
         // 5개 필드 중 1개 변경 (20%)
         state.data.name = 'Lee';
         await state.save('/api/users/1');
@@ -132,7 +127,7 @@ describe('DomainState.save() — HTTP 메서드 분기', () => {
 
     it('성공 후 changeLog가 비워진다', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
         state.data.name = 'Lee';
         await state.save('/api/users/1');
         expect(state._getChangeLog()).toHaveLength(0);
@@ -140,12 +135,11 @@ describe('DomainState.save() — HTTP 메서드 분기', () => {
 
     it('성공 후 dirtyFields가 비워진다', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
         state.data.name = 'Lee';
         await state.save('/api/users/1');
         expect(state._getDirtyFields().size).toBe(0);
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -153,22 +147,21 @@ describe('DomainState.save() — HTTP 메서드 분기', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainState.save() — Optimistic Update 롤백 (1-D)', () => {
-
     let state, handler;
 
     beforeEach(() => {
         handler = mockHandler({ fetchError: makeHttpError(409) });
-        state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+        state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
     });
 
     it('TC-DS-006: HTTP 4xx → save() 진입 시점 상태가 오염되지 않음', async () => {
         // ── Arrange: 복수 필드 mutation (2/5 = 40% → PATCH 분기)
-        state.data.name  = 'Lee';
+        state.data.name = 'Lee';
         state.data.email = 'lee@example.com';
 
         // save() 진입 직전 상태를 기준점으로 캡처
-        const changeLogCountBefore  = state._getChangeLog().length;   // 2
-        const dirtyFieldsCountBefore = state._getDirtyFields().size;  // 2
+        const changeLogCountBefore = state._getChangeLog().length; // 2
+        const dirtyFieldsCountBefore = state._getDirtyFields().size; // 2
 
         // ── Act: save() 실패
         await expect(state.save('/api/users/1')).rejects.toBeDefined();
@@ -218,7 +211,6 @@ describe('DomainState.save() — Optimistic Update 롤백 (1-D)', () => {
         const lastCall = handler._fetch.mock.calls.at(-1);
         expect(['PATCH', 'PUT']).toContain(lastCall[1].method);
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -226,16 +218,15 @@ describe('DomainState.save() — Optimistic Update 롤백 (1-D)', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainState — Batching Scheduler (1-C)', () => {
-
     it('TC-DS-010: 동기 블록 다중 변경 → _broadcast는 microtask 후 단 1회', async () => {
-        const handler  = mockHandler();
-        const state    = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler, { debug: true });
+        const handler = mockHandler();
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler, { debug: true });
         const broadcastSpy = vi.spyOn(state, '_broadcast');
 
         // 동기 블록 안에서 3개 변경
-        state.data.name  = 'A';
+        state.data.name = 'A';
         state.data.email = 'B';
-        state.data.role  = 'C';
+        state.data.role = 'C';
 
         // microtask가 아직 실행되기 전 — broadcast 호출 없음
         expect(broadcastSpy).toHaveBeenCalledTimes(0);
@@ -248,8 +239,8 @@ describe('DomainState — Batching Scheduler (1-C)', () => {
     });
 
     it('TC-DS-011: await 경계 → 각 블록 독립 flush', async () => {
-        const handler  = mockHandler();
-        const state    = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler, { debug: true });
+        const handler = mockHandler();
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler, { debug: true });
         const broadcastSpy = vi.spyOn(state, '_broadcast');
 
         state.data.name = 'A';
@@ -262,19 +253,16 @@ describe('DomainState — Batching Scheduler (1-C)', () => {
 
         expect(broadcastSpy).toHaveBeenCalledTimes(2);
     });
-
 });
 
 describe('DomainState.remove()', () => {
-
     it('DELETE 메서드로 요청 전송', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
         await state.remove('/api/users/1');
         expect(handler._fetch).toHaveBeenCalledWith(
             expect.any(String),
             expect.objectContaining({ method: 'DELETE' })
         );
     });
-
 });

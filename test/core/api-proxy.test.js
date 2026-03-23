@@ -6,13 +6,17 @@ import { createProxy } from '../../src/core/api-proxy.js';
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('createProxy — 기본 변경 추적', () => {
-
     it('TC-C-001: 존재하는 키 수정 → replace op 기록', () => {
         const { proxy, getChangeLog } = createProxy({ name: 'Davi' });
         proxy.name = 'Lee';
         const log = getChangeLog();
         expect(log).toHaveLength(1);
-        expect(log[0]).toMatchObject({ op: 'replace', path: '/name', oldValue: 'Davi', newValue: 'Lee' });
+        expect(log[0]).toMatchObject({
+            op: 'replace',
+            path: '/name',
+            oldValue: 'Davi',
+            newValue: 'Lee',
+        });
     });
 
     it('TC-C-002: 존재하지 않는 키 추가 → add op 기록', () => {
@@ -38,7 +42,6 @@ describe('createProxy — 기본 변경 추적', () => {
         proxy.name = 'Davi'; // 동일값
         expect(getChangeLog()).toHaveLength(0);
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -46,7 +49,6 @@ describe('createProxy — 기본 변경 추적', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('createProxy — 중첩 객체 추적', () => {
-
     it('TC-C-005: 중첩 객체 수정 → path에 부모/자식 포함', () => {
         const { proxy, getChangeLog } = createProxy({ address: { city: 'Seoul' } });
         proxy.address.city = 'Busan';
@@ -61,7 +63,6 @@ describe('createProxy — 중첩 객체 추적', () => {
         const a2 = proxy.address;
         expect(a1).toBe(a2);
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -69,12 +70,11 @@ describe('createProxy — 중첩 객체 추적', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('createProxy — 배열 변이 추적', () => {
-
     it('TC-C-007: push → 마지막 인덱스에 add op 기록', () => {
         const { proxy, getChangeLog } = createProxy({ items: ['A', 'B'] });
         proxy.items.push('C');
         const log = getChangeLog();
-        const addEntry = log.find(e => e.op === 'add' && e.path === '/items/2');
+        const addEntry = log.find((e) => e.op === 'add' && e.path === '/items/2');
         expect(addEntry).toBeDefined();
         expect(addEntry.newValue).toBe('C');
     });
@@ -83,8 +83,8 @@ describe('createProxy — 배열 변이 추적', () => {
         const { proxy, getChangeLog } = createProxy({ items: ['A', 'B', 'C'] });
         proxy.items.splice(1, 1, 'X');
         const log = getChangeLog();
-        const removeEntry = log.find(e => e.op === 'remove' && e.path === '/items/1');
-        const addEntry    = log.find(e => e.op === 'add'    && e.path === '/items/1');
+        const removeEntry = log.find((e) => e.op === 'remove' && e.path === '/items/1');
+        const addEntry = log.find((e) => e.op === 'add' && e.path === '/items/1');
         expect(removeEntry).toBeDefined();
         expect(removeEntry.oldValue).toBe('B');
         expect(addEntry).toBeDefined();
@@ -96,30 +96,29 @@ describe('createProxy — 배열 변이 추적', () => {
         proxy.items.sort();
         const log = getChangeLog();
         // sort는 단일 replace op를 생성해야 함
-        expect(log.filter(e => e.op === 'replace' && e.path === '/items')).toHaveLength(1);
+        expect(log.filter((e) => e.op === 'replace' && e.path === '/items')).toHaveLength(1);
     });
 
     it('reverse → 배열 전체 단일 replace op', () => {
         const { proxy, getChangeLog } = createProxy({ items: [1, 2, 3] });
         proxy.items.reverse();
         const log = getChangeLog();
-        expect(log.filter(e => e.op === 'replace' && e.path === '/items')).toHaveLength(1);
+        expect(log.filter((e) => e.op === 'replace' && e.path === '/items')).toHaveLength(1);
     });
 
     it('shift → index 0 remove op', () => {
         const { proxy, getChangeLog } = createProxy({ items: ['A', 'B'] });
         proxy.items.shift();
         const log = getChangeLog();
-        expect(log.find(e => e.op === 'remove' && e.path === '/items/0')).toBeDefined();
+        expect(log.find((e) => e.op === 'remove' && e.path === '/items/0')).toBeDefined();
     });
 
     it('unshift → index 0 add op', () => {
         const { proxy, getChangeLog } = createProxy({ items: ['B', 'C'] });
         proxy.items.unshift('A');
         const log = getChangeLog();
-        expect(log.find(e => e.op === 'add' && e.path === '/items/0')).toBeDefined();
+        expect(log.find((e) => e.op === 'add' && e.path === '/items/0')).toBeDefined();
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -127,7 +126,6 @@ describe('createProxy — 배열 변이 추적', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('createProxy — dirtyFields 추적 (1-A)', () => {
-
     it('TC-C-010: 최상위 키 변경 → dirtyFields에 해당 키 등록', () => {
         const { proxy, getDirtyFields } = createProxy({ name: 'Davi', age: 30 });
         proxy.name = 'Lee';
@@ -156,7 +154,6 @@ describe('createProxy — dirtyFields 추적 (1-A)', () => {
         clearDirtyFields();
         expect(getDirtyFields().size).toBe(0);
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -164,7 +161,6 @@ describe('createProxy — dirtyFields 추적 (1-A)', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('createProxy — 복원 메서드 (1-D)', () => {
-
     it('TC-C-013: restoreTarget → domainObject를 스냅샷으로 복원', () => {
         const { proxy, getTarget, restoreTarget } = createProxy({ name: 'Davi' });
         proxy.name = 'Lee';
@@ -205,7 +201,10 @@ describe('createProxy — 복원 메서드 (1-D)', () => {
     });
 
     it('restoreDirtyFields → dirtyFields를 스냅샷 집합으로 교체', () => {
-        const { proxy, getDirtyFields, restoreDirtyFields } = createProxy({ name: 'Davi', age: 30 });
+        const { proxy, getDirtyFields, restoreDirtyFields } = createProxy({
+            name: 'Davi',
+            age: 30,
+        });
         proxy.name = 'Lee';
         const snapshot = getDirtyFields(); // new Set 복사본
         proxy.age = 31;
@@ -215,7 +214,6 @@ describe('createProxy — 복원 메서드 (1-D)', () => {
         expect(getDirtyFields().has('age')).toBe(false);
         expect(getDirtyFields().has('name')).toBe(true);
     });
-
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -223,7 +221,6 @@ describe('createProxy — 복원 메서드 (1-D)', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('createProxy — ProxyWrapper 인터페이스', () => {
-
     it('getChangeLog는 얕은 복사본 반환 → 외부 변조가 내부 changeLog에 영향 없음', () => {
         const { proxy, getChangeLog } = createProxy({ name: 'Davi' });
         proxy.name = 'Lee';
@@ -252,5 +249,4 @@ describe('createProxy — ProxyWrapper 인터페이스', () => {
         clearChangeLog();
         expect(getChangeLog()).toHaveLength(0);
     });
-
 });

@@ -44,8 +44,7 @@
  */
 
 import { _setNestedValue } from '../../common/js-object-util.js';
-import { createProxy }     from '../../core/api-proxy.js';
-
+import { createProxy } from '../../core/api-proxy.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -84,7 +83,6 @@ import { createProxy }     from '../../core/api-proxy.js';
  * @returns {import('../../domain/DomainState.js').DomainState} 메서드 체이닝용 `this` 반환
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 플러그인 객체
 // ════════════════════════════════════════════════════════════════════════════════
@@ -111,7 +109,6 @@ import { createProxy }     from '../../core/api-proxy.js';
  * user.bindForm('userForm'); // 폼에 현재 data를 채우고 이후 변경을 추적
  */
 export const FormBinder = {
-
     /**
      * `DomainState` 클래스에 폼 바인딩 기능을 주입한다.
      * `DomainState.use(FormBinder)` 호출 시 자동으로 실행된다.
@@ -125,7 +122,6 @@ export const FormBinder = {
      * @returns {void}
      */
     install(DomainStateClass) {
-
         // ── 1. 정적 팩토리 주입: DomainState.fromForm ─────────────────────────
         /**
          * HTML Form 요소를 기반으로 `DomainState`를 생성한다. (`isNew: true`)
@@ -144,11 +140,11 @@ export const FormBinder = {
          * // 사용자가 폼을 입력하면 state.data가 자동으로 갱신된다
          * await state.save('/api/users'); // → POST
          */
-        /** @type {any} */ (DomainStateClass).fromForm = function(
-                /** @type {string | HTMLFormElement} */ formOrId,
-                /** @type {import('../../network/api-handler.js').ApiHandler} */ handler, 
-                options = /** @type {FromFormOptions} */ ({})
-            ) {
+        /** @type {any} */ (DomainStateClass).fromForm = function (
+            /** @type {string | HTMLFormElement} */ formOrId,
+            /** @type {import('../../network/api-handler.js').ApiHandler} */ handler,
+            options = /** @type {FromFormOptions} */ ({})
+        ) {
             const formEl = _resolveForm(formOrId);
             if (!formEl) throw new Error('[DSM] 유효한 HTMLFormElement가 아닙니다.');
 
@@ -158,13 +154,13 @@ export const FormBinder = {
             const wrapper = createProxy(skeleton, () => {
                 state?._scheduleFlush();
             });
-            
+
             state = new DomainStateClass(wrapper, {
                 handler,
                 urlConfig: options.urlConfig,
-                isNew:     true,
-                debug:     options.debug,
-                label:     options.label ?? formEl.id ?? 'form_state',
+                isNew: true,
+                debug: options.debug,
+                label: options.label ?? formEl.id ?? 'form_state',
             });
 
             _bindFormEvents(formEl, wrapper.getTarget(), wrapper.proxy);
@@ -189,9 +185,9 @@ export const FormBinder = {
          * user.bindForm('userForm'); // 폼에 name, address.city 등 자동 채움
          * // 이후 폼 변경 → user.data 자동 갱신 → user.save() 시 PATCH 전송
          */
-        /** @type {any} */ (DomainStateClass.prototype).bindForm = function(
-                /** @type {string | HTMLFormElement} */ formOrId
-            ) {
+        /** @type {any} */ (DomainStateClass.prototype).bindForm = function (
+            /** @type {string | HTMLFormElement} */ formOrId
+        ) {
             const formEl = _resolveForm(formOrId);
             if (!formEl) return this;
 
@@ -200,9 +196,8 @@ export const FormBinder = {
             _bindFormEvents(formEl, this._getTarget(), this.data);
             return this;
         };
-    }
+    },
 };
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 내부 DOM 유틸리티
@@ -220,7 +215,8 @@ export const FormBinder = {
  * @returns {HTMLFormElement | null} 찾은 Form 요소 또는 `null`
  */
 function _resolveForm(formOrId) {
-    if (typeof formOrId === 'string') return /** @type {HTMLFormElement | null} */ (document.getElementById(formOrId));
+    if (typeof formOrId === 'string')
+        return /** @type {HTMLFormElement | null} */ (document.getElementById(formOrId));
     if (formOrId instanceof HTMLFormElement) return formOrId;
     return null;
 }
@@ -240,7 +236,7 @@ function _resolveForm(formOrId) {
  * _formToSkeleton(form); // → { user: { name: 'Davi', age: '30' } }
  */
 function _formToSkeleton(formEl) {
-    const obj = {};// HTMLFormControlsCollection을 일반 배열로 변환하면서 any[]로 캐스팅
+    const obj = {}; // HTMLFormControlsCollection을 일반 배열로 변환하면서 any[]로 캐스팅
     const elements = /** @type {any[]} */ (Array.from(formEl.elements));
     for (const el of elements) {
         if (!el.name) continue;
@@ -277,7 +273,8 @@ function _syncToForm(formEl, targetObj) {
             val = /** @type {any} */ (val)[k];
         }
         if (val !== undefined && val !== null) {
-            if (el.type === 'checkbox' || el.type === 'radio') el.checked = (el.value === String(val));
+            if (el.type === 'checkbox' || el.type === 'radio')
+                el.checked = el.value === String(val);
             else el.value = val;
         }
     }
@@ -306,12 +303,13 @@ function _syncToForm(formEl, targetObj) {
  * @returns {void}
  */
 function _bindFormEvents(formEl, targetObj, proxyObj) {
-    formEl.addEventListener('input', (e) => {// e.target을 any로 캐스팅해서 DOM 속성(name, type, value)에 자유롭게 접근!
+    formEl.addEventListener('input', (e) => {
+        // e.target을 any로 캐스팅해서 DOM 속성(name, type, value)에 자유롭게 접근!
         const target = /** @type {any} */ (e.target);
         if (!target.name) return;
         // input[type=text] 등은 blur 시점에 동기화 (타이핑 중 잦은 프록시 호출 방지)
         if (['text', 'password', 'email', 'textarea'].includes(target.type)) return;
-        
+
         const val = target.type === 'checkbox' ? target.checked : target.value;
         _setNestedValue(proxyObj, target.name.split('.'), val); // targetObj가 아닌 proxyObj를 조작해 이력 기록
     });

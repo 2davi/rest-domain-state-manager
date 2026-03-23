@@ -60,7 +60,6 @@ import {
     MSG_TYPE,
 } from '../constants/channel.const.js';
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
 // ════════════════════════════════════════════════════════════════════════════════
@@ -139,7 +138,6 @@ import {
  * @property {Array<*>} errors    - 인스턴스 수준 에러 목록
  */
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 모듈 수준 상태 (싱글톤)
 // ════════════════════════════════════════════════════════════════════════════════
@@ -175,7 +173,6 @@ let _channel = null;
  */
 const _stateRegistry = new Map();
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // 내부 유틸리티
 // ════════════════════════════════════════════════════════════════════════════════
@@ -208,14 +205,15 @@ function getChannel() {
  * @returns {void}
  */
 function registerTab() {
-    getChannel()?.postMessage(/** @type {TabRegisterMessage} */ ({
-        type:   MSG_TYPE.TAB_REGISTER,
-        tabId:  TAB_ID,
-        tabUrl: location.href,
-        states: Object.fromEntries(_stateRegistry),
-    }));
+    getChannel()?.postMessage(
+        /** @type {TabRegisterMessage} */ ({
+            type: MSG_TYPE.TAB_REGISTER,
+            tabId: TAB_ID,
+            tabUrl: location.href,
+            states: Object.fromEntries(_stateRegistry),
+        })
+    );
 }
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 지연 초기화 (Lazy Initialization)
@@ -267,16 +265,17 @@ export function initDebugChannel() {
     // 단, 모바일 브라우저나 강제 종료 시에는 이 이벤트가 발생하지 않을 수 있다.
     // 이 경우 팝업의 Heartbeat GC 로직이 5초 후 해당 탭을 자동으로 제거한다.
     window.addEventListener('beforeunload', () => {
-        getChannel()?.postMessage(/** @type {TabUnregisterMessage} */ ({
-            type:  MSG_TYPE.TAB_UNREGISTER,
-            tabId: TAB_ID,
-        }));
+        getChannel()?.postMessage(
+            /** @type {TabUnregisterMessage} */ ({
+                type: MSG_TYPE.TAB_UNREGISTER,
+                tabId: TAB_ID,
+            })
+        );
     });
 
     // 페이지 로드 직후 자기 등록 (팝업이 이미 열려있다면 즉시 이 탭을 인식함)
     registerTab();
 }
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 공개 API
@@ -304,10 +303,12 @@ export function initDebugChannel() {
  */
 export function closeDebugChannel() {
     if (_channel) {
-        _channel.postMessage(/** @type {TabUnregisterMessage} */ ({
-            type:  MSG_TYPE.TAB_UNREGISTER,
-            tabId: TAB_ID,
-        }));
+        _channel.postMessage(
+            /** @type {TabUnregisterMessage} */ ({
+                type: MSG_TYPE.TAB_UNREGISTER,
+                tabId: TAB_ID,
+            })
+        );
         _channel.close();
         _channel = null;
         console.debug('[DSM] Debug BroadcastChannel closed.');
@@ -342,17 +343,19 @@ export function broadcastUpdate(label, snapshot) {
     // debug: true인 DomainState가 최초로 상태를 broadcast하는 시점에
     // 채널 초기화를 수행한다. 브라우저 환경이 아니면 no-op.
     // Node.js / Vitest(node) 환경에서는 no-op으로 처리한다.
-    if(typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
     initDebugChannel();
 
     _stateRegistry.set(label, { label, ...snapshot });
-    getChannel()?.postMessage(/** @type {DsUpdateMessage} */ ({
-        type:    MSG_TYPE.DS_UPDATE,
-        tabId:   TAB_ID,
-        tabUrl:  location.href,
-        label,
-        snapshot,
-    }));
+    getChannel()?.postMessage(
+        /** @type {DsUpdateMessage} */ ({
+            type: MSG_TYPE.DS_UPDATE,
+            tabId: TAB_ID,
+            tabUrl: location.href,
+            label,
+            snapshot,
+        })
+    );
 }
 
 /**
@@ -377,15 +380,17 @@ export function broadcastUpdate(label, snapshot) {
  */
 export function broadcastError(key, error) {
     // Node.js / Vitest(node) 환경에서는 no-op으로 처리한다.
-    if(typeof window === 'undefined') return;
-    
-    getChannel()?.postMessage(/** @type {DsErrorMessage} */ ({
-        type:   MSG_TYPE.DS_ERROR,
-        tabId:  TAB_ID,
-        tabUrl: location.href,
-        key,
-        error:  String(error),
-    }));
+    if (typeof window === 'undefined') return;
+
+    getChannel()?.postMessage(
+        /** @type {DsErrorMessage} */ ({
+            type: MSG_TYPE.DS_ERROR,
+            tabId: TAB_ID,
+            tabUrl: location.href,
+            key,
+            error: String(error),
+        })
+    );
 }
 
 /**
@@ -428,7 +433,6 @@ export function openDebugPopup() {
         _initPopupChannel(popup);
     });
 }
-
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 내부 팝업 유틸리티
@@ -609,7 +613,7 @@ function _buildPopupHTML() {
         btn.onclick = () => { activeTab = btn.dataset.id; render(); };
       });
   }
-<\/script>
+</script>
 </body>
 </html>`;
 }
