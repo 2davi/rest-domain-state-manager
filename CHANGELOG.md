@@ -1,3 +1,9 @@
+## [0.9.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.8.0...v0.9.0) (2026-03-23)
+
+### ✨ Features
+
+* **docs:** add interactive playground and decision log ([f2cf063](https://github.com/2davi/rest-domain-state-manager/commit/f2cf06308e7d767852e3177c8af853e777755054))
+
 ## [0.8.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.7.0...v0.8.0) (2026-03-23)
 
 ### ⚠ BREAKING CHANGES
