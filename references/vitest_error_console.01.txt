@@ -1,0 +1,161 @@
+C:\Workspace\rest-domain-state-manager>npm test
+
+> @2davi/rest-domain-state-manager@0.5.0 test
+> vitest run
+
+ DEPRECATED  "environmentMatchGlobs" is deprecated. Use `test.projects` to define different configurations instead.
+
+ RUN  v3.2.4 C:/Workspace/rest-domain-state-manager
+
+stderr | test/domain/DomainVO.test.js > DomainVO — checkSchema() > TC-V-003: 응답 데이터에 VO 키 누락 → valid:false, missingKeys 포함
+[DSM] DomainVO 정합성 오류: 응답 데이터에 VO 스키마의 "address" 필드가 없습니다.
+
+stderr | test/domain/DomainVO.test.js > DomainVO — checkSchema() > TC-V-004: 응답에 VO에 없는 키 존재 → valid:true, extraKeys 포함
+[DSM] DomainVO 정합성 경고: 응답 데이터에 VO 스키마에 없는 "extra" 필드가 포함되어 있습니다.
+
+ ✓ test/domain/DomainVO.test.js (13 tests) 20ms
+stdout | test/core/api-proxy.test.js > createProxy — 기본 변경 추적 > TC-C-001: 존재하는 키 수정 → replace op 기록
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — 기본 변경 추적 > TC-C-002: 존재하지 않는 키 추가 → add op 기록
+[DSM][Proxy][add]     path: /phone | newValue: 010
+
+stdout | test/core/api-proxy.test.js > createProxy — 기본 변경 추적 > TC-C-003: delete 연산 → remove op 기록
+[DSM][Proxy][remove]  path: /age | oldValue: 30
+
+stdout | test/core/api-proxy.test.js > createProxy — 중첩 객체 추적 > TC-C-005: 중첩 객체 수정 → path에 부모/자식 포함
+[DSM][Proxy][get]     deep proxy 진입 | path: /address
+[DSM][Proxy][replace] path: /address/city | oldValue: Seoul → Busan
+
+stdout | test/core/api-proxy.test.js > createProxy — 중첩 객체 추적 > TC-C-006: 동일 중첩 객체 재접근 → WeakMap 캐싱 (동일 참조)
+[DSM][Proxy][get]     deep proxy 진입 | path: /address
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > TC-C-007: push → 마지막 인덱스에 add op 기록
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][add]     path: /items/2 | newValue: C
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > TC-C-008: splice(1,1,"X") → index 1 remove 후 add 기록
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][remove]  path: /items/1 | oldValue: B
+[DSM][Proxy][add]     path: /items/1 | newValue: X
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > TC-C-009: sort → 배열 전체 단일 replace op
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][replace] path: /items | oldValue: ["C","A","B"] → ["A","B","C"]
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > reverse → 배열 전체 단일 replace op
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][replace] path: /items | oldValue: [1,2,3] → [3,2,1]
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > shift → index 0 remove op
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][remove]  path: /items/0 | oldValue: A
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > unshift → index 0 add op
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][add]     path: /items/0 | newValue: A
+
+stdout | test/core/api-proxy.test.js > createProxy — dirtyFields 추적 (1-A) > TC-C-010: 최상위 키 변경 → dirtyFields에 해당 키 등록
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — dirtyFields 추적 (1-A) > TC-C-011: 중첩 키 변경 → 최상위 키만 dirtyFields에 등록
+[DSM][Proxy][get]     deep proxy 진입 | path: /address
+[DSM][Proxy][replace] path: /address/city | oldValue: Seoul → Busan
+
+stdout | test/core/api-proxy.test.js > createProxy — dirtyFields 추적 (1-A) > TC-C-012: 동일 키 반복 변경 → dirtyFields.size 유지 (Set 중복 무시)
+[DSM][Proxy][replace] path: /name | oldValue: A → 0
+[DSM][Proxy][replace] path: /name | oldValue: 0 → 1
+[DSM][Proxy][replace] path: /name | oldValue: 1 → 2
+[DSM][Proxy][replace] path: /name | oldValue: 2 → 3
+[DSM][Proxy][replace] path: /name | oldValue: 3 → 4
+[DSM][Proxy][replace] path: /name | oldValue: 4 → 5
+[DSM][Proxy][replace] path: /name | oldValue: 5 → 6
+[DSM][Proxy][replace] path: /name | oldValue: 6 → 7
+[DSM][Proxy][replace] path: /name | oldValue: 7 → 8
+[DSM][Proxy][replace] path: /name | oldValue: 8 → 9
+
+stdout | test/core/api-proxy.test.js > createProxy — dirtyFields 추적 (1-A) > clearDirtyFields 호출 후 dirtyFields 비워짐
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > TC-C-013: restoreTarget → domainObject를 스냅샷으로 복원
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > TC-C-014: restoreTarget → Proxy 우회, changeLog에 기록 안 됨
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > TC-C-015: Array 루트 객체 복원 → splice/push로 처리
+[DSM][Proxy][replace] path: /0 | oldValue: A → X
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > restoreChangeLog → changeLog를 스냅샷 항목으로 교체
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][Proxy][replace] path: /name | oldValue: Lee → Kim
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > restoreDirtyFields → dirtyFields를 스냅샷 집합으로 교체
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][Proxy][replace] path: /age | oldValue: 30 → 31
+
+stdout | test/core/api-proxy.test.js > createProxy — ProxyWrapper 인터페이스 > getChangeLog는 얕은 복사본 반환 → 외부 변조가 내부 changeLog에 영향 없음
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — ProxyWrapper 인터페이스 > getDirtyFields는 new Set 복사본 반환 → 외부 변조가 내부에 영향 없음
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — ProxyWrapper 인터페이스 > clearChangeLog 후 getChangeLog().length === 0
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+ ✓ test/core/api-proxy.test.js (24 tests) 34ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Suites 3 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/domain/DomainPipeline.test.js [ test/domain/DomainPipeline.test.js ]
+ FAIL  test/domain/DomainState.test.js [ test/domain/DomainState.test.js ]
+ FAIL  test/network/api-handler.test.js [ test/network/api-handler.test.js ]
+ReferenceError: window is not defined
+ ❯ src/debug/debug-channel.js:225:1
+    223| // 단, 모바일 브라우저나 강제 종료 시에는 이 이벤트가 발생하지 않을 수 있다.
+    224| // 이 경우 팝업의 Heartbeat GC 로직이 5초 후 해당 탭을 자동으로 제거한다.   
+    225| window.addEventListener('beforeunload', () => {
+       | ^
+    226|     getChannel()?.postMessage(/** @type {TabUnregisterMessage} */ ({
+    227|         type:  MSG_TYPE.TAB_UNREGISTER,
+ ❯ src/domain/DomainState.js:48:1
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯Error: Cannot find package 'jsdom' imported from C:\Workspace\rest-domain-state-manager\node_modules\vitest\dist\chunks\index.CmSc2RE5.js
+ ❯ Object.getPackageJSONURL node:internal/modules/package_json_reader:301:9
+ ❯ packageResolve node:internal/modules/esm/resolve:768:81
+ ❯ moduleResolve node:internal/modules/esm/resolve:859:18
+ ❯ defaultResolve node:internal/modules/esm/resolve:991:11
+ ❯ ModuleLoader.#cachedDefaultResolve node:internal/modules/esm/loader:719:20
+ ❯ ModuleLoader.#resolveAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:736:38
+ ❯ ModuleLoader.resolveSync node:internal/modules/esm/loader:765:52
+ ❯ ModuleLoader.#resolve node:internal/modules/esm/loader:701:17
+ ❯ ModuleLoader.getOrCreateModuleJob node:internal/modules/esm/loader:621:35
+ ❯ onImport.tracePromise.__proto__ node:internal/modules/esm/loader:650:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯Error: Cannot find package 'jsdom' imported from C:\Workspace\rest-domain-state-manager\node_modules\vitest\dist\chunks\index.CmSc2RE5.js
+ ❯ Object.getPackageJSONURL node:internal/modules/package_json_reader:301:9
+ ❯ packageResolve node:internal/modules/esm/resolve:768:81
+ ❯ moduleResolve node:internal/modules/esm/resolve:859:18
+ ❯ defaultResolve node:internal/modules/esm/resolve:991:11
+ ❯ ModuleLoader.#cachedDefaultResolve node:internal/modules/esm/loader:719:20
+ ❯ ModuleLoader.#resolveAndMaybeBlockOnLoaderThread node:internal/modules/esm/loader:736:38
+ ❯ ModuleLoader.resolveSync node:internal/modules/esm/loader:765:52
+ ❯ ModuleLoader.#resolve node:internal/modules/esm/loader:701:17
+ ❯ ModuleLoader.getOrCreateModuleJob node:internal/modules/esm/loader:621:35
+ ❯ onImport.tracePromise.__proto__ node:internal/modules/esm/loader:650:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ Test Files  3 failed | 2 passed (7)
+      Tests  37 passed (37)
+     Errors  2 errors
+   Start at  09:49:56
+   Duration  2.13s (transform 263ms, setup 0ms, collect 185ms, tests 54ms, environment 2ms, prepare 1.33s)

@@ -3,46 +3,73 @@ layout: home
 hero:
   name: "DSM"
   text: "REST 도메인 상태 관리자"
-  tagline: "레거시 SI/SM 환경을 위한 가장 직관적이고 강력한 상태 관리 솔루션"
+  tagline: "백엔드 DTO를 Proxy로 래핑하여 변경을 추적하고, save() 하나로 올바른 HTTP 메서드를 자동 결정합니다. MyBatis · JSP · 레거시 환경을 위한 데이터 계층 솔루션."
   actions:
     - theme: brand
-      text: 🚀 30초 만에 시작하기
-      link: /guide/getting-started
+      text: 빠른 시작 →
+      link: /guide/installation
     - theme: alt
-      text: 📚 API 레퍼런스
-      link: /api/
+      text: API 레퍼런스
+      link: /api/domain.DomainState.Class.DomainState
+    - theme: alt
+      text: 철학 읽기
+      link: /philosophy
+
 features:
-  - title: "단 한 줄로 끝내는 폼 바인딩"
-    details: "getElementById() 노가다는 이제 그만. Form 요소와 Proxy 객체를 단 한 줄로 연결하고 양방향 변경을 완벽하게 추적합니다."
-  - title: "V8 엔진 최적화 (Lazy-Proxying)"
-    details: "무분별한 객체 생성을 막는 WeakMap 기반의 지연 프록싱(Lazy-Proxying)으로 극강의 렌더링 퍼포먼스를 제공합니다."
-  - title: "스마트한 HTTP 분기"
-    details: "저장(save) 시점에 변경된 데이터(Delta)만 추려내어 POST, PUT, PATCH(RFC 6902) 중 최적의 메서드를 자동으로 쏘아줍니다."
+  - icon: 🔍
+    title: 자동 변경 추적
+    details: JS Proxy가 모든 필드 변경을 감지합니다. 중첩 객체와 배열 변이(push, splice, sort)까지 RFC 6902 형식으로 자동 기록됩니다.
+
+  - icon: ⚡
+    title: 스마트 HTTP 분기
+    details: save() 호출 시 isNew 플래그와 dirtyFields 비율을 분석하여 POST / PUT / PATCH 를 자동 선택합니다. HTTP 메서드 결정 로직을 다시는 직접 작성하지 않아도 됩니다.
+
+  - icon: 🛡️
+    title: Optimistic Update 롤백
+    details: HTTP 요청이 실패하면 domainObject, changeLog, dirtyFields, isNew 네 개의 상태를 save() 호출 이전으로 자동 복원합니다.
+
+  - icon: 🧩
+    title: Framework-Agnostic
+    details: React, Vue, 또는 순수 Vanilla JavaScript 어디서든 동작합니다. DOM 의존성은 선택적 플러그인으로 분리되어 있어 Node.js 환경에서도 코어 기능이 완전히 동작합니다.
+
+  - icon: 🔬
+    title: V8 최적화
+    details: WeakMap 기반 Lazy-Proxying, Reflect API 전면 도입, 배열 Delta 계산 알고리즘으로 Hidden Class 오염 없이 V8 JIT 최적화를 유지합니다.
+
+  - icon: 📡
+    title: 내장 디버거
+    details: BroadcastChannel API를 이용한 멀티탭 디버그 팝업을 제공합니다. Heartbeat GC로 탭 생명주기를 추적하고 실시간으로 상태 변화를 시각화합니다.
 ---
 
 <br>
 
-## ⚡️ 왜 DSM을 써야 할까요?
+## 문제
 
-MyBatis와 JSP를 쓰는 레거시 환경에서, 폼 데이터를 긁어모으느라 고통받고 계십니까?
-
-### ❌ Before: 지옥의 수동 조립
 ```javascript
-const payload = {
-  name: document.getElementById('name').value,
-  city: document.getElementById('city').value,
-  role: document.getElementById('role').value,
-  // 필드가 50개면 50줄 작성...
-};
-await fetch('/api/users/1', { method: 'PUT', body: JSON.stringify(payload) });
+// ❌ 레거시 환경에서 반복되는 보일러플레이트
+const name    = document.getElementById('name').value
+const city    = document.getElementById('city').value
+// ... 필드 수만큼 반복
+
+const method = isNew ? 'POST' : hasChanges ? 'PATCH' : 'PUT'
+const body   = method === 'PATCH' ? buildPatchPayload() : JSON.stringify(allFields)
+await fetch('/api/users/1', { method, body })
+// 이 계산이 매번 정확하다고 보장할 수 있습니까?
 ```
 
-### ✅ After (DSM): 완벽한 자동화
-```javascript
-// 1. 폼 바인딩 및 변경 추적 시작 (점 표기법으로 중첩 데이터도 완벽 지원)
-const user = DomainState.fromForm('userForm', api);
+## 해결
 
-// 2. 사용자가 폼을 수정하면 Proxy가 알아서 변경분을 수집합니다.
-// 3. 저장 시점에 최적의 HTTP 메서드로 자동 전송!
-await user.save('/api/users/1'); 
+```javascript
+// ✅ DSM: 변경 추적과 HTTP 분기를 한 번에 위임
+import { ApiHandler, DomainState } from '@2davi/rest-domain-state-manager'
+
+const api  = new ApiHandler({ host: 'localhost:8080' })
+const user = await api.get('/api/users/1')  // isNew: false
+
+// 폼 수정 → Proxy가 자동으로 변경 이력 수집
+user.data.name         = formEl.name.value
+user.data.address.city = formEl.city.value
+
+// save() 하나로 끝. POST / PUT / PATCH는 자동 결정됩니다.
+await user.save('/api/users/1')
 ```

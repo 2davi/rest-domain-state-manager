@@ -1,0 +1,344 @@
+C:\Workspace\rest-domain-state-manager>npm test
+
+> @2davi/rest-domain-state-manager@0.5.0 test
+> vitest run
+
+ DEPRECATED  "environmentMatchGlobs" is deprecated. Use `test.projects` to define different configurations instead.
+
+ RUN  v3.2.4 C:/Workspace/rest-domain-state-manager
+
+stdout | test/domain/DomainState.test.js > DomainState.fromJSON() > data getter가 Proxy 객체를 반환한다
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Test
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — HTTP 메서드 분기 > TC-DS-001: isNew===true → POST
+[DSM][URL] 최종 URL → http://localhost:8080/api/users
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:false > TC-P-002: fetch 실패 → _errors 기록, 나머지 계속 진행
+[DSM][Pipeline] 병렬 fetch 시작 | keys: user, role
+
+stdout | test/network/api-handler.test.js > ApiHandler.get() > TC-N-004: GET 성공 → DomainState(isNew:false) 반환
+[DSM][URL] 최종 URL → https://localhost:8080/api/users/1
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — HTTP 메서드 분기 > TC-DS-002: POST 성공 후 isNew가 false로 전환
+[DSM][URL] 최종 URL → http://localhost:8080/api/users
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — HTTP 메서드 분기 > TC-DS-003: dirtyFields.size===0 → PUT (변경 없음)
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+stdout | test/network/api-handler.test.js > ApiHandler.get() > 응답 본문이 비어있으면 Error throw
+[DSM][URL] 최종 URL → https://localhost:8080/api/users/1
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — HTTP 메서드 분기 > TC-DS-004: dirtyRatio >= 0.7 → PUT (5개 중 4개 = 80% 변경)
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][Proxy][replace] path: /email | oldValue: davi@example.com → lee@example.com
+[DSM][Proxy][replace] path: /role | oldValue: admin → user
+[DSM][Proxy][replace] path: /address | oldValue: {"city":"Seoul","zip":"04524"} → {"city":"Busan","zip":"12345"}
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — HTTP 메서드 분기 > TC-DS-005: dirtyRatio < 0.7 → PATCH + RFC 6902 형식 payload
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+ ✓ test/network/api-handler.test.js (6 tests) 22ms
+stdout | test/domain/DomainState.test.js > DomainState.save() — HTTP 메서드 분기 > 성공 후 changeLog가 비워진다
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — HTTP 메서드 분기 > 성공 후 dirtyFields가 비워진다
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-006: HTTP 4xx → domainObject가 save() 이전 값으로 복원
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+stderr | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-006: HTTP 4xx → domainObject가 save() 이전 값으로 복원
+[DSM] save() HTTP 409 오류 — 서버 동기화 실패. 도메인 상태를 save() 호출 이전으로 롤백합니다.
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:false > TC-P-004: after() 핸들러가 등록 순서대로 실행
+[DSM][Pipeline] 병렬 fetch 시작 | keys: a, b
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:false > TC-P-004: after() 핸들러가 등록 순서대로 실행
+[DSM][Pipeline] 병렬 fetch 완료
+[DSM][Pipeline] after 핸들러 실행 | key: a
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:false > TC-P-004: after() 핸들러가 등록 순서대로 실행
+[DSM][Pipeline] after 핸들러 완료 | key: a
+[DSM][Pipeline] after 핸들러 실행 | key: b
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:false > TC-P-004: after() 핸들러가 등록 순서대로 실행
+[DSM][Pipeline] after 핸들러 완료 | key: b
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:false > fetch 실패한 키의 after() 핸들러는 건너뜀
+[DSM][Pipeline] 병렬 fetch 시작 | keys: user
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:true > TC-P-003: fetch 실패 시 즉시 reject
+[DSM][Pipeline] 병렬 fetch 시작 | keys: user
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:true > after() 핸들러 실패 시 즉시 reject
+[DSM][Pipeline] 병렬 fetch 시작 | keys: user
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-007: HTTP 오류 → changeLog가 save() 이전 상태로 복원
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+stderr | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-007: HTTP 오류 → changeLog가 save() 이전 상태로 복원
+[DSM] save() HTTP 409 오류 — 서버 동기화 실패. 도메인 상태를 save() 호출 이전으로 롤백합니다.
+
+stdout | test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:true > after() 핸들러 실패 시 즉시 reject
+[DSM][Pipeline] 병렬 fetch 완료
+[DSM][Pipeline] after 핸들러 실행 | key: user
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-008: HTTP 오류 → 에러가 re-throw됨 (호출자 catch 가능)
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+stderr | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-008: HTTP 오류 → 에러가 re-throw됨 (호출자 catch 가능)
+[DSM] save() HTTP 409 오류 — 서버 동기화 실패. 도메인 상태를 save() 호출 이전으로 롤백합니다.
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-009: 롤백 후 재시도 → 올바른 메서드로 전송됨
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+stderr | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-009: 롤백 후 재시도 → 올바른 메서드로 전송됨
+[DSM] save() HTTP 409 오류 — 서버 동기화 실패. 도메인 상태를 save() 호출 이전으로 롤백합니다.
+
+stdout | test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-009: 롤백 후 재시도 → 올바른 메서드로 전송됨
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+ ❯ test/domain/DomainPipeline.test.js (8 tests | 3 failed) 71ms
+   ✓ DomainPipeline.after() > TC-P-001: 존재하지 않는 key → 즉시 Error throw 5ms
+   ✓ DomainPipeline.after() > handler가 함수가 아닐 때 TypeError throw 1ms
+   ✓ DomainPipeline.after() > 체이닝 가능 (this 반환) 1ms
+   × DomainPipeline.run() — strict:false > TC-P-002: fetch 실패 → _errors 기록, 나머지 계속 진행 30ms
+     → location is not defined
+   ✓ DomainPipeline.run() — strict:false > TC-P-004: after() 핸들러가 등록 순서대로 실행 3ms
+   × DomainPipeline.run() — strict:false > fetch 실패한 키의 after() 핸들러는 건너뜀 6ms
+     → location is not defined
+   ✓ DomainPipeline.run() — strict:true > TC-P-003: fetch 실패 시 즉시 reject 3ms
+   × DomainPipeline.run() — strict:true > after() 핸들러 실패 시 즉시 reject 20ms
+     → expected [Function] to throw error including 'handler error' but got 'location is not defined'
+stdout | test/domain/DomainState.test.js > DomainState.remove() > DELETE 메서드로 요청 전송
+[DSM][URL] 최종 URL → http://localhost:8080/api/users/1
+
+ ❯ test/domain/DomainState.test.js (18 tests | 3 failed) 85ms
+   ✓ DomainState.fromJSON() > isNew가 false로 생성된다 3ms
+   ✓ DomainState.fromJSON() > data getter가 Proxy 객체를 반환한다 3ms
+   ✓ DomainState.fromVO() > isNew가 true로 생성된다 1ms
+   ✓ DomainState.fromVO() > validators/transformers가 주입된다 0ms
+   ✓ DomainState.save() — HTTP 메서드 분기 > TC-DS-001: isNew===true → POST 7ms
+   ✓ DomainState.save() — HTTP 메서드 분기 > TC-DS-002: POST 성공 후 isNew가 false로 전환 1ms
+   ✓ DomainState.save() — HTTP 메서드 분기 > TC-DS-003: dirtyFields.size===0 → PUT (변경 없음) 1ms
+   ✓ DomainState.save() — HTTP 메서드 분기 > TC-DS-004: dirtyRatio >= 0.7 → PUT (5개 중 4개 = 80% 변경) 2ms
+   ✓ DomainState.save() — HTTP 메서드 분기 > TC-DS-005: dirtyRatio < 0.7 → PATCH + RFC 6902 형식 payload 3ms
+   ✓ DomainState.save() — HTTP 메서드 분기 > 성공 후 changeLog가 비워진다 9ms
+   ✓ DomainState.save() — HTTP 메서드 분기 > 성공 후 dirtyFields가 비워진다 1ms
+   × DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-006: HTTP 4xx → domainObject가 save() 이전 값으로 복원 20ms
+     → expected 'Lee' to be 'Davi' // Object.is equality
+   ✓ DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-007: HTTP 오류 → changeLog가 save() 이전 상태로 복원 2ms
+   ✓ DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-008: HTTP 오류 → 에러가 re-throw됨 (호출자 catch 가능) 1ms
+   ✓ DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-009: 롤백 후 재시도 → 올바른 메서드로 전송됨 3ms
+   × DomainState — Batching Scheduler (1-C) > TC-DS-010: 동기 블록 다중 변경 → _broadcast는 microtask 후 단 1회 21ms
+     → location is not defined
+   × DomainState — Batching Scheduler (1-C) > TC-DS-011: await 경계 → 각 블록 독립 flush 1ms
+     → location is not defined
+   ✓ DomainState.remove() > DELETE 메서드로 요청 전송 1ms
+stderr | test/domain/DomainVO.test.js > DomainVO — checkSchema() > TC-V-003: 응답 데이터에 VO 키 누락 → valid:false, missingKeys 포함
+[DSM] DomainVO 정합성 오류: 응답 데이터에 VO 스키마의 "address" 필드가 없습니다.
+
+stderr | test/domain/DomainVO.test.js > DomainVO — checkSchema() > TC-V-004: 응답에 VO에 없는 키 존재 → valid:true, extraKeys 포함
+[DSM] DomainVO 정합성 경고: 응답 데이터에 VO 스키마에 없는 "extra" 필드가 포함되어 있습니다.
+
+ ✓ test/domain/DomainVO.test.js (13 tests) 21ms
+stdout | test/core/api-proxy.test.js > createProxy — 기본 변경 추적 > TC-C-001: 존재하는 키 수정 → replace op 기록
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — 기본 변경 추적 > TC-C-002: 존재하지 않는 키 추가 → add op 기록
+[DSM][Proxy][add]     path: /phone | newValue: 010
+
+stdout | test/core/api-proxy.test.js > createProxy — 기본 변경 추적 > TC-C-003: delete 연산 → remove op 기록
+[DSM][Proxy][remove]  path: /age | oldValue: 30
+
+stdout | test/core/api-proxy.test.js > createProxy — 중첩 객체 추적 > TC-C-005: 중첩 객체 수정 → path에 부모/자식 포함
+[DSM][Proxy][get]     deep proxy 진입 | path: /address
+[DSM][Proxy][replace] path: /address/city | oldValue: Seoul → Busan
+
+stdout | test/core/api-proxy.test.js > createProxy — 중첩 객체 추적 > TC-C-006: 동일 중첩 객체 재접근 → WeakMap 캐싱 (동일 참조)
+[DSM][Proxy][get]     deep proxy 진입 | path: /address
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > TC-C-007: push → 마지막 인덱스에 add op 기록
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][add]     path: /items/2 | newValue: C
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > TC-C-008: splice(1,1,"X") → index 1 remove 후 add 기록
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][remove]  path: /items/1 | oldValue: B
+[DSM][Proxy][add]     path: /items/1 | newValue: X
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > TC-C-009: sort → 배열 전체 단일 replace op
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][replace] path: /items | oldValue: ["C","A","B"] → ["A","B","C"]
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > reverse → 배열 전체 단일 replace op
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][replace] path: /items | oldValue: [1,2,3] → [3,2,1]
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > shift → index 0 remove op
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][remove]  path: /items/0 | oldValue: A
+
+stdout | test/core/api-proxy.test.js > createProxy — 배열 변이 추적 > unshift → index 0 add op
+[DSM][Proxy][get]     deep proxy 진입 | path: /items
+[DSM][Proxy][add]     path: /items/0 | newValue: A
+
+stdout | test/core/api-proxy.test.js > createProxy — dirtyFields 추적 (1-A) > TC-C-010: 최상위 키 변경 → dirtyFields에 해당 키 등록
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — dirtyFields 추적 (1-A) > TC-C-011: 중첩 키 변경 → 최상위 키만 dirtyFields에 등록
+[DSM][Proxy][get]     deep proxy 진입 | path: /address
+[DSM][Proxy][replace] path: /address/city | oldValue: Seoul → Busan
+
+stdout | test/core/api-proxy.test.js > createProxy — dirtyFields 추적 (1-A) > TC-C-012: 동일 키 반복 변경 → dirtyFields.size 유지 (Set 중복 무시)
+[DSM][Proxy][replace] path: /name | oldValue: A → 0
+[DSM][Proxy][replace] path: /name | oldValue: 0 → 1
+[DSM][Proxy][replace] path: /name | oldValue: 1 → 2
+[DSM][Proxy][replace] path: /name | oldValue: 2 → 3
+[DSM][Proxy][replace] path: /name | oldValue: 3 → 4
+[DSM][Proxy][replace] path: /name | oldValue: 4 → 5
+[DSM][Proxy][replace] path: /name | oldValue: 5 → 6
+[DSM][Proxy][replace] path: /name | oldValue: 6 → 7
+[DSM][Proxy][replace] path: /name | oldValue: 7 → 8
+[DSM][Proxy][replace] path: /name | oldValue: 8 → 9
+
+stdout | test/core/api-proxy.test.js > createProxy — dirtyFields 추적 (1-A) > clearDirtyFields 호출 후 dirtyFields 비워짐
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > TC-C-013: restoreTarget → domainObject를 스냅샷으로 복원
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > TC-C-014: restoreTarget → Proxy 우회, changeLog에 기록 안 됨
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > TC-C-015: Array 루트 객체 복원 → splice/push로 처리
+[DSM][Proxy][replace] path: /0 | oldValue: A → X
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > restoreChangeLog → changeLog를 스냅샷 항목으로 교체
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][Proxy][replace] path: /name | oldValue: Lee → Kim
+
+stdout | test/core/api-proxy.test.js > createProxy — 복원 메서드 (1-D) > restoreDirtyFields → dirtyFields를 스냅샷 집합으로 교체
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+[DSM][Proxy][replace] path: /age | oldValue: 30 → 31
+
+stdout | test/core/api-proxy.test.js > createProxy — ProxyWrapper 인터페이스 > getChangeLog는 얕은 복사본 반환 → 외부 변조가 내부 changeLog에 영향 없음
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — ProxyWrapper 인터페이스 > getDirtyFields는 new Set 복사본 반환 → 외부 변조가 내부에 영향 없음
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/core/api-proxy.test.js > createProxy — ProxyWrapper 인터페이스 > clearChangeLog 후 getChangeLog().length === 0
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+ ✓ test/core/api-proxy.test.js (24 tests) 30ms
+stdout | test/plugins/FormBinder.test.js > FormBinder — 이벤트 추적 > TC-FB-002: text input blur → data 갱신
+[DSM][Proxy][replace] path: /name | oldValue: Davi → Lee
+
+stdout | test/plugins/FormBinder.test.js > FormBinder — 이벤트 추적 > select change → data 즉시 갱신
+[DSM][Proxy][replace] path: /role | oldValue: admin → user
+
+ ✓ test/plugins/FormBinder.test.js (5 tests) 81ms
+ ✓ test/plugins/DomainRenderer.test.js (5 tests) 49ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:false > TC-P-002: fetch 실패 → _errors 기록, 나머지 계속 진행
+ReferenceError: location is not defined
+ ❯ broadcastError src/debug/debug-channel.js:380:17
+    378|         type:   MSG_TYPE.DS_ERROR,
+    379|         tabId:  TAB_ID,
+    380|         tabUrl: location.href,
+       |                 ^
+    381|         key,
+    382|         error:  String(error),
+ ❯ DomainPipeline.run src/domain/DomainPipeline.js:284:31
+ ❯ test/domain/DomainPipeline.test.js:48:24
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+ FAIL  test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:false > fetch 실패한 키의 after() 핸들러는 건너뜀
+ReferenceError: location is not defined
+ ❯ broadcastError src/debug/debug-channel.js:380:17
+    378|         type:   MSG_TYPE.DS_ERROR,
+    379|         tabId:  TAB_ID,
+    380|         tabUrl: location.href,
+       |                 ^
+    381|         key,
+    382|         error:  String(error),
+ ❯ DomainPipeline.run src/domain/DomainPipeline.js:284:31
+ ❯ test/domain/DomainPipeline.test.js:73:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+ FAIL  test/domain/DomainPipeline.test.js > DomainPipeline.run() — strict:true > after() 핸들러 실패 시 즉시 reject
+AssertionError: expected [Function] to throw error including 'handler error' but got 'location is not defined'
+
+Expected: "handler error"
+Received: "location is not defined"
+
+ ❯ test/domain/DomainPipeline.test.js:99:9
+     97| 
+     98|     it('after() 핸들러 실패 시 즉시 reject', async () => {
+     99|         await expect(
+       |         ^
+    100|             new DomainPipeline({
+    101|                 user: Promise.resolve(makeDomainState()),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+ FAIL  test/domain/DomainState.test.js > DomainState.save() — Optimistic Update 롤백 (1-D) > TC-DS-006: HTTP 4xx → domainObject가 save() 이전 값으로 복원
+AssertionError: expected 'Lee' to be 'Davi' // Object.is equality
+
+Expected: "Davi"
+Received: "Lee"
+
+ ❯ test/domain/DomainState.test.js:169:41
+    167| 
+    168|         await expect(state.save('/api/users/1')).rejects.toBeDefined();
+    169|         expect(state._getTarget().name).toBe(originalName);
+       |                                         ^
+    170|     });
+    171| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+ FAIL  test/domain/DomainState.test.js > DomainState — Batching Scheduler (1-C) > TC-DS-010: 동기 블록 다중 변경 → _broadcast는 microtask 후 단 1회
+ReferenceError: location is not defined
+ ❯ broadcastUpdate src/debug/debug-channel.js:350:18
+    348|         type:    MSG_TYPE.DS_UPDATE,
+    349|         tabId:   TAB_ID,
+    350|         tabUrl:  location.href,
+       |                  ^
+    351|         label,
+    352|         snapshot,
+ ❯ DomainState._broadcast src/domain/DomainState.js:786:24
+ ❯ new DomainState src/domain/DomainState.js:315:31
+ ❯ DomainState.fromJSON src/domain/DomainState.js:371:19
+ ❯ test/domain/DomainState.test.js:216:38
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+ FAIL  test/domain/DomainState.test.js > DomainState — Batching Scheduler (1-C) > TC-DS-011: await 경계 → 각 블록 독립 flush
+ReferenceError: location is not defined
+ ❯ broadcastUpdate src/debug/debug-channel.js:350:18
+    348|         type:    MSG_TYPE.DS_UPDATE,
+    349|         tabId:   TAB_ID,
+    350|         tabUrl:  location.href,
+       |                  ^
+    351|         label,
+    352|         snapshot,
+ ❯ DomainState._broadcast src/domain/DomainState.js:786:24
+ ❯ new DomainState src/domain/DomainState.js:315:31
+ ❯ DomainState.fromJSON src/domain/DomainState.js:371:19
+ ❯ test/domain/DomainState.test.js:236:38
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+ Test Files  2 failed | 5 passed (7)
+      Tests  6 failed | 73 passed (79)
+   Start at  10:58:52
+   Duration  4.29s (transform 366ms, setup 0ms, collect 1.21s, tests 361ms, environment 4.04s, prepare 1.64s)
