@@ -1,6 +1,6 @@
 {
   "name": "@2davi/rest-domain-state-manager",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "Proxy-based REST Domain State Manager for smart change tracking and auto-branching HTTP methods.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -45,12 +45,10 @@
   "author": "2davi",
   "license": "ISC",
   "devDependencies": {
-    "@commitlint/cli": "^20.5.0",
-    "@commitlint/config-conventional": "^20.5.0",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/npm": "^13.1.5",
     "eslint": "^9.0.0",
+    "eslint-plugin-jsdoc": "^62.8.0",
     "jsdom": "^29.0.1",
+    "globals": "^17.4.0",
     "prettier": "^3.5.0",
     "terser": "^5.46.1",
     "typedoc": "^0.28.17",
@@ -58,13 +56,15 @@
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
     "vitepress": "^1.6.4",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "semantic-release": "^25.0.3",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/npm": "^13.1.5",
+    "conventional-changelog-conventionalcommits": "^9.3.0"
   },
   "dependencies": {
-    "@semantic-release/git": "^10.0.1",
-    "conventional-changelog-conventionalcommits": "^9.3.0",
-    "eslint-plugin-jsdoc": "^62.8.0",
-    "globals": "^17.4.0",
-    "semantic-release": "^25.0.3"
   }
 }
