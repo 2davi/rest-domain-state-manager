@@ -58,7 +58,7 @@ new ApiHandler(urlConfig?)
 
 동일한 `ApiHandler` 인스턴스를 개발/운영 환경에서 모두 사용하려면 `env` 옵션을 환경 변수와 연결하는 것이 권장됩니다.
 
-```
+```markdown
 1. protocol 명시                → 그대로 사용 ('HTTP' | 'HTTPS')
 2. env = 'production'           → HTTPS 자동 적용
 3. env = 'development'          → HTTP 자동 적용
