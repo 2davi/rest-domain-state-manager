@@ -1,3 +1,9 @@
+## [0.9.2](https://github.com/2davi/rest-domain-state-manager/compare/v0.9.1...v0.9.2) (2026-03-23)
+
+### 🐛 Bug Fixes
+
+* **README:** added missing README ([a4c3983](https://github.com/2davi/rest-domain-state-manager/commit/a4c398324cd1b2dae6376e48931f072bb281516d))
+
 ## [0.9.1](https://github.com/2davi/rest-domain-state-manager/compare/v0.9.0...v0.9.1) (2026-03-23)
 
 ### 🐛 Bug Fixes
