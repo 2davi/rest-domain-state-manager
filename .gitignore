@@ -1,3 +1,8 @@
+# 2026-03-25
+# Vitepress
+.vitepress/dist/
+.vitepress/cache/
+
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,node,macos,windows
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,node,macos,windows
 
@@ -126,7 +131,7 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-# dist -- # 추후 라이브러리 배포를 할 때에는 빌드된 배포물을 저장소에 포함시키는 게 맞다.
+dist
 
 # Gatsby files
 .cache/
