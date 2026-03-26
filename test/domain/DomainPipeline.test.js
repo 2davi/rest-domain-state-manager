@@ -4,7 +4,7 @@ import { DomainPipeline } from '../../src/domain/DomainPipeline.js';
 import { makeUserDto } from '../fixtures/index.js';
 
 // DomainState.PipelineConstructor 주입 (진입점 없이 직접 테스트 시 필요)
-DomainState.PipelineConstructor = DomainPipeline;
+DomainState.configure({ pipelineFactory: (...args) => new DomainPipeline(...args) });
 
 function makeDomainState() {
     return DomainState.fromJSON(JSON.stringify(makeUserDto()), {

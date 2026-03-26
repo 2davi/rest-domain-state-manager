@@ -1,7 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DomainState } from '../../src/domain/DomainState.js';
 import { DomainVO } from '../../src/domain/DomainVO.js';
 import { makeUserDto, makeHttpError } from '../fixtures/index.js';
+
+afterEach(() => {
+    // _pipelineFactory는 모듈 클로저 변수라 외부 리셋 불가.
+    // 각 beforeEach에서 configure()로 새 mock이 주입되므로 오염 없음.
+});
 
 // ── Mock ApiHandler 팩토리 ─────────────────────────────────────────────────────
 /**
