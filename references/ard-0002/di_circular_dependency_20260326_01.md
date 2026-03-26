@@ -309,10 +309,6 @@ refactor(core): restructure index.js as composition root via configure()
 test(domain): verify DomainState isolation with mocked pipelineFactory
 
   - DomainState.test.js: PipelineConstructor 직접 주입 방식 제거
-  - configure({ pipelineFactory: vi.fn() }) 방식으로 mock 교체
-  - DomainPipeline import 없이 DomainState 전체 테스트 통과 확인
-  - all() 메서드: 팩토리 반환값을 그대로 반환하는지 단위 테스트 추가
-  - configure() 미호출 시 all() 에러 throw 케이스 추가
 
 
 # STEP F — 아키텍처 의존 다이어그램 문서 갱신
