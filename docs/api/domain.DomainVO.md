@@ -41,7 +41,7 @@ await newUser.save(); // → POST to static baseURL
 
 ## See
 
-DomainState
+module:domain/DomainState DomainState
 
 ## Classes
 

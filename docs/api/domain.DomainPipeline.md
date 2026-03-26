@@ -43,7 +43,7 @@ if (result._errors?.length) {
 
 ## See
 
- - DomainState
+ - module:domain/DomainState DomainState
  - [MDN — Promise.allSettled](https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled)
 
 ## Classes

@@ -37,9 +37,9 @@ REST 리소스(또는 Aggregate Root) 단위로 인스턴스 하나를 생성한
 
 ## See
 
- - [DomainVO](domain.DomainVO.Class.DomainVO.md)
- - DomainPipeline
- - ApiHandler
+ - module:domain/DomainVO DomainVO
+ - module:domain/DomainPipeline DomainPipeline
+ - module:network/api-handler ApiHandler
 
 ## Classes
 
