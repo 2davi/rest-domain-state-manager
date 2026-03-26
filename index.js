@@ -22,8 +22,11 @@ import { DomainRenderer } from './src/plugins/domain-renderer/DomainRenderer.js'
 import { FormBinder } from './src/plugins/form-binder/FormBinder.js';
 import { closeDebugChannel } from './src/debug/debug-channel.js';
 
-// 의존성 주입: DomainState가 순환 참조 없이 DomainPipeline을 생성할 수 있도록 생성자를 넘겨준다.
-DomainState.PipelineConstructor = DomainPipeline;
+DomainState.configure({
+    // index.js가 두 모듈을 import하는 유일한 파일 (Composition Root).
+    // DomainState.js와 DomainPipeline.js는 서로의 존재를 모른다.
+    pipelineFactory: (...args) => new DomainPipeline(...args),
+});
 
 export {
     ApiHandler,
