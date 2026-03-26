@@ -29,10 +29,12 @@
  * `DomainState.use(plugin)` 호출 시 `plugin.install(DomainState)`가 실행되어
  * `prototype` 또는 클래스 레벨에 기능을 동적으로 주입할 수 있다.
  *
- * ## 의존성 주입 (순환 참조 해소)
- * `DomainState`와 `DomainPipeline`의 상호 참조를 막기 위해
- * 진입점(`rest-domain-state-manager.js`)에서
- * `DomainState.PipelineConstructor = DomainPipeline`으로 생성자를 주입한다.
+ * ## 의존성 주입 (Composition Root 패턴)
+ * `DomainState`와 `DomainPipeline`의 순환 참조를 제거하기 위해
+ * `DomainPipeline`을 직접 import하지 않는다.
+ * 대신, 진입점(`index.js`)이 `DomainState.configure({ pipelineFactory })`를 호출하여
+ * 팩토리 함수를 모듈 클로저 변수 `_pipelineFactory`에 은닉 주입한다.
+ * `DomainState.all()`은 이 팩토리만 호출할 뿐, `DomainPipeline`의 존재를 알지 못한다.
  *
  * @module domain/DomainState
  * @see {@link module:domain/DomainVO DomainVO}
@@ -47,6 +49,22 @@ import { ERR } from '../constants/error.messages.js';
 import { DIRTY_THRESHOLD } from '../constants/dirty.const.js';
 import { broadcastUpdate, openDebugPopup } from '../debug/debug-channel.js';
 import { DomainVO } from './DomainVO.js';
+
+// ════════════════════════════════════════════════════════════════════════════════
+// 모듈 레벨 의존성 저장소
+// ════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * DomainPipeline 인스턴스를 생성하는 팩토리 함수.
+ *
+ * `DomainState.configure({ pipelineFactory })`를 통해서만 주입받는다.
+ * 모듈 스코프 클로저 변수이므로 외부에서 직접 접근하거나 덮어쓸 수 없다.
+ *
+ * DomainPipeline을 직접 import하지 않으므로 반환 타입을 object로 완화한다.
+ * 구체적인 DomainPipeline 타입 힌트는 all()의 @returns JSDoc에서 처리한다.
+ * @type {((...args: any[]) => object) | null}
+ */
+let _pipelineFactory = null;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -192,30 +210,54 @@ export class DomainState {
         return DomainState;
     }
 
-    // ── 의존성 주입 (순환 참조 해소) ──────────────────────────────────────────
+    // ── 의존성 주입 (Composition Root 패턴) ───────────────────────────────────
+
     /**
-     * `DomainPipeline` 클래스 생성자.
-     * 진입점(`rest-domain-state-manager.js`)에서 주입된다.
+     * 라이브러리 의존성을 주입하는 설정 메서드.
      *
-     * `DomainState`와 `DomainPipeline`의 상호 참조를 피하기 위해
-     * 직접 import 대신 생성자 주입(Constructor Injection) 패턴을 사용한다.
+     * `DomainState`와 `DomainPipeline`의 순환 참조를 제거하기 위해,
+     * `DomainPipeline` 생성자를 직접 import하지 않고 팩토리 함수로 주입받는다.
      *
-     * @type {typeof import('./DomainPipeline.js').DomainPipeline | null}
+     * **직접 호출 불필요.** 라이브러리 진입점(`index.js`)이 모듈 평가 시점에
+     * 자동으로 호출한다. 소비자가 직접 호출할 일은 없다.
+     *
+     * Vitest 환경에서는 `configure({ pipelineFactory: vi.fn() })`으로 DomainPipeline을
+     * 로드하지 않고도 DomainState 단독 테스트가 가능하다.
+     *
+     * @param {object} config
+     * @param {(...args: any[]) => object} config.pipelineFactory - `(resourceMap, options) => DomainPipeline` 형태의 팩토리 함수
+     * @throws {TypeError} `pipelineFactory`가 함수가 아닐 때
+     *
+     * @example <caption>index.js (Composition Root) — 라이브러리 내부 사용</caption>
+     * DomainState.configure({
+     *     pipelineFactory: (...args) => new DomainPipeline(...args)
+     * });
+     *
+     * @example <caption>Vitest 테스트 환경에서 mock 주입</caption>
+     * DomainState.configure({ pipelineFactory: vi.fn(() => ({ run: vi.fn() })) });
      */
-    static PipelineConstructor = null;
+    static configure({ pipelineFactory }) {
+        if (typeof pipelineFactory !== 'function') {
+            throw new TypeError(
+                '[DSM] DomainState.configure(): pipelineFactory는 함수여야 합니다.'
+            );
+        }
+        // 모듈 레벨 클로저 변수에 저장. 이 시점부터 all()이 팩토리를 사용할 수 있다.
+        _pipelineFactory = pipelineFactory;
+        return DomainState;  // 체이닝 허용: DomainState.configure({...}).use(Plugin)
+    }
 
     /**
      * 여러 `DomainState`를 병렬로 fetch하고, 후처리 핸들러를 순서대로 체이닝하는
      * `DomainPipeline` 인스턴스를 반환한다.
      *
-     * 내부적으로 `DomainState.PipelineConstructor`를 통해 `DomainPipeline`을 생성한다.
-     * `rest-domain-state-manager.js` 진입점을 통해 `PipelineConstructor`가 주입되지 않으면
-     * 즉시 `Error`를 throw한다.
+     * 내부적으로 `_pipelineFactory`(모듈 클로저 변수)를 호출한다.
+     * `DomainState.configure()`를 통해 팩토리가 주입되지 않으면 즉시 `Error`를 throw한다.
      *
-     * @param {ResourceMap}    resourceMap - 키: 리소스 식별자, 값: `Promise<DomainState>`
-     * @param {PipelineOptions} [options]  - 파이프라인 실행 옵션
-     * @returns {import('./DomainPipeline.js').DomainPipeline} 체이닝 가능한 파이프라인 인스턴스
-     * @throws {Error} `PipelineConstructor`가 주입되지 않은 경우
+     * @param {ResourceMap}     resourceMap - 키: 리소스 식별자, 값: `Promise<DomainState>`
+     * @param {PipelineOptions} [options]   - 파이프라인 실행 옵션
+     * @returns {object} 체이닝 가능한 DomainPipeline 인스턴스. after() / run() 메서드를 제공한다.
+     * @throws {Error} `configure()`가 호출되지 않은 경우
      *
      * @example
      * const result = await DomainState.all({
@@ -229,12 +271,12 @@ export class DomainState {
      * if (result._errors?.length) console.warn(result._errors);
      */
     static all(resourceMap, options = {}) {
-        if (!DomainState.PipelineConstructor) {
-            throw new Error(
-                '[DSM] DomainPipeline이 주입되지 않았습니다. rest-domain-state-manager.js 진입점을 사용하세요.'
-            );
+        if (!_pipelineFactory) {
+            throw new Error(ERR.PIPELINE_NOT_CONFIGURED);
         }
-        return new DomainState.PipelineConstructor(resourceMap, options);
+        // _pipelineFactory는 index.js에서 (...args) => new DomainPipeline(...args)로 주입됨.
+        // DomainState는 DomainPipeline의 존재를 모르고, 팩토리 함수만 실행한다.
+        return _pipelineFactory(resourceMap, options);
     }
 
     // ════════════════════════════════════════════════════════════════════════════

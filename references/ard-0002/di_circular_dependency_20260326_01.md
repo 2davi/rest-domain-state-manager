@@ -275,6 +275,16 @@ refactor(config): add eslint-plugin-import no-cycle rule
   - maxDepth: Infinity, ignoreExternal: true 옵션 설정
   - npm run lint 실행으로 DomainState ↔ DomainPipeline 순환 경로 공식 확인
 
+## 예상 결과와 다름. `npm run lint` 했더니 에러 발생하지 않음.
+
+- **왜?** JSDoc으로 작성된 타입 선언은 es module 레벨 차원에서 그냥 줄글 주석에 불과하다.
+          그러니, ES Module 차원에서는 애초에 순환 참조가 없었던 것이다.
+          하지만, 안전망으로서의 가치는 있을 것.
+- 커밋 메시지 수정:
+  - npm run lint 실행 → 예상 결과가 다름
+    - 순환 참조 에러가 잡히지 않는다. (∵ JSDoc으로 작성된 타입 선언은 es module 레벨 차원에서 그냥 줄글 주석에 불과)
+    - ES Module 차원에서는 애초에 순환 참조가 없었던 것이다.
+    - 하지만, 안전망으로서의 가치 확인.
 
 # STEP B + C — DomainState 의존성 역전 핵심 작업
 refactor(domain): replace PipelineConstructor bridge with configure() DI pattern

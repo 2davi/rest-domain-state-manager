@@ -61,6 +61,11 @@ export const ERR = Object.freeze({
     PLUGIN_NO_INSTALL: `${PREFIX} DomainState.use(): 플러그인은 install(DomainState) 메서드를 가져야 합니다.`,
 
     // ── DomainPipeline ─────────────────────────────────────────────────────
+    /**  */
+    PIPELINE_NOT_CONFIGURED:
+        `${PREFIX} DomainState.all(): pipelineFactory가 주입되지 않았습니다. ` +
+        'index.js 진입점을 통해 라이브러리를 import하거나, DomainState.configure({ pipelineFactory })를 직접 호출하세요.',
+
     /** @param {string} key */
     PIPELINE_INVALID_KEY: (key) =>
         `${PREFIX} DomainPipeline.after(): "${key}"는 등록되지 않은 리소스 키입니다. ` +
