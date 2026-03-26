@@ -991,3 +991,313 @@ else → _cloneDeep(value)
 3) **병렬 실패:** A·B 성공, C 실패 → A·B 모두 `restore()` 확인
 4) **멱등성 검증:** `restore()`를 동일 인스턴스에 2회 연속 호출해도 에러 없이 동일 결과 반환 확인
 5) **스냅샷 없는 restore() 검증:** 스냅샷 미생성 상태에서 `restore()` 호출 시 안전한 no-op(경고 로그만 출력) 동작 확인
+
+---
+
+### 4. v1.0.0 달성 이후의 확장 아키텍처 전망
+
+> v1.0.0이 달성하는 7대 목표는 이 라이브러리의 기반을 다지는 작업이다.
+> > _보안, 구조, 성능, 번들링 — 이 네 축이 제대로 서야 그 위에 무언가를 쌓을 수 있다._
+> > _그리고 v1.0.0 위에 쌓아야 할 것은 명확하다. 배열 상태 관리와 UI 레이어의 선택적 위임이다._
+
+---
+
+#### 4.1. 1:N 배열 상태의 부재 — 라이브러리의 미완성 영역
+
+> `DomainState`는 단일 DTO 객체를 다루는 데에는 충분히 강력하나,
+> SI/SM 환경에서 가장 흔한 화면 패턴인 **1:N 부모-자식 관계의 그리드 UI**를 다루는 순간 무용지물이 된다.
+
+- SI 환경에서 1:N 화면을 구현할 때마다 `fnAddRow()`, `fnRemoveRow()`, `fnReindexRows()`, `fnSelectAll()`이 JSP마다 복붙된다.
+  - `fnReindexRows()` 한 함수가 50줄에 이르며, 컬럼 하나가 바뀌면 `attr('name', ...)` 코드 전체를 손으로 다시 쓴다.
+  - 이 보일러플레이트를 라이브러리가 흡수하지 못하는 한, DSM의 존재 이유는 단순 `fetch` 래퍼에 머문다.
+- 배열 상태 관리가 필요한 시나리오는 두 가지 구조로 분리된다.
+  - **Nested Array:** `PUT /api/users/{id}` 한 번으로 `{ userId, certificateList: [...] }` 전체를 전송. 부모 `DomainState`의 필드가 배열이다.
+  - **Root Array:** `POST /api/certificates`로 배열 자체가 전송 본문. 배열이 독립적인 REST 리소스다.
+  - 이 두 시나리오는 REST API 계층에서 완전히 다른 구조이며, 하나의 클래스로 억지로 통합하면 내부 복잡도가 폭발한다.
+- 이를 해결하기 위한 신규 클래스 **`DomainCollection`**을 `src/domain/` 레이어에 추가한다.
+  - `DomainCollection`은 `DomainState`를 원소로 가지는 상태 관리 컨테이너다.
+  - Java 유추: `DomainState ≈ Map<K,V>`, `DomainCollection ≈ List<DomainState>`
+
+##### 4.1.1. Source of Truth와 Reactive 채택 근거
+
+> 배열 상태 관리에서 "누가 Source of Truth인가"를 결정하지 않으면 설계 전체가 흔들린다.
+> > _DOM이 Source of Truth가 되는 순간, changeLog 기반 HTTP 메서드 자동 분기라는 이 라이브러리의 핵심 정체성이 반쪽짜리로 전락한다._
+
+- 세 가지 선택지를 검토했다.
+  - **Option A (Reactive):** 모든 `input` 변경이 실시간으로 DomainState Proxy를 업데이트한다. changeLog가 항상 정확하다.
+  - **Option B (DOM이 Source of Truth):** `save()` 직전 DOM에서 읽어 DomainState를 재구성한다. 기존 `fnReindexRows()` 후 `serialize()` 패턴과 동일.
+  - **Option C (Hybrid):** 구조 변경(행 추가/삭제)은 즉시, 필드 값은 `save()` 직전 flush.
+- **Option A (Reactive)를 채택한다.**
+  - Option B와 C는 changeLog가 `save()` 시점까지 비어있어 PATCH payload가 정확히 생성되지 않는다.
+  - 실제 SI 화면에서 500개 행이 동시에 새로 입력되는 케이스는 DSM 책임 범위 밖이다. 수정 폼은 대부분 "기존 데이터 위에 행 하나 추가"가 99%다.
+  - `debug: false` 상태에서 BroadcastChannel과 Microtask Batching 비용이 사라지며, changeLog 기록 자체는 단순 배열 `push` 연산이다.
+- 권장 최대 행 수 및 guard 수치는 실측 테스트 후 결정한다.
+
+##### 4.1.2. trackingMode 도입 근거
+
+> Reactive 채택으로 changeLog가 항상 정확해지는 대신, 운용 환경에서의 성능 부담을 명시적으로 소비자가 선택할 수 있어야 한다.
+> > _개발 환경과 운용 환경의 기본값을 라이브러리가 결정하는 것은 비즈니스 차원의 결정이다. 라이브러리는 선택지를 제공하고, 결정은 소비자에게 위임한다._
+
+- 두 가지 추적 모드를 `trackingMode` 플래그로 선택한다.
+  - **`'realtime'`:** 현재 구현 그대로. Proxy `set` 트랩 발화마다 changeLog에 즉시 기록. 개발 단계에서 데이터 흐름을 눈으로 확인하는 데 유리하다.
+  - **`'lazy'`:** `save()` 호출 시점에 인스턴스 생성 시 저장한 `_initialSnapshot`과 현재 상태를 deep diff하여 changeLog를 그 자리에서 생성한다. 평상시 changeLog는 비어있다.
+    - `'realtime'`이 "언제 기록하는가" 축에서 이름을 가지듯, `'lazy'`도 동일한 축에서 대칭을 이룬다. "changeLog 기록을 `save()` 시점까지 미룬다"는 Lazy Evaluation(지연 평가) 개념이다.
+    - 사용자가 `name`을 `'A' → 'B' → 'C'`로 바꾸면 `'realtime'`은 changeLog에 2개 항목을 쌓지만 `'lazy'`는 최종 결과인 `A → C` 하나만 기록한다. 네트워크 페이로드가 더 작고 서버 측 JSON Patch 파싱 비용도 줄어든다.
+- `trackingMode`는 각 DomainState 인스턴스 생성 시 명시적 플래그로 선택한다. 라이브러리 전역 기본값으로 설정하지 않는다.
+  - 개발 환경에서도 운용 환경과 동일한 성능 체감을 원해서 `'lazy'`를 쓰고 싶은 개발자가 있을 수 있다. 그 결정은 개발자가 한다.
+
+---
+
+#### 4.2. DomainCollection의 설계 원칙
+
+> Root Array 시나리오에서 배열 자체가 독립적인 REST 리소스일 때, 각 항목은 서로 독립적인 changeLog를 가지는 DomainState여야 한다.
+> > _DomainCollection은 DomainState들을 담는 컨테이너다. 그 이상도, 그 이하도 아니다._
+
+- **Nested Array 선언 방식 — 런타임 연결 채택:**
+  - `DomainVO.static fields`에 `type: DomainCollection`을 선언하면 `DomainVO`가 `DomainCollection`을 `import`해야 한다. ard-0002에서 충분히 경험한 순환 참조 문제가 재발한다. 즉각 반려.
+  - `DomainVO`는 `static fields`에 배열 기본값(`default: []`)만 선언한다. `bindCollection()` 호출 시점에 라이브러리가 런타임에 해당 필드와 DomainCollection을 연결한다.
+  - 이 패턴은 `DomainVO`와 `DomainState`의 관계와 동일하다. `DomainVO`는 `DomainState` 없이도 선언 가능하고, `fromVO()` 호출 시점에 연결이 일어나는 것처럼.
+- **`saveAll()` 전략:**
+  - SI 레거시 환경에서 1:N 배열 저장 시 백엔드는 대부분 리스트 전체를 한 번에 덮어쓰는 방식(DELETE ALL + INSERT, 또는 MERGE)으로 처리한다.
+  - `sequential`이나 `parallel`로 쪼개어 개별 API를 쏘는 것은 MSA 환경에서나 유효하며, SI 레거시에서는 오히려 트랜잭션이 꼬이기 쉽다.
+  - **`batch` (배열 전체를 단일 통신)를 MVP로 단독 구현한다.** `sequential`/`parallel`은 3.7의 DomainPipeline 보상 트랜잭션 완성 이후 연계한다.
+
+---
+
+#### 4.3. UIComposer — 데이터 레이어와 UI 레이어를 잇는 선택적 위임
+
+> 현재 `FormBinder`와 `DomainRenderer`는 각자 기능하고 있으나, 방향이 정반대인 두 플러그인을 하나의 추상 레이어 없이 방치하는 것은 향후 확장을 스스로 막는 구조다.
+> > _FormBinder는 "DOM이 먼저 있고 State가 읽는다." DomainRenderer는 "State가 먼저 있고 DOM이 따라간다." 이 두 방향을 통합하려면 공통 추상 레이어가 필요하다._
+
+- 통합 플러그인 **`UIComposer`**를 `src/ui/` 레이어에 신설한다.
+  - **렌더링(DomainRenderer 흡수):** State → DOM 생성
+  - **바인딩(FormBinder 흡수):** 기존 DOM ↔ State 연결
+  - **컬렉션 조작(신규):** State 기반 동적 DOM 관리
+- 이 플러그인은 `Domain*` 접두사를 가져선 안 된다.
+  - `Domain*` 시리즈(`DomainState`, `DomainVO`, `DomainCollection`, `DomainPipeline`)는 전부 **데이터 세계**의 구성원이다.
+  - UI 규칙은 Domain 단위가 아닌 **화면 단위**로 결정된다. `CertificateVO` 하나로 목록 화면은 읽기 전용 `<span>`, 등록 폼은 편집 가능한 `<input>` 그리드, 모달은 체크박스 선택 테이블을 각각 만들 수 있다.
+  - `UIComposer`는 데이터 세계와 UI 세계를 잇는 다리이며, 다리는 어느 한쪽 세계에 속하지 않는다.
+
+##### 4.3.1. UILayout — HTML Template-Driven Binding
+
+> UILayout의 역할은 구조 생성이 아니라 데이터 매핑이다.
+> > _라이브러리가 `document.createElement`로 DOM을 빚어내는 방식은 "개발자 대신 라이브러리가 백틱으로 HTML을 짠다"는 것과 본질적으로 다르지 않다._
+
+- UILayout이 JS 객체로 태그 이름을 하드코딩(`static item = { tag: 'tr', cellTag: 'td' }`)하고 라이브러리가 DOM을 생성하는 방식을 검토했으나 전면 반려했다.
+  - SI 환경 화면은 `<td>` 안에 `<div>` 3개, 그 안에 `<span>`이 껴있는 구조가 일상적이다. 이를 JS 속성으로 표현하려 들면 `childTag`, `wrapperTag` 등 속성이 끝없이 늘어나 감당 불가 수준에 도달한다.
+  - DOM 구조에 대한 통제권은 전적으로 HTML 작성자(개발자)에게 있어야 한다.
+- **채택 방식 — HTML `<template>` 요소 기반:**
+  - 개발자는 HTML 파일에 `<template id="certRowTemplate">` 태그로 행(row) 하나의 완전한 DOM 구조를 직접 선언한다.
+  - `UILayout`은 `static templateSelector`로 해당 템플릿을 지정하고, `static columns`의 `selector`로 각 필드와 DOM 요소를 매핑하기만 한다.
+  - CSS 클래스, 중첩 `<div>`, Bootstrap 구조, Tailwind CSS — 라이브러리가 전혀 관여하지 않는다.
+  - [HTML Living Standard — `<template>` element](https://html.spec.whatwg.org/multipage/scripting.html#the-template-element): 파싱은 되지만 렌더링은 되지 않으며, `document.importNode(template.content, true)` 호출 전까지 완전히 비활성 상태다.
+- **`sourceKey` 패턴 — 정적 선언과 런타임 주입 분리:**
+  - `UILayout`은 코드 작성 시점에 선언된다. 공통코드 `DomainCollection`은 `DomainPipeline.run()` 이후 런타임에야 존재한다. 정적 선언이 런타임 데이터를 직접 참조할 수 없다.
+  - UILayout의 `columns`에서는 `sourceKey: 'certTypes'` 문자열 키로만 선언하고, 실제 `DomainCollection`은 `bind()` 호출 시 `sources: { certTypes: result.certTypes }` 옵션으로 주입받는다.
+  - [Angular의 DI 토큰 패턴](https://angular.dev/guide/di/di-in-action)과 개념적으로 동일하다.
+
+##### 4.3.2. CollectionBinder 기능 목록
+
+> SI/SM 환경에서 그리드 UI가 반드시 갖춰야 할 기능들이 있다.
+> > _AG Grid, Handsontable, DevExtreme DataGrid 등 엔터프라이즈 그리드 라이브러리의 공통 기능과 SI 실무 패턴을 합쳐 목록화한다._
+
+- **[기본 행 조작] — MVP:**
+  - `addEmpty`: 빈 행 추가 (DomainCollection에 새 DomainState 추가 + `<template>` 복제 후 DOM 삽입)
+  - `removeChecked`: 선택된 행 삭제 — **역순(LIFO) splice 처리 필수.** 정방향 splice는 인덱스가 밀려 잘못된 항목을 삭제한다.
+  - `removeAll`: 전체 행 삭제
+  - `selectAll`: 전체 행 선택/해제
+  - `invertSelection`: 선택 반전
+  - `selectOne`: 개별 행 선택 — **동적 DOM이므로 이벤트 위임으로 내부 자동 처리.** 소비자가 직접 바인딩하는 것은 허용하지 않는다.
+- **[UI 보조] — MVP:** 행 번호 자동 갱신, 전체선택 체크박스 상태 동기화 (내부 자동 처리)
+- **[유효성 검사] — MVP:** `validate` (save() 전 전체 행 일괄 검증), 행 단위 invalid-feedback 자동 처리
+- **[행 순서 조작] — Extends (patch 버전):** `moveUp`, `moveDown`, 드래그 앤 드롭 정렬
+- **[데이터 조작] — Extends (patch 버전):** `duplicateChecked` (선택 행 복사), 선택 행 특정 필드 일괄 변경
+- **소비자 API 원칙:** `bindCollection()`이 컨트롤 함수 객체를 반환하고, 소비자는 destructuring aliasing으로 원하는 함수명에 할당하여 원하는 UI에 연결한다. 라이브러리가 버튼이나 체크박스의 존재를 강제하지 않는다.
+
+---
+
+#### 4.4. 소스 레이어 구조 개편 및 deprecated 정책
+
+> `plugins/`에 편의 플러그인과 아키텍처 선택을 동일한 레이어에 두는 것은 무게감의 혼동이다.
+> > _`FormBinder`와 `DomainRenderer`는 DSM 없이는 동작하지 않는 편의 유틸이다. `UIComposer`는 애플리케이션에 view 레이어 자체를 선택적으로 위임하는 아키텍처 결정이다._
+
+- `src/ui/` 레이어를 신설하여 `UIComposer`, `UILayout`, binder, renderer, collection 하위 모듈을 배치한다.
+  - `view`와 `page`는 Vue의 `src/views/`, Next.js의 `src/pages/`와 이름이 겹쳐 IDE 검색, 번들 분석, 오류 메시지에서 혼란을 유발한다. `ui/`를 채택한다.
+- `UILayout`은 `src/ui/UILayout.js`에 위치하지만 `index.js` 최상위에서 export한다. `DomainVO`와 동일한 패턴이다. `UIComposer`를 설치하지 않은 상태에서도 `UILayout` 선언이 가능해야 한다.
+- `FormBinder`와 `DomainRenderer`는 **v2.0.0에서 공식 deprecated 처리하고 migration guide를 제공한다.** 즉각 제거하지 않는다.
+  - 제거 시점에 대한 정책(grace period, major version 범위)은 v2.0.0 릴리즈 이후 별도 논의한다.
+- `plugins/` 레이어는 삭제하지 않는다. 향후 Vue, React, Angular 등 특정 프론트엔드 프레임워크와의 연동 어댑터를 배치하는 공간으로 역할을 재정의한다.
+
+---
+
+### 5. v1.0.0 이후 확장 아키텍처 달성을 위한 구현 지침
+
+> v1.0.0의 7대 목표가 모두 달성된 시점에서, v1.x.x와 v2.0.0을 향해 나아갈 구현 순서를 선언한다.
+> > _DomainCollection과 UIComposer는 서로 독립적으로 설계되어야 한다. DomainCollection은 UI 없이도 완전하게 동작해야 하며, UIComposer는 DomainState든 DomainCollection이든 동일한 인터페이스로 다룰 수 있어야 한다._
+
+---
+
+#### 5.1. [상태 레이어] DomainCollection 클래스 구현
+
+##### 5.1.1. 판단 근거
+
+- **`DomainCollection`은 UI와 완전히 독립된 순수 상태 레이어여야 한다.**
+  - UIComposer 없이도 `DomainCollection.saveAll({ strategy: 'batch' })`로 배열 전체를 전송할 수 있어야 한다.
+  - `DomainCollection`이 UI 레이어를 알게 되는 순간, 상태 레이어와 UI 레이어의 결합이 발생하여 테스트 격리가 불가능해진다.
+- **`lazy` 모드에서 배열 전체 Diff의 정확성은 `itemKey`에 달려있다.**
+  - 순수 위치(positional) 기반 Diff는 "행 삭제 후 신규 추가" 케이스에서 잘못된 patch를 생성한다.
+    - 초기 배열 `[{id:1},{id:2}]`에서 `{id:1}`을 삭제하고 `{id:3}`을 추가하면, 위치 기준 diff는 두 개의 `replace`로 오독한다.
+    - 실제 의도는 `remove {id:1}` + `add {id:3}`이다.
+  - `UILayout.static itemKey`로 지정된 필드를 기준으로 LCS(Longest Common Subsequence) 기반 diff를 수행한다.
+  - `itemKey`가 없는 경우: 초기값인 항목(id: null 또는 id: '')은 무조건 `add`, 초기 배열에만 있고 현재 배열에 없는 항목은 `remove`로 처리하는 방어 로직을 적용한다.
+  - [LCS 알고리즘 참조 — cs.columbia.edu](https://www.cs.columbia.edu/~allen/S14/NOTES/lcs.pdf)
+
+##### 5.1.2. 실천 과제 (Outline)
+
+###### 5.1.2.A. STEP 1. `DomainCollection` 클래스 구현 (`src/domain/DomainCollection.js`)
+
+1) `DomainCollection.create(api, options)` 팩토리 메서드 구현: 빈 컬렉션 생성. `itemVO`, `urlConfig`, `debug`, `trackingMode` 옵션 수용.
+2) `DomainCollection.fromJSONArray(jsonText, api, options)` 팩토리 메서드 구현: GET 응답 배열로부터 각 항목을 `DomainState`로 생성하여 컬렉션 초기화.
+3) 핵심 메서드 구현: `add(initialData?)`, `remove(indexOrState)`, `getItems()`, `getCheckedItems()`, `getCount()`, `toJSON()`.
+4) `_initialSnapshot` 저장: `fromJSONArray()` 시점에 `structuredClone()`으로 초기 배열 상태를 보존한다.
+
+###### 5.1.2.B. STEP 2. `trackingMode: 'realtime' | 'lazy'` 구현
+
+1) `DomainState.fromJSON()` / `fromVO()`의 `options`에 `trackingMode` 플래그를 추가한다.
+2) `'realtime'` (기존 동작): Proxy `set` 트랩 발화 시 changeLog에 즉시 기록. 변경 없음.
+3) `'lazy'` 신규 구현:
+   - Proxy `set` 트랩에서 changeLog 기록 로직을 건너뛴다. `_initialSnapshot` 비교용 저장만 수행.
+   - `save()` / `saveAll()` 진입 직전: `_initialSnapshot`과 `getTarget()`을 deep diff하여 changeLog를 그 자리에서 생성.
+   - `DomainCollection`의 `lazy` 모드: 행 추가/삭제 시 메모리 배열(`getTarget()`)만 변경. `saveAll()` 시점에 전체 배열 diff 수행.
+4) `itemKey` 기반 LCS diff 유틸 함수를 `src/common/` 레이어에 구현한다.
+
+###### 5.1.2.C. STEP 3. `DomainCollection.saveAll()` — `batch` 전략 구현
+
+1) `toJSON()`으로 현재 배열 전체를 직렬화하여 단일 POST로 전송하는 `batch` 전략을 구현한다.
+2) `lazy` 모드라면 `saveAll()` 진입 시 STEP 2의 diff를 먼저 실행하여 changeLog를 확정한 뒤 직렬화한다.
+3) `sequential` / `parallel` 전략은 3.7 DomainPipeline 보상 트랜잭션 완성 이후로 미룬다.
+
+###### 5.1.2.D. STEP 4. `index.js` Composition Root에 `DomainCollection` export 추가
+
+1) `src/domain/DomainCollection.js`를 `index.js`에서 import하고 named export에 추가한다.
+2) `DomainCollection`이 `DomainPipeline`과 상호작용하는 경우(파이프라인 결과물을 컬렉션에 hydrate)에 대한 순환 참조 가능성을 사전 점검한다.
+
+###### 5.1.2.E. STEP 5. Vitest 단위 테스트 작성
+
+1) **create/fromJSONArray:** 빈 컬렉션 생성, 배열로부터 DomainState 목록 생성 확인.
+2) **add/remove:** add() 후 `getItems().length` 증가, remove() 후 감소, 역순 splice 정확성 확인.
+3) **`lazy` diff 정확성:** 초기 배열에서 항목 삭제 + 신규 추가 후 `saveAll()` 호출 시 `add`/`remove` patch가 정확히 생성되는지 확인.
+4) **`itemKey` 기반 LCS:** `itemKey` 선언 시 위치 이동이 아닌 동일성 기반으로 diff가 수행되는지 확인.
+5) **`batch` saveAll():** `toJSON()` 직렬화 결과가 단일 POST body로 전달되는지 확인.
+
+---
+
+#### 5.2. [UI 레이어] `src/ui/` 레이어 신설 및 `UILayout` 클래스 구현
+
+##### 5.2.1. 판단 근거
+
+- **`UILayout`은 UI 계약 선언 클래스다. `DomainVO`가 데이터 계약을 선언하듯.**
+  - `DomainVO`가 DB Schema를 본 따 데이터 구조를 선언하듯, `UILayout`은 화면 목적에 맞는 UI 표현 방식을 선언한다.
+  - 동일한 `DomainVO`로 등록 폼, 목록 화면, 상세 팝업 — 각각 다른 `UILayout`을 선언할 수 있다.
+- **HTML `<template>` 기반이어야 DOM 구조에 대한 통제권이 개발자에게 완전히 귀속된다.**
+  - JS 객체로 태그를 선언하고 `document.createElement`로 DOM을 빚는 방식은 중첩 셀, 래퍼 div, 커스텀 클래스를 표현하기 위한 속성이 끝없이 늘어나는 구조적 함정에 빠진다.
+  - `<template>` 요소는 HTML Living Standard에 정의된 클론용 비활성 DOM 트리다. 화면 개발자가 원하는 어떤 구조든 자유롭게 작성하고, 라이브러리는 `selector`로 지정된 요소에 데이터를 꽂을 뿐이다.
+
+##### 5.2.2. 실천 과제 (Outline)
+
+###### 5.2.2.A. STEP 1. `src/ui/` 디렉토리 구조 생성
+
+1) 아래 구조로 `src/ui/` 레이어를 신설한다:
+2) `UILayout`을 `index.js` 최상위에서 named export에 추가한다. `UIComposer` 없이도 `UILayout` 선언이 가능해야 한다.
+
+```text
+   src/ui/
+   ├── UIComposer.js     ← 통합 플러그인 엔트리
+   ├── UILayout.js       ← UI 계약 base class
+   ├── binder/           ← FormBinder 흡수
+   ├── renderer/         ← DomainRenderer 흡수
+   └── collection/       ← CollectionBinder 신규
+```
+
+###### 5.2.2.B. STEP 2. `UILayout` base class 구현 (`src/ui/UILayout.js`)
+
+1) `static templateSelector`: `<template>` 요소의 CSS 선택자.
+2) `static itemKey`: `lazy` 모드 diff 시 항목 동일성 기준 필드명. 선언 권장, 미선언 시 방어 로직 적용.
+3) `static columns`: 필드명 → `{ selector, sourceKey?, required?, readOnly? }` 매핑 선언.
+4) `UIComposer`가 설치되지 않은 상태에서 `bind()` 또는 `bindCollection()`이 호출되면 즉시 `Error`를 throw한다. 에러 메시지에 "UIComposer 플러그인을 먼저 설치하세요"를 명시한다.
+
+###### 5.2.2.C. STEP 3. `mode: 'read' | 'edit'` 지원 설계
+
+1) `mode: 'edit'` (기본): `<template>`을 복제하여 `[selector]` 요소에 State 값을 채운다.
+2) `mode: 'read'`: `[selector]` 요소가 input 계열이면 `disabled` 처리 또는 `textContent`만 설정한다. form 요소를 생성하지 않는다.
+3) `readonlyTemplateSelector`를 별도 선언할지, 동일 템플릿 내 `input → textContent` 치환만으로 처리할지는 구현 착수 전 별도 논의한다.
+
+###### 5.2.2.D. STEP 4. Vitest 단위 테스트 작성
+
+1) `UIComposer` 미설치 상태에서 `bind()` 호출 시 `Error` throw 확인.
+2) `static templateSelector`가 없는 경우 명확한 에러 메시지 throw 확인.
+3) `static itemKey` 선언 여부에 따른 diff 분기 동작 확인.
+
+---
+
+#### 5.3. [UI 레이어] `UIComposer` 통합 플러그인 구현
+
+##### 5.3.1. 판단 근거
+
+- **`CollectionBinder`를 독립 플러그인으로 외부에 노출하면 v2.0.0에서 `UIComposer`로 흡수할 때 소비자가 migration 비용을 두 번 치른다.**
+  - v1.x.x 단계에서 `CollectionBinder` 로직을 `UIComposer`의 내부 모듈로 처음부터 설계하고, 외부에는 `UIComposer` 이름으로만 노출한다.
+- **`bindCollection()`이 컨트롤 함수 객체를 반환해야 한다.**
+  - 개발자는 반환받은 함수를 원하는 이름으로 destructuring하여 원하는 버튼, 체크박스에 직접 연결한다.
+  - 라이브러리는 어떤 버튼이나 체크박스가 존재하는지 알지 못하며, 알아서도 안 된다. 이벤트 바인딩의 주도권은 개발자에게 있다.
+  - 단, 동적으로 생성되는 행 내부의 개별 체크박스(`selectOne`)는 이벤트 위임으로 내부에서 자동 처리한다. 소비자가 직접 바인딩하는 것은 허용하지 않는다.
+- **`sourceKey` 연결은 `bind()` / `bindCollection()` 호출 시 `sources` 옵션으로 주입한다.**
+  - `UILayout` 선언은 정적(코드 작성 시점), `DomainCollection`은 동적(런타임). 정적 선언이 런타임 데이터를 직접 참조할 수 없으므로 주입 분리가 필수다.
+
+##### 5.3.2. 실천 과제 (Outline)
+
+###### 5.3.2.A. STEP 1. `UIComposer` 플러그인 엔트리 구현 (`src/ui/UIComposer.js`)
+
+1) `DomainState.use(UIComposer)` 호출 시 `plugin.install(DomainState)`가 실행되어 다음 메서드를 주입한다:
+   - `DomainState.prototype.bind(containerSelector, options)`: FormBinder 역할 흡수. `UILayout`, `sources`, `mode` 옵션 수용.
+   - `DomainState.prototype.bindCollection(fieldName, containerSelector, options)`: Nested Array용.
+   - `DomainCollection.prototype.bind(containerSelector, options)`: Root Array용. 동일 인터페이스.
+2) `DomainRenderer.prototype.renderTo()` 역할은 `sources` 주입 + `type: 'select'` 분기 처리로 `bind()` / `bindCollection()` 내부에 흡수한다.
+
+###### 5.3.2.B. STEP 2. `collection/` 내부 모듈 구현 — CollectionBinder MVP
+
+1) **`addEmpty()`:** `DomainCollection.add()` 호출 → `<template>` 복제 → DOM에 삽입 → 행 번호 갱신 → 전체선택 체크박스 상태 동기화.
+2) **`removeChecked()`:** `.dsm-checkbox:checked` 행의 인덱스 수집 → **역순(내림차순) 정렬** → `DomainCollection.remove()` 순차 실행 → DOM 제거 → 재정렬.
+   - 역순 정렬 없이 정방향으로 remove하면 앞 인덱스 제거 시 뒤 인덱스가 밀려 잘못된 항목이 삭제된다. 이는 기존 `fnRemoveRow()` 코드에는 없던 버그 소지다.
+3) **`removeAll()`:** 전체 항목 일괄 제거.
+4) **`selectAll(checked)`:** 전체 `.dsm-checkbox` 상태를 `checked`로 설정.
+5) **`invertSelection()`:** 현재 체크 상태 반전.
+6) **`validate()`:** `UILayout.columns`의 `required` 필드를 순회하여 값이 비어있는 행에 invalid-feedback을 표시. 전체 유효성 여부를 반환.
+7) **`getCheckedItems()` / `getItems()` / `getCount()`:** 상태 조회 함수.
+
+###### 5.3.2.C. STEP 3. `sources` 옵션 처리 — `sourceKey` 연결
+
+1) `bind()` / `bindCollection()` 내부에서 `UILayout.columns`를 순회하며 `sourceKey`가 선언된 필드를 탐지한다.
+2) `sources[sourceKey]` 값이 `DomainCollection` 인스턴스인지 확인한다.
+3) `DomainCollection.getItems()` → 각 항목의 데이터로 `<option>` 요소를 생성하여 `<select>` 요소에 삽입한다.
+4) `sourceKey`가 선언되었으나 `sources`에 해당 키가 없으면 명확한 에러 메시지를 throw한다. 조용히 빈 `<select>`를 만드는 Silent Failure를 허용하지 않는다.
+
+###### 5.3.2.D. STEP 4. Extends 기능 — [행 순서 조작] / [데이터 조작] (patch 버전)
+
+1) `moveUp()` / `moveDown()`: 선택 행의 배열 인덱스를 이동 + DOM 노드 이동.
+2) `duplicateChecked()`: 선택 행의 DomainState를 `structuredClone()`으로 복제하여 `DomainCollection.add()`로 추가.
+3) 일괄 필드 변경: 선택된 행들의 특정 필드를 하나의 값으로 설정. SI 환경에서 "선택된 항목 전체의 상태 코드를 일괄 변경"하는 케이스에 대응.
+
+###### 5.3.2.E. STEP 5. `FormBinder` / `DomainRenderer` deprecated 처리
+
+1) v2.0.0 릴리즈 시점에 `FormBinder`와 `DomainRenderer`의 JSDoc에 `@deprecated` 태그를 추가한다.
+2) 두 플러그인 사용 시 `console.warn`으로 "v2.0.0에서 deprecated되었습니다. UIComposer를 사용하세요" 메시지를 출력한다.
+3) migration guide 문서를 `docs/guide/migration-v2.md`로 작성하여 기존 사용자의 전환을 돕는다.
+
+###### 5.3.2.F. STEP 6. Vitest 통합 테스트 작성
+
+1) **`addEmpty()`:** 호출 후 `DomainCollection.getCount()` 증가 + DOM에 `<tr>` 추가 확인.
+2) **`removeChecked()` 역순 splice:** 체크박스 2개 선택 후 제거 시 올바른 항목이 제거되는지 확인.
+3) **`sourceKey` 연결:** `sources` 옵션 주입 후 `<select>` 내 `<option>` 수가 DomainCollection 항목 수와 일치하는지 확인.
+4) **`sourceKey` 미주입 에러:** `sourceKey`가 선언되었으나 `sources`에 해당 키가 없을 때 `Error` throw 확인.
+5) **`validate()`:** required 필드가 빈 행 존재 시 `false` 반환 + invalid-feedback 표시 확인.
+6) **deprecated 경고:** `DomainState.use(FormBinder)` 호출 시 `console.warn` 발화 확인.
