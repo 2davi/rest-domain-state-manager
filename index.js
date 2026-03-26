@@ -25,7 +25,8 @@ import { closeDebugChannel } from './src/debug/debug-channel.js';
 DomainState.configure({
     // index.js가 두 모듈을 import하는 유일한 파일 (Composition Root).
     // DomainState.js와 DomainPipeline.js는 서로의 존재를 모른다.
-    pipelineFactory: (...args) => new DomainPipeline(...args),
+    // index.js는 DomainPipeline을 직접 import하여서 `configure()`의 `@param` 타입을 인지하고 있다. 그래서 명시적으로 작성.
+    pipelineFactory: (resourceMap, options) => new DomainPipeline(resourceMap, options),
 });
 
 export {
