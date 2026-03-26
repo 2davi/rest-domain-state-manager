@@ -39,7 +39,12 @@
  *     result._errors.forEach(({ key, error }) => console.warn(key, error));
  * }
  * ```
- *
+ * 
+ * ## 의존성 방향
+ * `DomainPipeline → DomainState` 단방향. `DomainState`는 `DomainPipeline`을 알지 못한다.
+ * 아래 @typedef의 `import('./DomainState.js')` 참조는 IDE 자동완성 전용 JSDoc hinting이며,
+ * 런타임 의존성이 아니다. (ES Module import 구문 없음)
+ * 
  * @module domain/DomainPipeline
  * @see {@link module:domain/DomainState DomainState}
  * @see {@link https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled MDN — Promise.allSettled}
