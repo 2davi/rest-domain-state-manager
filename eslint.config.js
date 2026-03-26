@@ -1,7 +1,8 @@
 // eslint.config.js
-import js        from '@eslint/js';
-import jsdoc     from 'eslint-plugin-jsdoc';
-import globals   from 'globals';
+import js           from '@eslint/js';
+import jsdoc        from 'eslint-plugin-jsdoc';
+import importPlugin from 'eslint-plugin-import';
+import globals      from 'globals';
 
 export default [
 
@@ -21,7 +22,10 @@ export default [
     {
         files: ['src/**/*.js', 'index.js'],
 
-        plugins: { jsdoc },
+        plugins: { 
+            jsdoc,
+            import: importPlugin // KEY 이름이 'import'여야 규칙 prefix에 맞음
+        },
 
         languageOptions: {
             ecmaVersion:  2022,
@@ -79,6 +83,12 @@ export default [
 
             // @param 타입이 있는데 설명이 없으면 경고
             'jsdoc/require-param-description': 'warn',
+
+            // ── 순환 참조 감지 ──────────────────────────────────────────────
+            
+            // maxDepth: Infinity  → A→B→C→A 같은 간접 순환도 전부 추적
+            // ignoreExternal: true → node_modules 내부까지는 추적 안 함 (성능)
+            'import/no-cycle': ['error', { maxDepth: Infinity, ignoreExternal: true }],
         },
     },
 
