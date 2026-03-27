@@ -45,9 +45,9 @@
  * await order.save('/api/orders/999'); // → order-service.com 으로 전송
  */
 
-import { DomainState } from '../domain/DomainState.js';
+import { DomainState }                  from '../domain/DomainState.js';
 import { normalizeUrlConfig, buildURL } from '../core/url-resolver.js';
-//import { ERR }                          from '../constants/error.messages.js';
+import { ERR }                          from '../constants/error.messages.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -88,10 +88,45 @@ import { normalizeUrlConfig, buildURL } from '../core/url-resolver.js';
  */
 
 // ════════════════════════════════════════════════════════════════════════════════
+// 모듈 상수
+// ════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * CSRF 토큰 삽입이 필요한 HTTP 메서드 집합.
+ * RFC 9110 기준 서버 상태를 변경하는 메서드만 포함한다.
+ * GET / HEAD / OPTIONS / TRACE 는 Safe Method로 제외.
+ *
+ * Set으로 선언하는 이유: Array.includes()는 O(n), Set.has()는 O(1).
+ * 항목이 4개뿐이라 실측 차이는 없으나, 의미론적으로 '순서 없는 집합'이 정확하다.
+ *
+ * @type {Set<string>}
+ */
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+// ════════════════════════════════════════════════════════════════════════════════
 // ApiHandler 클래스
 // ════════════════════════════════════════════════════════════════════════════════
 
 class ApiHandler {
+    // ── CSRF 토큰 저장소 ───────────────────────────────────────────────────────
+    /**
+     * CSRF 토큰 저장소. `init()` 호출 여부와 파싱 결과를 3-상태로 구분한다.
+     *
+     * | 상태        | 의미                                              | `_fetch()` 동작              |
+     * |-------------|---------------------------------------------------|------------------------------|
+     * | `undefined` | `init()` 미호출. CSRF 기능 비활성.                | 토큰 삽입 로직 전체 건너뜀   |
+     * | `null`      | `init()` 호출됨. 토큰 파싱 실패.                  | 뮤테이션 요청 시 즉시 throw  |
+     * | `string`    | 정상 파싱된 토큰 값.                               | `X-CSRF-Token` 헤더 자동 주입 |
+     *
+     * Private class field로 선언하여 외부 직접 접근 및 덮어쓰기를 차단한다.
+     *
+     * @type {string | null | undefined}
+     */
+    #csrfToken = undefined;
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // 생성자
+    // ════════════════════════════════════════════════════════════════════════════
     /**
      * `ApiHandler` 인스턴스를 생성한다.
      *
@@ -140,6 +175,97 @@ class ApiHandler {
     // ════════════════════════════════════════════════════════════════════════════
     // 공개 API
     // ════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * CSRF 토큰을 초기화한다. DOM이 준비된 시점에 1회 호출한다.
+     *
+     * ## 탐색 우선순위
+     * 1. `csrfToken` 직접 주입 — Vitest / SSR 환경용
+     * 2. `csrfSelector` CSS 선택자로 meta 태그 `content` 파싱
+     * 3. `csrfSelector` 미지정 시 `'meta[name="_csrf"]'` 기본값으로 탐색 (Spring Security 기본)
+     * 4. `csrfCookieName` 지정 시 `document.cookie` 파싱 (Double-Submit Cookie 패턴)
+     * 5. 모두 실패 → `#csrfToken = null` (뮤테이션 요청 발생 시 throw)
+     *
+     * ## 환경 호환성
+     * `typeof document === 'undefined'`인 Node.js / Vitest 환경에서는
+     * DOM 탐색을 건너뛴다. 이 환경에서는 `csrfToken` 직접 주입만 동작한다.
+     *
+     * @param {object} [config={}]             - CSRF 토큰 탐색 전략을 구성하는 옵션 객체.
+     * @param {string} [config.csrfSelector]   - CSRF 토큰 meta 태그 CSS 선택자.
+     *                                           기본값: `'meta[name="_csrf"]'`
+     * @param {string} [config.csrfCookieName] - Double-Submit Cookie 방식의 쿠키명.
+     *                                           csrfSelector 탐색 실패 시 fallback.
+     * @param {string} [config.csrfToken]      - 토큰 직접 주입. 지정 시 다른 탐색보다 우선.
+     * @returns {ApiHandler} 체이닝용 `this` 반환
+     *
+     * @example <caption>Spring Security — meta 태그 기본값 자동 탐색</caption>
+     * // 서버가 렌더링한 HTML: <meta name="_csrf" content="abc123">
+     * api.init({});
+     *
+     * @example <caption>커스텀 선택자 (Laravel / Django)</caption>
+     * // HTML: <meta name="csrf-token" content="abc123">
+     * api.init({ csrfSelector: 'meta[name="csrf-token"]' });
+     *
+     * @example <caption>Double-Submit Cookie</caption>
+     * api.init({ csrfCookieName: 'XSRF-TOKEN' });
+     *
+     * @example <caption>Vitest / SSR 환경 — 직접 주입</caption>
+     * api.init({ csrfToken: 'test-csrf-token' });
+     */
+    init({ csrfSelector, csrfCookieName, csrfToken } = {}) {
+
+        // ── 1순위: 직접 주입 ─────────────────────────────────────────────────
+        // Node.js, SSR, Vitest 환경에서 DOM 없이 토큰을 주입할 때 사용한다.
+        if (typeof csrfToken === 'string') {
+            this.#csrfToken = csrfToken;
+            return this;
+        }
+
+        // ── 2·3순위: DOM 탐색 (브라우저 환경 전용) ───────────────────────────
+        // Node.js / Vitest 환경에서는 document 자체가 없으므로 전체 블록을 건너뛴다.
+        if (typeof document !== 'undefined') {
+
+            // 2순위: meta 태그 파싱
+            // csrfSelector 미지정 시 Spring Security 기본 태그명으로 탐색한다.
+            const selector = csrfSelector ?? 'meta[name="_csrf"]';
+            const metaEl   = /** @type {Element | HTMLMetaElement | null} */document.querySelector(selector);
+
+            if (metaEl && metaEl instanceof HTMLMetaElement) {
+                if (metaEl.content) {
+                    // 정상 케이스
+                    this.#csrfToken = metaEl.content;
+                    return this;
+                } else {
+                    // 태그는 있는데 content가 비어있음 → 서버 사이드 버그
+                    // throw가 아닌 console.warn으로 처리하는 게 맞다.
+                    // init() 시점에 throw하면 앱 자체가 초기화를 못 하니까.
+                    // 대신 이후 뮤테이션 요청에서 null 상태로 throw되어 감지된다.
+                    console.warn(ERR.CSRF_INIT_NO_TOKEN(selector));
+                    // #csrfToken = null 처리로 흘러내려감 (의도적)
+                }
+            }
+
+            // 3순위: cookie 파싱 (Double-Submit Cookie 패턴)
+            // csrfCookieName을 명시한 경우에만 시도한다.
+            if (csrfCookieName) {
+                const match = document.cookie
+                    .split(';')
+                    .map(c => c.trim())
+                    .find(c => c.startsWith(`${csrfCookieName}=`));
+
+                if (match) {
+                    this.#csrfToken = decodeURIComponent(match.split('=')[1]);
+                    return this;
+                }
+            }
+        }
+
+        // ── 탐색 실패: null 마킹 ─────────────────────────────────────────────
+        // init()은 분명히 호출됐는데 토큰을 찾지 못한 상태.
+        // undefined(미호출)와 달리, 뮤테이션 요청이 들어오면 즉시 throw한다.
+        this.#csrfToken = null;
+        return this;
+    }
 
     /**
      * HTTP GET 요청을 전송하고 응답을 `DomainState`로 변환하여 반환한다.
