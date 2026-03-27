@@ -18,7 +18,20 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/cjs/index.cjs"
+    },
+    "./adapters/react": {
+        "types":   "./dist/src/adapters/react.d.ts",
+        "import":  "./dist/src/adapters/react.mjs",
+        "require": "./dist/cjs/src/adapters/react.cjs"
     }
+  },
+  "peerDependencies": {
+      "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+      "react": {
+          "optional": true
+      }
   },
   "files": [
     "dist",
