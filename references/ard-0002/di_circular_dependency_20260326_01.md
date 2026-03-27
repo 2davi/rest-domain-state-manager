@@ -245,15 +245,15 @@ DomainState 단독 테스트 파일
 
 ### 수정 파일 목록 및 변경 범위
 
-| 파일 | 변경 종류 | 변경 내용 |
-| --- | --- | --- |
-| `package.json` | **수정** | `eslint-plugin-import` devDependency 추가 |
-| `eslint.config.js` | **수정** | `eslint-plugin-import` 플러그인 등록 + `import/no-cycle` 규칙 추가 |
-| `src/domain/DomainState.js` | **수정** | 모듈 레벨 `_pipelineFactory` 추가, `static PipelineConstructor` 제거, `static configure()` 추가, `all()` 내부 참조 교체, JSDoc 업데이트 |
-| `index.js` | **수정** | `PipelineConstructor` 직접 주입 → `DomainState.configure()` 호출로 교체 |
-| `src/domain/DomainPipeline.js` | **수정** | JSDoc 주석에 "IDE hinting 전용, 런타임 의존성 없음" 명시 추가 |
-| `README.md` | **수정** | 모듈 의존 방향 다이어그램 갱신 |
-| `tests/domain/DomainState.test.js` | **수정** | `PipelineConstructor` 직접 주입 방식 → `configure()` API 방식으로 교체 |
+| 파일                               | 변경 종류  | 변경 내용                                                                                                                               |
+| ---------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`                     |  **수정**  | `eslint-plugin-import` devDependency 추가                                                                                               |
+| `eslint.config.js`                 |  **수정**  | `eslint-plugin-import` 플러그인 등록 + `import/no-cycle` 규칙 추가                                                                      |
+| `src/domain/DomainState.js`        |  **수정**  | 모듈 레벨 `_pipelineFactory` 추가, `static PipelineConstructor` 제거, `static configure()` 추가, `all()` 내부 참조 교체, JSDoc 업데이트 |
+| `index.js`                         |  **수정**  | `PipelineConstructor` 직접 주입 → `DomainState.configure()` 호출로 교체                                                                 |
+| `src/domain/DomainPipeline.js`     |  **수정**  | JSDoc 주석에 "IDE hinting 전용, 런타임 의존성 없음" 명시 추가                                                                           |
+| `README.md`                        |  **수정**  | 모듈 의존 방향 다이어그램 갱신                                                                                                          |
+| `tests/domain/DomainState.test.js` |  **수정**  | `PipelineConstructor` 직접 주입 방식 → `configure()` API 방식으로 교체                                                                  |
 
 ### Feature 브랜치명
 

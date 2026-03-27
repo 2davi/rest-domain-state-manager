@@ -18,7 +18,8 @@
  * 인스턴스에 결합된 서버 설정이 모든 `save()` / `remove()` 요청에 자동 적용된다.
  *
  * ## 공개 메서드
- * - `get(requestPath, options?)` — 외부 개발자가 사용하는 유일한 HTTP 메서드
+ * - `init(config?)` — CSRF 토큰 초기화. DOM이 준비된 시점에 1회 호출한다. 미호출 시 CSRF 기능 비활성.
+ * - `get(requestPath, options?)` — GET 요청 전송 후 `DomainState` 반환
  *
  * ## 내부 전용 메서드
  * - `_fetch(url, options?)` — `DomainState.save()` / `remove()` 에서 위임 호출
