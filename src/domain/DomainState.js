@@ -50,6 +50,7 @@ import { DIRTY_THRESHOLD } from '../constants/dirty.const.js';
 import { broadcastUpdate, openDebugPopup } from '../debug/debug-channel.js';
 import { DomainVO } from './DomainVO.js';
 import { maybeDeepFreeze } from '../common/freeze.js';
+import { setSilent }       from '../common/logger.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 모듈 레벨 의존성 저장소
@@ -240,37 +241,58 @@ export class DomainState {
     // ── 의존성 주입 (Composition Root 패턴) ───────────────────────────────────
 
     /**
-     * 라이브러리 의존성을 주입하는 설정 메서드.
+     * 라이브러리 의존성 및 전역 동작을 설정하는 메서드.
      *
      * `DomainState`와 `DomainPipeline`의 순환 참조를 제거하기 위해,
      * `DomainPipeline` 생성자를 직접 import하지 않고 팩토리 함수로 주입받는다.
      *
-     * **직접 호출 불필요.** 라이브러리 진입점(`index.js`)이 모듈 평가 시점에
-     * 자동으로 호출한다. 소비자가 직접 호출할 일은 없다.
+     * **`pipelineFactory`는 직접 호출 불필요.** 라이브러리 진입점(`index.js`)이
+     * 모듈 평가 시점에 자동으로 주입한다.
      *
      * Vitest 환경에서는 `configure({ pipelineFactory: vi.fn() })`으로 DomainPipeline을
      * 로드하지 않고도 DomainState 단독 테스트가 가능하다.
      *
-     * @param {object} config
-     * @param {(...args: any[]) => object} config.pipelineFactory - `(resourceMap, options) => DomainPipeline` 형태의 팩토리 함수
-     * @throws {TypeError} `pipelineFactory`가 함수가 아닐 때
+     * @param {object}   [config={}]
+     * @param {(...args: any[]) => object} [config.pipelineFactory]
+     *   `(resourceMap, options) => DomainPipeline` 형태의 팩토리 함수.
+     *   `DomainState.all()` 호출 전에 반드시 주입되어야 한다.
+     * @param {boolean}  [config.silent=false]
+     *   `true`이면 라이브러리 내부의 모든 `console` 출력을 억제한다.
+     *   통합 테스트 또는 콘솔 오염을 막아야 하는 운영 환경에서 사용한다.
+     * @returns {typeof DomainState} 체이닝용 `DomainState` 클래스 반환
+     * @throws {TypeError} `pipelineFactory`가 전달됐지만 함수가 아닐 때
      *
      * @example <caption>index.js (Composition Root) — 라이브러리 내부 사용</caption>
      * DomainState.configure({
-     *     pipelineFactory: (...args) => new DomainPipeline(...args)
+     *     pipelineFactory: (resourceMap, options) => new DomainPipeline(resourceMap, options)
      * });
      *
      * @example <caption>Vitest 테스트 환경에서 mock 주입</caption>
      * DomainState.configure({ pipelineFactory: vi.fn(() => ({ run: vi.fn() })) });
+     *
+     * @example <caption>통합 테스트 환경 — 콘솔 억제</caption>
+     * DomainState.configure({ silent: true });
+     *
+     * @example <caption>체이닝</caption>
+     * DomainState.configure({ pipelineFactory: factory, silent: true }).use(FormBinder);
      */
-    static configure({ pipelineFactory }) {
-        if (typeof pipelineFactory !== 'function') {
-            throw new TypeError(
-                '[DSM] DomainState.configure(): pipelineFactory는 함수여야 합니다.'
-            );
+    static configure({ pipelineFactory, silent } = {}) {
+        // pipelineFactory: 전달된 경우에만 검증 및 주입
+        // undefined이면 건너뜀 — configure({ silent: true })만 호출해도 에러 없음
+        if (pipelineFactory !== undefined) {
+            if (typeof pipelineFactory !== 'function') {
+                throw new TypeError(
+                    '[DSM] DomainState.configure(): pipelineFactory는 함수여야 합니다.'
+                );
+            }
+            _pipelineFactory = pipelineFactory;
         }
-        // 모듈 레벨 클로저 변수에 저장. 이 시점부터 all()이 팩토리를 사용할 수 있다.
-        _pipelineFactory = pipelineFactory;
+
+        // silent: 전달된 경우에만 설정
+        if (silent !== undefined) {
+            setSilent(silent);
+        }
+
         return DomainState;  // 체이닝 허용: DomainState.configure({...}).use(Plugin)
     }
 
