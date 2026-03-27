@@ -43,6 +43,8 @@
  */
 
 import { ERR } from '../constants/error.messages.js';
+import { safeClone }        from '../common/clone.js';
+import { devWarn, logError } from '../common/logger.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -55,8 +57,10 @@ import { ERR } from '../constants/error.messages.js';
  *
  * @property {*}                    [default='']
  *   필드의 기본값. `toSkeleton()`이 초기 객체를 생성할 때 사용한다.
- *   `object` 또는 `array`이면 `JSON.parse(JSON.stringify(val))`로 deep copy하여
+ *   `object` 또는 `array`이면 `safeClone(val)`로 deep copy하여
  *   인스턴스 간 참조 공유를 방지한다.
+ *   `structuredClone()`을 우선 사용하고, 미지원 환경에서는 재귀 폴백으로 처리한다.
+ *   `Date`·`RegExp` 등 특수 타입의 타입 손실을 방지한다.
  *
  * @property {(value: *) => boolean} [validate]
  *   필드 유효성 검사 함수. 반환값이 `false`이면 유효하지 않은 값으로 간주한다.
@@ -113,8 +117,9 @@ export class DomainVO {
      * 1. `static fields`가 없으면 인스턴스의 own property를 얕은 복사(`{ ...this }`)로 반환.
      * 2. `static fields`가 있으면 각 필드의 `default` 값으로 객체를 구성한다.
      * 3. `default`가 없으면 `''` (빈 문자열)을 사용한다.
-     * 4. `default`가 `object` 또는 `array`이면 `JSON.parse(JSON.stringify(val))`로 deep copy.
-     *    인스턴스마다 독립적인 참조를 갖도록 하여 상태 공유 버그를 방지한다.
+     * 4. `default`가 `object` 또는 `array`이면 `safeClone(val)`로 deep copy.
+     *    `structuredClone()`을 우선 사용하고 미지원 환경에서는 재귀 폴백으로 처리한다.
+     *    `Date`·`RegExp` 타입 손실을 방지하고, 인스턴스 간 참조를 독립적으로 유지한다.
      *
      * @returns {object} `static fields`의 `default` 값으로 구성된 초기 객체
      *
@@ -153,7 +158,7 @@ export class DomainVO {
                 return [
                     key,
                     val !== null && typeof val === 'object'
-                        ? JSON.parse(JSON.stringify(val)) // 객체/배열: deep copy
+                        ? safeClone(val)  // 객체/배열: deep copy (Date·RegExp 타입 보존)
                         : val, // 원시값: 그대로
                 ];
             })
@@ -272,8 +277,10 @@ export class DomainVO {
      *   (서버가 추가 필드를 내려주는 경우, 무시해도 무방)
      *
      * ## 콘솔 출력
-     * - `missingKeys`: `console.error(ERR.VO_SCHEMA_MISSING_KEY(k))` — 각 키마다 에러
-     * - `extraKeys`:   `console.warn(ERR.VO_SCHEMA_EXTRA_KEY(k))`   — 각 키마다 경고
+     * - `missingKeys`: `logError(ERR.VO_SCHEMA_MISSING_KEY(k))` — 환경 무관 에러 (`silent` 제외)
+     * - `extraKeys`:   `devWarn(ERR.VO_SCHEMA_EXTRA_KEY(k))`   — 개발 환경 전용 경고 (`silent` 제외)
+     *
+     * `DomainState.configure({ silent: true })` 설정 시 모든 출력이 억제된다.
      *
      * @param {object} data - `DomainState._getTarget()`으로 읽은 REST API 응답 데이터 객체
      * @returns {SchemaCheckResult} `{ valid, missingKeys, extraKeys }`
@@ -305,8 +312,12 @@ export class DomainVO {
         const missingKeys = schemaKeys.filter((k) => !dataKeys.includes(k));
         const extraKeys = dataKeys.filter((k) => !schemaKeys.includes(k));
 
-        missingKeys.forEach((k) => console.error(ERR.VO_SCHEMA_MISSING_KEY(k)));
-        extraKeys.forEach((k) => console.warn(ERR.VO_SCHEMA_EXTRA_KEY(k)));
+        // missingKeys: 기능 이상을 의미하므로 환경 무관하게 항상 출력 (silent 제외)
+        missingKeys.forEach((k) => logError(ERR.VO_SCHEMA_MISSING_KEY(k)));
+
+        // extraKeys: 기능에 영향 없는 정보성 경고. 개발 환경에서만 출력.
+        // process.env.NODE_ENV 치환 후 Tree-shaking으로 프로덕션 빌드에서 제거된다.
+        extraKeys.forEach((k) => devWarn(ERR.VO_SCHEMA_EXTRA_KEY(k)));
 
         return {
             valid: missingKeys.length === 0,
