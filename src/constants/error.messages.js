@@ -60,6 +60,16 @@ export const ERR = Object.freeze({
     // ── 플러그인 ───────────────────────────────────────────────────────────
     PLUGIN_NO_INSTALL: `${PREFIX} DomainState.use(): 플러그인은 install(DomainState) 메서드를 가져야 합니다.`,
 
+    // ── ApiHandler CSRF ────────────────────────────────────────────────────
+    /** @param {string} method - 토큰 없이 시도된 HTTP 메서드 */
+    CSRF_TOKEN_MISSING: (method) =>
+        `${PREFIX} ApiHandler._fetch(): ${method} 요청에 CSRF 토큰이 필요하지만 ` +
+        '토큰을 찾을 수 없습니다. api.init({ csrfSelector })를 호출하여 토큰을 초기화하세요.',
+
+    /** @param {string} selector - 토큰 파싱 방법 선택자  */
+    CSRF_INIT_NO_TOKEN: (selector) =>
+        `${PREFIX} ApiHandler.init(): csrfSelector="${selector}"로 meta 태그를 찾았으나 ` +
+        'content 속성이 비어있습니다. 서버가 토큰을 HTML에 올바르게 삽입했는지 확인하세요.',
     // ── DomainPipeline ─────────────────────────────────────────────────────
     /**  */
     PIPELINE_NOT_CONFIGURED:
