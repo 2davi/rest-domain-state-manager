@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { DomainVO } from '../../src/domain/DomainVO.js';
+import { DomainState } from '../../src/domain/DomainState.js';
 
 // ── 테스트용 서브클래스 정의 ──────────────────────────────────────────────────
 class UserVO extends DomainVO {
@@ -111,5 +112,92 @@ describe('DomainVO — getBaseURL()', () => {
 
     it('static baseURL 미선언 → null 반환', () => {
         expect(new EmptyVO().getBaseURL()).toBeNull();
+    });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DomainVO.toSkeleton() — safeClone 교체 검증
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('DomainVO.toSkeleton() — safeClone deep copy', () => {
+
+    it('SC-V-001: Date 기본값이 Date 인스턴스로 복사된다', () => {
+        class EventVO extends DomainVO {
+            static fields = {
+                title:     { default: '' },
+                startDate: { default: new Date('2026-01-01') },
+            };
+        }
+        const skeleton = new EventVO().toSkeleton();
+        expect(skeleton.startDate).toBeInstanceOf(Date);
+        expect(skeleton.startDate.getFullYear()).toBe(2026);
+    });
+
+    it('SC-V-002: 객체 기본값이 인스턴스 간 독립적인 참조를 갖는다', () => {
+        class AddressVO extends DomainVO {
+            static fields = {
+                address: { default: { city: 'Seoul', zip: '04524' } },
+            };
+        }
+        const s1 = new AddressVO().toSkeleton();
+        const s2 = new AddressVO().toSkeleton();
+
+        s1.address.city = 'Busan';
+        expect(s2.address.city).toBe('Seoul');  // 오염 없음
+        expect(s1.address).not.toBe(s2.address);  // 다른 참조
+    });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DomainVO.checkSchema() — 로그 레벨 분류 검증
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('DomainVO.checkSchema() — 로그 레벨 분류', () => {
+
+    it('SC-V-003: extraKeys 감지 시 프로덕션 환경에서 console.warn이 발화하지 않는다', () => {
+        const originalEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'production';
+
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const data = { userId: 'u1', name: 'Davi', age: 30, address: {}, extra: 'unknown' };
+        new UserVO().checkSchema(data);
+
+        expect(warnSpy).not.toHaveBeenCalled();
+
+        warnSpy.mockRestore();
+        process.env.NODE_ENV = originalEnv;
+    });
+
+    it('SC-V-004: missingKeys 감지 시 프로덕션 환경에서도 console.error가 발화한다', () => {
+        const originalEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'production';
+
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        // address 누락
+        new UserVO().checkSchema({ userId: 'u1', name: 'Davi', age: 30 });
+
+        expect(errorSpy).toHaveBeenCalled();
+
+        errorSpy.mockRestore();
+        process.env.NODE_ENV = originalEnv;
+    });
+
+    it('SC-V-005: configure({ silent: true }) 후 missing/extra 모두 콘솔 출력 억제된다', () => {
+        DomainState.configure({ silent: true });
+
+        const warnSpy  = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        // missing + extra 동시 유발
+        new UserVO().checkSchema({ userId: 'u1', extra: 'x' });
+
+        expect(warnSpy).not.toHaveBeenCalled();
+        expect(errorSpy).not.toHaveBeenCalled();
+
+        warnSpy.mockRestore();
+        errorSpy.mockRestore();
+
+        // silent 해제 — 다른 테스트에 영향 없도록
+        DomainState.configure({ silent: false });
     });
 });
