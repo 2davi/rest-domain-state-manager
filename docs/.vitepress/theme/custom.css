@@ -102,6 +102,13 @@
     max-width: 560px;
 }
 
+@media (min-width: 640px) {
+    .VPHero .text {
+        max-width: 600px;
+        min-width: 600px;
+    }
+}
+
 /* ── 4. 네비게이션 뱃지 (사이드바용) ────────────────────── */
 .nav-badge {
     display: inline-block;
