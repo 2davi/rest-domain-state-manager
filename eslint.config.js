@@ -104,7 +104,6 @@ export default [
                 ...globals.browser,
                 ...globals.node,
                 ...globals.es2021,
-                process: 'readonly',  // 번들러 define으로 주입되는 Node.js 전역
             },
         },
 
