@@ -1,15 +1,5 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
 
-export default defineConfig({
-  build: {
-    lib: {
-      entry: resolve(__dirname, 'index.js'),
-      name: 'DSM',
-      fileName: (format) => `index.${format === 'es' ? 'js' : 'cjs'}`,
-      formats: ['es', 'cjs']
-    },
-    sourcemap: true,
-    minify: 'terser'
-  }
-});
+// 라이브러리 번들 빌드는 rollup.config.js가 담당한다.
+// 이 파일은 index.html 개발 플레이그라운드(vite dev) 전용이다.
+export default defineConfig({});
