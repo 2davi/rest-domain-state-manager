@@ -540,7 +540,7 @@
 2) [`deepFreeze` 구현 시](https://dev.to/syed_ammar/javascript-object-deep-freeze-vs-shallow-freeze-4nk8) `WeakSet`을 통해 [순환 참조 안전 처리를 포함한다.](https://coreui.io/answers/how-to-implement-deep-freeze-in-javascript/)
 3) 대안으로 `Object.freeze()` 대신 **읽기 전용 Proxy 트랩**(`set` Trap에서 throw 발화)을 사용하면 재귀 순회 비용 없이 유사한 효과를 얻을 수 있다.
 
-###### 3.3.2.D. React 연동 인터페이스(`useDomainState`) 구현
+###### 3.3.2.D. STEP 4. React 연동 인터페이스(`useDomainState`) 구현
 
 1) `DomainState`에 `subscribe(listener)` 메서드와 `getSnapshot()` 메서드를 추가한다.
 2) `subscribe`는 `changeLog`가 변경될 때마다 등록된 리스너를 호출하고, 구독 해제 함수를 반환한다.
@@ -548,18 +548,18 @@
 4) `useSyncExternalStore(state.subscribe, state.getSnapshot)`을 감싸는 `useDomainState(domainState)` 커스텀 훅을 별도 React 어댑터 패키지로 제공한다.
    [(코어 라이브러리의 프레임워크 비의존성 철학을 유지)](https://valtio.dev/docs/api/basic/useSnapshot)
 
-###### 3.3.2.E. Valtio 연동 방식 레퍼런스 검토
+###### 3.3.2.E. STEP 5. Valtio 연동 방식 레퍼런스 검토
 
 1) Valtio의 `proxy()` + `useSnapshot()` + `useSyncExternalStore` 연동 구조를 참조 구현으로 [상세 분석한다.](https://ungumungum.tistory.com/137)
 2) Valtio v2의 `useSnapshot`이 [React 19.1에서 호환 문제를 일으킨 사례를 통해,](https://github.com/pmndrs/valtio/discussions/1115)
    `useSyncExternalStore`와의 연동 시 React 버전 대응 테스트 케이스를 Vitest에 포함한다.
 
-###### 3.3.2.F. Mutative 아키텍처 설계 검토
+###### 3.3.2.F. STEP 6. Mutative 아키텍처 설계 검토
 
 1) 외부 의존성 없는 모듈 만들기로 했으니까 도입은 안 한다.
 2) 대신, Mutative의 copy-on-write 설계를 참고 아키텍처로 삼는다.
 
-###### 3.3.2.G. 성능 회귀 테스트 통합
+###### 3.3.2.G. STEP 7. 성능 회귀 테스트 통합
 
 1) 1,000개 이상의 중첩 객체를 대상으로 스냅샷 생성 시간을 측정하는 벤치마크를 `vitest.bench`로 작성한다.
 2) Shadow State 생성 비용이 기존 `JSON.parse` 방식 대비 동등하거나 낮은지 확인한다.

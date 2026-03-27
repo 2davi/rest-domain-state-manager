@@ -1,4 +1,4 @@
-// src/common/freeze.js
+/* global process */
 
 /**
  * 불변성 강제 유틸리티

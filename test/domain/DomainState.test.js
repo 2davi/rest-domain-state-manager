@@ -271,3 +271,127 @@ describe('DomainState.remove()', () => {
         );
     });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Shadow State — subscribe / getSnapshot / Structural Sharing
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
+
+    // ── getSnapshot 초기 상태 ──────────────────────────────────────────────────
+
+    it('SS-001: 인스턴스 생성 직후 getSnapshot()이 초기 데이터를 담은 객체를 반환한다', () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        const snap = state.getSnapshot();
+        expect(snap).toBeDefined();
+        expect(snap.name).toBe(makeUserDto().name);
+    });
+
+    it('SS-002: 변경 없이 getSnapshot() 두 번 호출 시 동일 참조를 반환한다 (무한루프 방지)', () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        const snap1 = state.getSnapshot();
+        const snap2 = state.getSnapshot();
+        expect(snap1).toBe(snap2);  // Object.is() 기준 동일 참조
+    });
+
+    // ── 변경 후 새 참조 ──────────────────────────────────────────────────────
+
+    it('SS-003: data 변경 후 microtask flush 완료 시 getSnapshot()이 새 참조를 반환한다', async () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        const snap1 = state.getSnapshot();
+
+        state.data.name = 'Lee';
+
+        // microtask flush 대기
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const snap2 = state.getSnapshot();
+        expect(snap1).not.toBe(snap2);      // 새 참조
+        expect(snap2.name).toBe('Lee');     // 값 반영 확인
+    });
+
+    // ── Structural Sharing ───────────────────────────────────────────────────
+
+    it('SS-004: 변경된 키는 새 참조, 변경 없는 키는 이전 스냅샷 참조를 재사용한다', async () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        const snap1 = state.getSnapshot();
+
+        // name만 변경 (address는 미변경)
+        state.data.name = 'Lee';
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const snap2 = state.getSnapshot();
+
+        // 변경된 키: 새 값
+        expect(snap2.name).toBe('Lee');
+
+        // 변경 없는 중첩 객체: 참조 재사용 (Structural Sharing)
+        expect(snap2.address).toBe(snap1.address);
+    });
+
+    // ── subscribe / 구독 해제 ────────────────────────────────────────────────
+
+    it('SS-005: subscribe()로 등록한 리스너가 data 변경 후 microtask flush 시 호출된다', async () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        const listener = vi.fn();
+
+        state.subscribe(listener);
+        state.data.name = 'Lee';
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(listener).toHaveBeenCalledOnce();
+    });
+
+    it('SS-006: subscribe()가 반환한 cleanup 함수 호출 후 리스너가 해제된다', async () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        const listener = vi.fn();
+
+        const unsubscribe = state.subscribe(listener);
+        unsubscribe();  // 즉시 해제
+
+        state.data.name = 'Lee';
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('SS-007: 변경 없으면 리스너가 호출되지 않는다', async () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        const listener = vi.fn();
+
+        state.subscribe(listener);
+        // data 변경 없음
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(listener).not.toHaveBeenCalled();
+    });
+
+    // ── 리스너 에러 격리 ─────────────────────────────────────────────────────
+
+    it('SS-008: 하나의 리스너 에러가 다른 리스너 실행을 막지 않는다', async () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+
+        const failingListener = vi.fn(() => { throw new Error('listener error'); });
+        const successListener = vi.fn();
+
+        state.subscribe(failingListener);
+        state.subscribe(successListener);
+
+        state.data.name = 'Lee';
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(failingListener).toHaveBeenCalledOnce();
+        expect(successListener).toHaveBeenCalledOnce();  // 에러에 영향받지 않음
+    });
+});
