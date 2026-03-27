@@ -330,9 +330,12 @@ class ApiHandler {
      *
      * ## 처리 내용
      * 1. `this._headers`와 `options.headers`를 병합하여 공통 헤더를 주입한다.
-     * 2. `response.ok` 검사 → `false`이면 `HttpError` 구조체를 throw한다.
-     * 3. 응답 본문을 `response.text()`로 읽어 반환한다.
-     * 4. 응답 본문이 비어있으면 (`204 No Content` 등) `null`을 반환한다.
+     * 2. **CSRF 토큰 삽입** — `init()`으로 토큰이 주입된 상태이고 뮤테이션 메서드
+     *    (`POST` / `PUT` / `PATCH` / `DELETE`)인 경우 `X-CSRF-Token` 헤더를 추가한다.
+     *    `init()` 미호출(`#csrfToken === undefined`) 시 이 단계를 건너뛴다.
+     * 3. `response.ok` 검사 → `false`이면 `HttpError` 구조체를 throw한다.
+     * 4. 응답 본문을 `response.text()`로 읽어 반환한다.
+     * 5. 응답 본문이 비어있으면 (`204 No Content` 등) `null`을 반환한다.
      *
      * ## 헤더 병합 우선순위
      * `options.headers`가 `this._headers`보다 우선 적용된다. (스프레드 오버라이드)
@@ -344,6 +347,8 @@ class ApiHandler {
      * @param {RequestInit} [options={}]   - `fetch()` 두 번째 인자와 동일. `method`, `body`, `headers` 포함.
      * @returns {Promise<string | null>} 응답 본문 텍스트. 빈 응답이면 `null`.
      * @throws {HttpError} `response.ok === false`인 경우 (`{ status, statusText, body }`)
+     * @throws {Error}     `init()` 호출 후 토큰 파싱에 실패한 상태(`#csrfToken === null`)에서
+     *                     뮤테이션 메서드 요청 시. 요청은 서버에 전달되지 않는다.
      *
      * @example <caption>DomainState.save() 내부에서의 POST 호출</caption>
      * await this._handler._fetch(url, {
@@ -361,21 +366,51 @@ class ApiHandler {
      * await this._handler._fetch(url, { method: 'DELETE' });
      * // 204 No Content → null 반환
      */
-    async _fetch(url, options = {}) {
+async _fetch(url, options = {}) {
+
+        const method = (options.method ?? 'GET').toUpperCase();
+
+        // 헤더를 변수로 먼저 구성한다.
+        // CSRF 토큰을 조건부로 추가해야 하므로 스프레드 한 방으로 끝내지 않고
+        // 별도 객체로 분리한다.
+        const headers = {
+            ...this._headers,
+            .../** @type {Record<string, string>} */(options.headers ?? {}),
+        };
+
+        // ── CSRF 토큰 삽입 ────────────────────────────────────────────────────
+        //
+        // | #csrfToken 상태 | 이 블록에서 일어나는 일                          |
+        // |-----------------|--------------------------------------------------|
+        // | undefined       | init() 미호출. 아무것도 하지 않음. (CSRF 비활성) |
+        // | null            | init() 호출됐으나 토큰 없음. throw.              |
+        // | string          | X-CSRF-Token 헤더 주입.                          |
+        //
+        // GET / HEAD / OPTIONS 등 Safe Method는 이 블록 자체에 진입하지 않는다.
+        // (OWASP CSRF Prevention Cheat Sheet, RFC 9110 § 9.2.1)
+        if (MUTATING_METHODS.has(method)) {
+            if (this.#csrfToken === null) {
+                throw new Error(ERR.CSRF_TOKEN_MISSING(method));
+            }
+            if (typeof this.#csrfToken === 'string') {
+                headers['X-CSRF-Token'] = this.#csrfToken;
+            }
+            // this.#csrfToken === undefined → 조건 미해당. 건너뜀.
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         const res = await fetch(url, {
             ...options,
-            headers: {
-                ...this._headers,
-                ...(options.headers ?? {}),
-            },
+            headers,   // 위에서 조립한 headers 객체로 덮어씀
         });
+
         const text = await res.text();
 
         if (!res.ok) {
             throw /** @type {HttpError} */ ({
-                status: res.status,
+                status:     res.status,
                 statusText: res.statusText,
-                body: text,
+                body:       text,
             });
         }
 
