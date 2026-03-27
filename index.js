@@ -11,6 +11,11 @@
  *   DomainPipeline 병렬 fetch + 순차 after() 체이닝
  *   DomainRenderer DOM 렌더링 플러그인 (DomainState.use(DomainRenderer)로 설치)
  *
+ * ── React 어댑터 (서브패스) ───────────────────────────────────────────────────
+ *   import { useDomainState } from '@2davi/rest-domain-state-manager/adapters/react';
+ *   React 18+의 useSyncExternalStore를 통해 DomainState를 컴포넌트에 연결한다.
+ *   React가 peerDependencies(optional)로 설치되어 있어야 한다.
+ * 
  * @module rest-domain-state-manager
  */
 

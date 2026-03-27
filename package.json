@@ -6,17 +6,17 @@
     "access": "public"
   },
   "type": "module",
-  "main":   "./dist/cjs/index.cjs",
+  "main": "./dist/cjs/index.cjs",
   "module": "./dist/index.mjs",
-  "types":  "./dist/index.d.ts",
+  "types": "./dist/index.d.ts",
   "engines": {
     "node": ">=20.0.0"
   },
   "sideEffects": false,
   "exports": {
     ".": {
-      "types":   "./dist/index.d.ts",
-      "import":  "./dist/index.mjs",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
       "require": "./dist/cjs/index.cjs"
     }
   },
@@ -26,18 +26,18 @@
     "LICENSE"
   ],
   "scripts": {
-    "dev":            "vite",
-    "build":          "rollup -c && tsc -p tsconfig.build.json",
-    "types":          "tsc -p tsconfig.build.json",
-    "lint":           "eslint src index.js",
-    "lint:fix":       "eslint src index.js --fix",
-    "format":         "prettier --write \"src/**/*.js\" \"index.js\" \"test/**/*.js\"",
-    "format:check":   "prettier --check \"src/**/*.js\" \"index.js\" \"test/**/*.js\"",
-    "test":           "vitest run",
+    "dev": "vite",
+    "build": "rollup -c && tsc -p tsconfig.build.json",
+    "types": "tsc -p tsconfig.build.json",
+    "lint": "eslint src index.js",
+    "lint:fix": "eslint src index.js --fix",
+    "format": "prettier --write \"src/**/*.js\" \"index.js\" \"test/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"index.js\" \"test/**/*.js\"",
+    "test": "vitest run",
     "prepublishOnly": "npm run lint && npm run test && npm run build",
-    "docs:dev":       "vitepress dev docs",
-    "docs:build":     "npm run docs:api && vitepress build docs",
-    "docs:api":       "typedoc"
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "npm run docs:api && vitepress build docs",
+    "docs:api": "typedoc"
   },
   "keywords": [
     "rest",
@@ -55,6 +55,7 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/npm": "^13.1.5",
+    "@types/react": "^18.3.28",
     "conventional-changelog-conventionalcommits": "^9.3.0",
     "eslint": "^9.0.0",
     "eslint-plugin-import": "^2.32.0",
