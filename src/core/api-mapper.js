@@ -21,6 +21,7 @@
  * @see {@link https://www.rfc-editor.org/rfc/rfc6902 RFC 6902 — JSON Patch}
  */
 
+/* global process */
 import { createProxy } from './api-proxy.js';
 import { OP } from '../constants/op.const.js';
 
@@ -154,6 +155,13 @@ export function toPayload(getTargetFn) {
  * ## 호출 시점
  * - `DomainState.save()` 에서 `changeLog.length > 0` → PATCH
  *
+ * ## 성능 계측 (개발 환경 전용)
+ * 개발 환경에서 `performance.mark()`로 실행 시간을 측정한다.
+ * 10ms 이상 소요 시 `console.debug`로 경보 출력한다.
+ * Long Task 기준(50ms) 초과 여부가 Worker 오프로딩 Phase 2 판단 근거가 된다.
+ * `process.env.NODE_ENV`를 소비자 번들러가 치환하면 프로덕션 빌드에서
+ * Tree-shaking으로 해당 블록이 완전히 제거된다.
+ * 
  * @param {() => ChangeLogEntry[]} getChangeLogFn
  *   `createProxy()`의 반환값에서 꺼낸 `getChangeLog` 함수.
  *   호출 시 현재 변경 이력의 얕은 복사본을 반환한다.
@@ -183,10 +191,28 @@ export function toPayload(getTargetFn) {
  * // ]
  */
 export function toPatch(getChangeLogFn) {
-    return getChangeLogFn().map(({ op, path, newValue }) => {
+    // ── 성능 계측 시작 (개발 환경 전용) ──────────────────────────────────────
+    const _isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
+    if (_isDev) performance.mark('dsm:toPatch:start');
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const result = getChangeLogFn().map(({ op, path, newValue }) => {
         /** @type {JsonPatchOperation} */
         const patch = { op, path };
         if (op !== OP.REMOVE) patch.value = newValue;
         return patch;
     });
+
+    // ── 성능 계측 종료 및 경보 ───────────────────────────────────────────────
+    if (_isDev) {
+        performance.mark('dsm:toPatch:end');
+        const m = performance.measure('dsm:toPatch', 'dsm:toPatch:start', 'dsm:toPatch:end');
+        // 10ms 이상이면 경보 (Long Task 기준 50ms의 조기 경보 임계값)
+        if (m.duration > 10) {
+            console.debug(`[DSM] toPatch() ${m.duration.toFixed(2)}ms — changeLog ${result.length}항목. 50ms 초과 시 Worker 오프로딩 검토.`);
+        }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    return result;
 }
