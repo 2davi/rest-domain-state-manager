@@ -17,13 +17,14 @@
  *
  * ## 외부 인터페이스
  *
- * | 멤버              | 종류            | 설명                                                  |
- * |------------------|-----------------|-------------------------------------------------------|
+ * | 멤버             | 종류            | 설명                                                    |
+ * |------------------|-----------------|---------------------------------------------------------|
  * | `.data`          | getter (Proxy)  | 변경 추적 Proxy 객체. 유일한 외부 데이터 진입점.        |
  * | `.save(path?)`   | async method    | `isNew` + `changeLog` 기반 POST / PATCH / PUT 자동 분기 |
- * | `.remove(path?)` | async method    | DELETE 요청 전송                                      |
- * | `.log()`         | method          | changeLog를 콘솔 테이블로 출력 (`debug: true` 시만)    |
- * | `.openDebugger()`| method          | 디버그 팝업 열기 (`debug: true` 시만)                  |
+ * | `.remove(path?)` | async method    | DELETE 요청 전송                                        |
+ * | `.log()`         | method          | changeLog를 콘솔 테이블로 출력 (`debug: true` 시만)     |
+ * | `.openDebugger()`| method          | 디버그 팝업 열기 (`debug: true` 시만)                   |
+ * | `.restore()`     | method          | `save()` 이전 상태로 인메모리 복원. 보상 트랜잭션용.    |
  *
  * ## 플러그인 시스템
  * `DomainState.use(plugin)` 호출 시 `plugin.install(DomainState)`가 실행되어
@@ -176,6 +177,26 @@ export class DomainState {
      * @type {Set<DsmPlugin>}
      */
     static #installedPlugins = new Set();
+
+    // ── 보상 트랜잭션 스냅샷 ──────────────────────────────────────────────────
+
+    /**
+     * `save()` 진입 직전 상태의 깊은 복사 스냅샷.
+     *
+     * | 상태        | 의미                                                               |
+     * |-------------|-------------------------------------------------------------------|
+     * | `undefined` | `save()` 미호출 또는 `restore()` 완료. `restore()` 호출 시 no-op. |
+     * | `object`    | `save()` 진입 시 캡처된 스냅샷. 파이프라인 보상 트랜잭션 기준점.  |
+     *
+     * `save()` 성공 후에도 즉시 초기화하지 않는다.
+     * `DomainPipeline`이 후속 `save()` 실패를 감지한 뒤 이미 성공한 인스턴스에
+     * `restore()`를 호출할 수 있도록 기준점을 유지한다.
+     *
+     * 다음 `save()` 호출 시 덮어쓰여 자동으로 최신 기준점으로 갱신된다.
+     *
+     * @type {{ data: object, changeLog: import('../core/api-proxy.js').ChangeLogEntry[], dirtyFields: Set<string>, isNew: boolean } | undefined}
+     */
+    #snapshot = undefined;
 
     // ── Shadow State ──────────────────────────────────────────────────────────
 
@@ -697,14 +718,15 @@ export class DomainState {
         const handler = this._assertHandler('save');
         const url = this._resolveURL(requestPath);
 
-        // ── 스냅샷 생성 — save() 진입 직전 상태를 깊은 복사로 보존 ──────────
-        // HTTP 요청 실패 시 _rollback()이 이 스냅샷으로 4개 상태를 복원한다.
-        // structuredClone은 동기 함수이므로 try 블록 진입 전에 완료된다.
-        const snapshot = {
-            data: structuredClone(this._getTarget()),
-            changeLog: this._getChangeLog(), // 이미 얕은 복사본 반환
+        // ── 스냅샷 캡처 — save() 진입 직전 상태를 인스턴스 필드에 저장 ─────────
+        // - 실패 시: _rollback()이 이 스냅샷으로 4개 상태를 복원한다.
+        // - 성공 시: DomainPipeline 보상 트랜잭션을 위해 유지된다.
+        // - 다음 save() 호출 시: 덮어쓰여 자동으로 최신 기준점으로 갱신된다.
+        this.#snapshot = {
+            data:        structuredClone(this._getTarget()),
+            changeLog:   this._getChangeLog(),   // 이미 얕은 복사본 반환
             dirtyFields: this._getDirtyFields(), // 이미 new Set 복사본 반환
-            isNew: this._isNew,
+            isNew:       this._isNew,
         };
 
         try {
@@ -737,17 +759,105 @@ export class DomainState {
             // ── 동기화 성공 후 상태 초기화 ──────────────────────────────────
             this._clearChangeLog();
             this._clearDirtyFields();
+            // #snapshot은 유지한다. DomainPipeline 보상 트랜잭션 기준점 역할.
             if (this._debug) this._broadcast();
         } catch (err) {
             // ── HTTP 오류 또는 네트워크 오류 — 상태 롤백 ────────────────────
             // 어떤 이유로 서버 동기화가 실패했든 클라이언트 상태를 복원한다.
             console.warn(ERR.SAVE_ROLLBACK(/** @type {any} */ (err)?.status ?? 0));
-            this._rollback(snapshot);
+            this._rollback(this.#snapshot);
 
             // 에러를 반드시 re-throw한다.
             // 호출자의 try/catch가 HttpError를 받아 적절히 처리할 수 있어야 한다.
+            // #snapshot은 유지한다. 재시도 시 동일 기준점으로 다시 rollback 가능.
             throw err;
         }
+    }
+
+/**
+     * 인메모리 도메인 상태를 `save()` 진입 이전 스냅샷으로 복원한다.
+     *
+     * `DomainPipeline`의 보상 트랜잭션(Compensating Transaction)에서
+     * 파이프라인이 자동으로 호출한다. 소비자가 직접 호출할 수도 있다.
+     *
+     * ## 복원 대상 (4가지)
+     * `save()` 진입 직전 캡처된 `#snapshot`의 네 가지 상태를 복원한다.
+     * - `domainObject` (원본 데이터)
+     * - `changeLog` (변경 이력)
+     * - `dirtyFields` (변경된 필드 집합)
+     * - `isNew` 플래그
+     *
+     * ## 멱등성 보장
+     * `#snapshot`이 `undefined`이면 경고 로그 후 `false`를 반환한다.
+     * 동일 인스턴스에 여러 번 호출해도 에러 없이 동일 결과를 낸다.
+     *
+     * ## 책임 범위
+     * 이 메서드는 **프론트엔드 인메모리 상태만 복원**한다.
+     * 서버에 이미 커밋된 상태를 되돌리는 것은 라이브러리 책임 범위 밖이며,
+     * 소비자가 `dsm:rollback` 이벤트를 구독하여 서버 롤백 API를 직접 호출해야 한다.
+     *
+     * ## `dsm:rollback` 이벤트
+     * 복원 완료 후 브라우저 환경에서 `CustomEvent('dsm:rollback')`를 발행한다.
+     * 소비자 앱이 이 이벤트를 구독하여 사용자 알림을 표시할 수 있다.
+     *
+     * @returns {boolean} 복원 성공 시 `true`, 스냅샷 없어 no-op 시 `false`
+     *
+     * @example <caption>DomainPipeline이 자동으로 호출 (failurePolicy: 'rollback-all')</caption>
+     * const result = await DomainState.all({ a: ..., b: ..., c: ... }, {
+     *     failurePolicy: 'rollback-all',
+     * }).after('a', s => s.save('/api/a'))
+     *   .after('b', s => s.save('/api/b'))
+     *   .after('c', s => s.save('/api/c'))
+     *   .run();
+     *
+     * @example <caption>소비자가 직접 호출</caption>
+     * try {
+     *     await userState.save('/api/users/1');
+     *     await profileState.save('/api/profiles/1');
+     * } catch (err) {
+     *     userState.restore();  // 인메모리 상태 복원
+     *     // 서버 롤백은 소비자 책임: DELETE /api/users/1 등
+     * }
+     *
+     * @example <caption>dsm:rollback 이벤트 구독</caption>
+     * window.addEventListener('dsm:rollback', (e) => {
+     *     console.warn(`[UI] ${e.detail.label} 상태가 복원되었습니다.`);
+     *     showErrorNotification('저장에 실패하여 이전 상태로 복원되었습니다.');
+     * });
+     */
+    restore() {
+        // ── 멱등성 방어 ─────────────────────────────────────────────────────
+        // #snapshot이 undefined이면 no-op.
+        // save() 미호출이거나 이미 restore()가 완료된 상태다.
+        if (this.#snapshot === undefined) {
+            console.warn(
+                `[DSM][${this._label}] restore(): 스냅샷이 없습니다. ` +
+                'save() 호출 없이 restore()를 호출했거나 이미 복원된 상태입니다.'
+            );
+            return false;
+        }
+        // ───────────────────────────────────────────────────────────────────
+
+        // ── 인메모리 상태 복원 ───────────────────────────────────────────────
+        this._rollback(this.#snapshot);
+        // ───────────────────────────────────────────────────────────────────
+
+        // ── 스냅샷 초기화 ────────────────────────────────────────────────────
+        // 복원 완료. 다음 restore() 호출은 no-op이 된다 (멱등성).
+        this.#snapshot = undefined;
+        // ───────────────────────────────────────────────────────────────────
+
+        // ── dsm:rollback 이벤트 발행 ─────────────────────────────────────────
+        // 소비자 앱이 구독하여 서버 롤백 API 호출 또는 UI 알림 표시 가능.
+        // Node.js / Vitest 환경에서는 window가 없으므로 건너뛴다.
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('dsm:rollback', {
+                detail: { label: this._label },
+            }));
+        }
+        // ───────────────────────────────────────────────────────────────────
+
+        return true;
     }
 
     /**
