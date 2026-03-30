@@ -118,3 +118,104 @@ describe('DomainPipeline.run() — strict:true', () => {
         ).rejects.toThrow('handler error');
     });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DomainPipeline — failurePolicy 보상 트랜잭션
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('DomainPipeline — failurePolicy 보상 트랜잭션', () => {
+
+    function makeState() {
+        return DomainState.fromJSON(JSON.stringify(makeUserDto()), {
+            _fetch: vi.fn().mockResolvedValue(null),
+            getUrlConfig: () => ({ protocol: 'http://', host: 'localhost:8080', basePath: '' }),
+            isDebug: () => false,
+        });
+    }
+
+    // ── RT-P-001: 'ignore' (기본값) — 기존 동작 유지 ─────────────────────────
+
+    it('RT-P-001: failurePolicy 미지정(ignore) 시 restore() 미호출', async () => {
+        const stateA = makeState();
+        const stateB = makeState();
+        const restoreSpy = vi.spyOn(stateA, 'restore');
+
+        const failHandler = vi.fn().mockRejectedValue(new Error('fail'));
+
+        await new DomainPipeline(
+            { a: Promise.resolve(stateA), b: Promise.resolve(stateB) },
+            { failurePolicy: 'ignore' }
+        )
+            .after('a', async (s) => { s.data.name = 'Lee'; await s.save('/api/a'); })
+            .after('b', failHandler)
+            .run();
+
+        expect(restoreSpy).not.toHaveBeenCalled();
+    });
+
+    // ── RT-P-002: 'rollback-all' — 전체 restore() ────────────────────────────
+
+    it('RT-P-002: rollback-all 시 에러 발생하면 전체 resolved에 restore() 호출', async () => {
+        const stateA = makeState();
+        const stateB = makeState();
+
+        const restoreSpyA = vi.spyOn(stateA, 'restore');
+        const restoreSpyB = vi.spyOn(stateB, 'restore');
+
+        await new DomainPipeline(
+            { a: Promise.resolve(stateA), b: Promise.resolve(stateB) },
+            { failurePolicy: 'rollback-all' }
+        )
+            .after('a', async (s) => { await s.save('/api/a'); })
+            .after('b', async () => { throw new Error('b fail'); })
+            .run();
+
+        expect(restoreSpyA).toHaveBeenCalledOnce();
+        expect(restoreSpyB).toHaveBeenCalledOnce();
+    });
+
+    // ── RT-P-003: 'fail-fast' — LIFO restore() ───────────────────────────────
+
+    it('RT-P-003: fail-fast 시 첫 실패 즉시 중단 + 이전 성공 역순 restore()', async () => {
+        const stateA = makeState();
+        const stateB = makeState();
+        const stateC = makeState();
+
+        const callOrder   = [];
+        const restoreSpyA = vi.spyOn(stateA, 'restore').mockImplementation(() => { callOrder.push('restore:a'); return true; });
+        const restoreSpyB = vi.spyOn(stateB, 'restore').mockImplementation(() => { callOrder.push('restore:b'); return true; });
+        const handlerCSpy = vi.fn();
+
+        await new DomainPipeline(
+            { a: Promise.resolve(stateA), b: Promise.resolve(stateB), c: Promise.resolve(stateC) },
+            { failurePolicy: 'fail-fast' }
+        )
+            .after('a', async (s) => { callOrder.push('save:a'); await s.save('/api/a'); })
+            .after('b', async (s) => { callOrder.push('save:b'); await s.save('/api/b'); })
+            .after('c', async () => { callOrder.push('fail:c'); throw new Error('c fail'); })
+            .run();
+
+        // c 핸들러 이후 핸들러는 실행되지 않음 (없지만 구조 검증)
+        // LIFO 보상: b → a 순서
+        expect(callOrder).toEqual(['save:a', 'save:b', 'fail:c', 'restore:b', 'restore:a']);
+        expect(restoreSpyA).toHaveBeenCalledOnce();
+        expect(restoreSpyB).toHaveBeenCalledOnce();
+        // stateC는 save() 미호출 → restore() 호출해도 no-op
+    });
+
+    // ── RT-P-004: 정상 경로 — 에러 없으면 보상 없음 ──────────────────────────
+
+    it('RT-P-004: rollback-all 설정에서 에러 없으면 restore() 미호출', async () => {
+        const stateA = makeState();
+        const restoreSpy = vi.spyOn(stateA, 'restore');
+
+        await new DomainPipeline(
+            { a: Promise.resolve(stateA) },
+            { failurePolicy: 'rollback-all' }
+        )
+            .after('a', async (s) => { await s.save('/api/a'); })
+            .run();
+
+        expect(restoreSpy).not.toHaveBeenCalled();
+    });
+});

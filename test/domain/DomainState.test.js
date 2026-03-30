@@ -395,3 +395,65 @@ describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
         expect(successListener).toHaveBeenCalledOnce();  // 에러에 영향받지 않음
     });
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DomainState.restore() — 보상 트랜잭션
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('DomainState.restore() — 보상 트랜잭션', () => {
+
+    // ── RT-DS-001: 정상 복원 ─────────────────────────────────────────────────
+
+    it('RT-DS-001: save() 후 restore() → save() 진입 이전 상태로 복원된다', async () => {
+        const handler = mockHandler();
+        const state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+
+        state.data.name = 'Lee';
+        const changeLogBeforeSave = state._getChangeLog().length; // 1
+
+        await state.save('/api/users/1');
+
+        // save() 성공 후 changeLog는 비워짐
+        expect(state._getChangeLog()).toHaveLength(0);
+
+        // restore() 호출
+        const result = state.restore();
+
+        expect(result).toBe(true);
+        // save() 진입 이전 값으로 복원: name = 'Lee', changeLog = 1개
+        expect(state._getTarget().name).toBe('Lee');
+        expect(state._getChangeLog()).toHaveLength(changeLogBeforeSave);
+    });
+
+    // ── RT-DS-002: 멱등성 — 스냅샷 없음 ─────────────────────────────────────
+
+    it('RT-DS-002: save() 미호출 시 restore() → false 반환, no-op', () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        // save() 한 번도 호출 안 함
+
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const result  = state.restore();
+
+        expect(result).toBe(false);
+        expect(warnSpy).toHaveBeenCalledOnce();
+        warnSpy.mockRestore();
+    });
+
+    // ── RT-DS-003: 멱등성 — 2회 연속 호출 ───────────────────────────────────
+
+    it('RT-DS-003: restore() 2회 연속 호출 시 두 번째는 false 반환', async () => {
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
+        state.data.name = 'Lee';
+        await state.save('/api/users/1');
+
+        const first  = state.restore();
+        const second = state.restore();  // #snapshot이 이미 undefined
+
+        expect(first).toBe(true);
+        expect(second).toBe(false);
+    });
+
+    // ── RT-DS-004: dsm:rollback 이벤트 (jsdom 환경 필요) ─────────────────────
+    // jsdom 환경에서만 window.dispatchEvent가 동작한다.
+    // DomainState.test.js는 node 환경이므로 이벤트 검증은 pipeline 통합 테스트에서 수행한다.
+});
