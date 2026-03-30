@@ -1,3 +1,9 @@
+## [0.10.1](https://github.com/2davi/rest-domain-state-manager/compare/v0.10.0...v0.10.1) (2026-03-30)
+
+### 🐛 Bug Fixes
+
+* **debug:** correct worker relative path + apply prettier formatting ([7e0bdb6](https://github.com/2davi/rest-domain-state-manager/commit/7e0bdb6f19512561191ac4873c125efd3c2d74ab))
+
 ## [0.10.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.9.2...v0.10.0) (2026-03-30)
 
 ### ✨ Features
