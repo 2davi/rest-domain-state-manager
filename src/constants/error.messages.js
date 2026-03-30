@@ -70,6 +70,13 @@ export const ERR = Object.freeze({
     CSRF_INIT_NO_TOKEN: (selector) =>
         `${PREFIX} ApiHandler.init(): csrfSelector="${selector}"로 meta 태그를 찾았으나 ` +
         'content 속성이 비어있습니다. 서버가 토큰을 HTML에 올바르게 삽입했는지 확인하세요.',
+
+    // ── DomainPipeline 보상 트랜잭션 ───────────────────────────────────────────
+    PIPELINE_ROLLBACK_WARN:
+        `${PREFIX} DomainPipeline: 파이프라인 실패로 보상 트랜잭션을 실행합니다. ` +
+        '성공한 DomainState 인스턴스를 save() 이전 상태로 복원합니다. ' +
+        '서버에 이미 커밋된 데이터는 소비자가 직접 처리해야 합니다.',
+
     // ── DomainPipeline ─────────────────────────────────────────────────────
     /**  */
     PIPELINE_NOT_CONFIGURED:
