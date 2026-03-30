@@ -43,7 +43,7 @@
  */
 
 import { ERR } from '../constants/error.messages.js';
-import { safeClone }        from '../common/clone.js';
+import { safeClone } from '../common/clone.js';
 import { devWarn, logError } from '../common/logger.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -158,7 +158,7 @@ export class DomainVO {
                 return [
                     key,
                     val !== null && typeof val === 'object'
-                        ? safeClone(val)  // 객체/배열: deep copy (Date·RegExp 타입 보존)
+                        ? safeClone(val) // 객체/배열: deep copy (Date·RegExp 타입 보존)
                         : val, // 원시값: 그대로
                 ];
             })

@@ -15,7 +15,7 @@
  *   import { useDomainState } from '@2davi/rest-domain-state-manager/adapters/react';
  *   React 18+의 useSyncExternalStore를 통해 DomainState를 컴포넌트에 연결한다.
  *   React가 peerDependencies(optional)로 설치되어 있어야 한다.
- * 
+ *
  * @module rest-domain-state-manager
  */
 

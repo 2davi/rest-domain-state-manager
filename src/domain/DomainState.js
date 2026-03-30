@@ -51,7 +51,7 @@ import { DIRTY_THRESHOLD } from '../constants/dirty.const.js';
 import { broadcastUpdate, openDebugPopup } from '../debug/debug-channel.js';
 import { DomainVO } from './DomainVO.js';
 import { maybeDeepFreeze } from '../common/freeze.js';
-import { setSilent }       from '../common/logger.js';
+import { setSilent } from '../common/logger.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 모듈 레벨 의존성 저장소
@@ -314,7 +314,7 @@ export class DomainState {
             setSilent(silent);
         }
 
-        return DomainState;  // 체이닝 허용: DomainState.configure({...}).use(Plugin)
+        return DomainState; // 체이닝 허용: DomainState.configure({...}).use(Plugin)
     }
 
     /**
@@ -425,9 +425,7 @@ export class DomainState {
         // getSnapshot()은 항상 유효한 참조를 반환해야 한다.
         // constructor 시점에 반드시 초기 스냅샷을 생성한다.
         // 이후 _scheduleFlush()의 microtask 콜백이 변경마다 재빌드한다.
-        this.#shadowCache = maybeDeepFreeze(
-            this._buildSnapshot(this._getTarget(), null)
-        );
+        this.#shadowCache = maybeDeepFreeze(this._buildSnapshot(this._getTarget(), null));
         // ─────────────────────────────────────────────────────────────────────
 
         // 생성 직후 디버그 채널에 초기 상태를 broadcast한다
@@ -723,10 +721,10 @@ export class DomainState {
         // - 성공 시: DomainPipeline 보상 트랜잭션을 위해 유지된다.
         // - 다음 save() 호출 시: 덮어쓰여 자동으로 최신 기준점으로 갱신된다.
         this.#snapshot = {
-            data:        structuredClone(this._getTarget()),
-            changeLog:   this._getChangeLog(),   // 이미 얕은 복사본 반환
+            data: structuredClone(this._getTarget()),
+            changeLog: this._getChangeLog(), // 이미 얕은 복사본 반환
             dirtyFields: this._getDirtyFields(), // 이미 new Set 복사본 반환
-            isNew:       this._isNew,
+            isNew: this._isNew,
         };
 
         try {
@@ -774,7 +772,7 @@ export class DomainState {
         }
     }
 
-/**
+    /**
      * 인메모리 도메인 상태를 `save()` 진입 이전 스냅샷으로 복원한다.
      *
      * `DomainPipeline`의 보상 트랜잭션(Compensating Transaction)에서
@@ -832,7 +830,7 @@ export class DomainState {
         if (this.#snapshot === undefined) {
             console.warn(
                 `[DSM][${this._label}] restore(): 스냅샷이 없습니다. ` +
-                'save() 호출 없이 restore()를 호출했거나 이미 복원된 상태입니다.'
+                    'save() 호출 없이 restore()를 호출했거나 이미 복원된 상태입니다.'
             );
             return false;
         }
@@ -851,9 +849,11 @@ export class DomainState {
         // 소비자 앱이 구독하여 서버 롤백 API 호출 또는 UI 알림 표시 가능.
         // Node.js / Vitest 환경에서는 window가 없으므로 건너뛴다.
         if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('dsm:rollback', {
-                detail: { label: this._label },
-            }));
+            window.dispatchEvent(
+                new CustomEvent('dsm:rollback', {
+                    detail: { label: this._label },
+                })
+            );
         }
         // ───────────────────────────────────────────────────────────────────
 

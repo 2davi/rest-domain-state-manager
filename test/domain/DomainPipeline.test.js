@@ -124,7 +124,6 @@ describe('DomainPipeline.run() — strict:true', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainPipeline — failurePolicy 보상 트랜잭션', () => {
-
     function makeState() {
         return DomainState.fromJSON(JSON.stringify(makeUserDto()), {
             _fetch: vi.fn().mockResolvedValue(null),
@@ -146,7 +145,10 @@ describe('DomainPipeline — failurePolicy 보상 트랜잭션', () => {
             { a: Promise.resolve(stateA), b: Promise.resolve(stateB) },
             { failurePolicy: 'ignore' }
         )
-            .after('a', async (s) => { s.data.name = 'Lee'; await s.save('/api/a'); })
+            .after('a', async (s) => {
+                s.data.name = 'Lee';
+                await s.save('/api/a');
+            })
             .after('b', failHandler)
             .run();
 
@@ -166,8 +168,12 @@ describe('DomainPipeline — failurePolicy 보상 트랜잭션', () => {
             { a: Promise.resolve(stateA), b: Promise.resolve(stateB) },
             { failurePolicy: 'rollback-all' }
         )
-            .after('a', async (s) => { await s.save('/api/a'); })
-            .after('b', async () => { throw new Error('b fail'); })
+            .after('a', async (s) => {
+                await s.save('/api/a');
+            })
+            .after('b', async () => {
+                throw new Error('b fail');
+            })
             .run();
 
         expect(restoreSpyA).toHaveBeenCalledOnce();
@@ -181,18 +187,33 @@ describe('DomainPipeline — failurePolicy 보상 트랜잭션', () => {
         const stateB = makeState();
         const stateC = makeState();
 
-        const callOrder   = [];
-        const restoreSpyA = vi.spyOn(stateA, 'restore').mockImplementation(() => { callOrder.push('restore:a'); return true; });
-        const restoreSpyB = vi.spyOn(stateB, 'restore').mockImplementation(() => { callOrder.push('restore:b'); return true; });
+        const callOrder = [];
+        const restoreSpyA = vi.spyOn(stateA, 'restore').mockImplementation(() => {
+            callOrder.push('restore:a');
+            return true;
+        });
+        const restoreSpyB = vi.spyOn(stateB, 'restore').mockImplementation(() => {
+            callOrder.push('restore:b');
+            return true;
+        });
         const handlerCSpy = vi.fn();
 
         await new DomainPipeline(
             { a: Promise.resolve(stateA), b: Promise.resolve(stateB), c: Promise.resolve(stateC) },
             { failurePolicy: 'fail-fast' }
         )
-            .after('a', async (s) => { callOrder.push('save:a'); await s.save('/api/a'); })
-            .after('b', async (s) => { callOrder.push('save:b'); await s.save('/api/b'); })
-            .after('c', async () => { callOrder.push('fail:c'); throw new Error('c fail'); })
+            .after('a', async (s) => {
+                callOrder.push('save:a');
+                await s.save('/api/a');
+            })
+            .after('b', async (s) => {
+                callOrder.push('save:b');
+                await s.save('/api/b');
+            })
+            .after('c', async () => {
+                callOrder.push('fail:c');
+                throw new Error('c fail');
+            })
             .run();
 
         // c 핸들러 이후 핸들러는 실행되지 않음 (없지만 구조 검증)
@@ -209,11 +230,10 @@ describe('DomainPipeline — failurePolicy 보상 트랜잭션', () => {
         const stateA = makeState();
         const restoreSpy = vi.spyOn(stateA, 'restore');
 
-        await new DomainPipeline(
-            { a: Promise.resolve(stateA) },
-            { failurePolicy: 'rollback-all' }
-        )
-            .after('a', async (s) => { await s.save('/api/a'); })
+        await new DomainPipeline({ a: Promise.resolve(stateA) }, { failurePolicy: 'rollback-all' })
+            .after('a', async (s) => {
+                await s.save('/api/a');
+            })
             .run();
 
         expect(restoreSpy).not.toHaveBeenCalled();

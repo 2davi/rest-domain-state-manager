@@ -277,7 +277,6 @@ describe('DomainState.remove()', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
-
     // ── getSnapshot 초기 상태 ──────────────────────────────────────────────────
 
     it('SS-001: 인스턴스 생성 직후 getSnapshot()이 초기 데이터를 담은 객체를 반환한다', () => {
@@ -291,7 +290,7 @@ describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
         const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
         const snap1 = state.getSnapshot();
         const snap2 = state.getSnapshot();
-        expect(snap1).toBe(snap2);  // Object.is() 기준 동일 참조
+        expect(snap1).toBe(snap2); // Object.is() 기준 동일 참조
     });
 
     // ── 변경 후 새 참조 ──────────────────────────────────────────────────────
@@ -307,8 +306,8 @@ describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
         await Promise.resolve();
 
         const snap2 = state.getSnapshot();
-        expect(snap1).not.toBe(snap2);      // 새 참조
-        expect(snap2.name).toBe('Lee');     // 값 반영 확인
+        expect(snap1).not.toBe(snap2); // 새 참조
+        expect(snap2.name).toBe('Lee'); // 값 반영 확인
     });
 
     // ── Structural Sharing ───────────────────────────────────────────────────
@@ -352,7 +351,7 @@ describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
         const listener = vi.fn();
 
         const unsubscribe = state.subscribe(listener);
-        unsubscribe();  // 즉시 해제
+        unsubscribe(); // 즉시 해제
 
         state.data.name = 'Lee';
 
@@ -380,7 +379,9 @@ describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
     it('SS-008: 하나의 리스너 에러가 다른 리스너 실행을 막지 않는다', async () => {
         const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), mockHandler());
 
-        const failingListener = vi.fn(() => { throw new Error('listener error'); });
+        const failingListener = vi.fn(() => {
+            throw new Error('listener error');
+        });
         const successListener = vi.fn();
 
         state.subscribe(failingListener);
@@ -392,7 +393,7 @@ describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
         await Promise.resolve();
 
         expect(failingListener).toHaveBeenCalledOnce();
-        expect(successListener).toHaveBeenCalledOnce();  // 에러에 영향받지 않음
+        expect(successListener).toHaveBeenCalledOnce(); // 에러에 영향받지 않음
     });
 });
 
@@ -401,12 +402,11 @@ describe('DomainState — Shadow State (subscribe / getSnapshot)', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainState.restore() — 보상 트랜잭션', () => {
-
     // ── RT-DS-001: 정상 복원 ─────────────────────────────────────────────────
 
     it('RT-DS-001: save() 후 restore() → save() 진입 이전 상태로 복원된다', async () => {
         const handler = mockHandler();
-        const state   = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
+        const state = DomainState.fromJSON(JSON.stringify(makeUserDto()), handler);
 
         state.data.name = 'Lee';
         const changeLogBeforeSave = state._getChangeLog().length; // 1
@@ -432,7 +432,7 @@ describe('DomainState.restore() — 보상 트랜잭션', () => {
         // save() 한 번도 호출 안 함
 
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        const result  = state.restore();
+        const result = state.restore();
 
         expect(result).toBe(false);
         expect(warnSpy).toHaveBeenCalledOnce();
@@ -446,8 +446,8 @@ describe('DomainState.restore() — 보상 트랜잭션', () => {
         state.data.name = 'Lee';
         await state.save('/api/users/1');
 
-        const first  = state.restore();
-        const second = state.restore();  // #snapshot이 이미 undefined
+        const first = state.restore();
+        const second = state.restore(); // #snapshot이 이미 undefined
 
         expect(first).toBe(true);
         expect(second).toBe(false);

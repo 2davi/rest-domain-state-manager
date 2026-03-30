@@ -212,7 +212,7 @@ function getChannel() {
  * `registerTab()` 폴백 경로가 실행되도록 한다.
  *
  * ## 번들러 호환성
- * `new Worker(new URL('./serializer.worker.js', import.meta.url))` 패턴은
+ * `new Worker(new URL('../workers/serializer.worker.js', import.meta.url))` 패턴은
  * Rollup / Vite / Webpack이 Worker 파일을 정적으로 분석하여 별도 청크로
  * 번들링하는 표준 방식이다. 상대 경로 문자열만 사용하면 번들러가 파일을 인식하지 못한다.
  *
@@ -223,8 +223,8 @@ function getSerializeWorker() {
     if (typeof Worker === 'undefined') return null;
 
     _serializeWorker = new Worker(
-        new URL('./serializer.worker.js', import.meta.url),
-        { type: 'module' }   // ESM Worker
+        new URL('../workers/serializer.worker.js', import.meta.url),
+        { type: 'module' } // ESM Worker
     );
     return _serializeWorker;
 }
@@ -258,17 +258,17 @@ function registerTab() {
         // _stateRegistry 직렬화를 메인 스레드 밖으로 위임한다.
         // JSON.stringify 후 문자열로 전달 — structuredClone보다 빠를 수 있음.
         worker.postMessage({
-            type:    'REGISTER_TAB',
-            tabId:   TAB_ID,
-            tabUrl:  location.href,
+            type: 'REGISTER_TAB',
+            tabId: TAB_ID,
+            tabUrl: location.href,
             payload: JSON.stringify(Object.fromEntries(_stateRegistry)),
         });
     } else {
         // ── 폴백 경로 (Worker 미지원 환경) ──────────────────────────────────
         getChannel()?.postMessage(
             /** @type {TabRegisterMessage} */ ({
-                type:   MSG_TYPE.TAB_REGISTER,
-                tabId:  TAB_ID,
+                type: MSG_TYPE.TAB_REGISTER,
+                tabId: TAB_ID,
                 tabUrl: location.href,
                 states: Object.fromEntries(_stateRegistry),
             })

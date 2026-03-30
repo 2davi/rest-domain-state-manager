@@ -62,6 +62,6 @@ export function useDomainState(domainState) {
     return useSyncExternalStore(
         /** @param {() => void} listener */
         (listener) => domainState.subscribe(listener),
-        ()         => domainState.getSnapshot()
+        () => domainState.getSnapshot()
     );
 }

@@ -46,9 +46,9 @@
  * await order.save('/api/orders/999'); // → order-service.com 으로 전송
  */
 
-import { DomainState }                  from '../domain/DomainState.js';
+import { DomainState } from '../domain/DomainState.js';
 import { normalizeUrlConfig, buildURL } from '../core/url-resolver.js';
-import { ERR }                          from '../constants/error.messages.js';
+import { ERR } from '../constants/error.messages.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -214,7 +214,6 @@ class ApiHandler {
      * api.init({ csrfToken: 'test-csrf-token' });
      */
     init({ csrfSelector, csrfCookieName, csrfToken } = {}) {
-
         // ── 1순위: 직접 주입 ─────────────────────────────────────────────────
         // Node.js, SSR, Vitest 환경에서 DOM 없이 토큰을 주입할 때 사용한다.
         if (typeof csrfToken === 'string') {
@@ -225,11 +224,11 @@ class ApiHandler {
         // ── 2·3순위: DOM 탐색 (브라우저 환경 전용) ───────────────────────────
         // Node.js / Vitest 환경에서는 document 자체가 없으므로 전체 블록을 건너뛴다.
         if (typeof document !== 'undefined') {
-
             // 2순위: meta 태그 파싱
             // csrfSelector 미지정 시 Spring Security 기본 태그명으로 탐색한다.
             const selector = csrfSelector ?? 'meta[name="_csrf"]';
-            const metaEl   = /** @type {Element | HTMLMetaElement | null} */document.querySelector(selector);
+            const metaEl =
+                /** @type {Element | HTMLMetaElement | null} */ document.querySelector(selector);
 
             if (metaEl && metaEl instanceof HTMLMetaElement) {
                 if (metaEl.content) {
@@ -251,8 +250,8 @@ class ApiHandler {
             if (csrfCookieName) {
                 const match = document.cookie
                     .split(';')
-                    .map(c => c.trim())
-                    .find(c => c.startsWith(`${csrfCookieName}=`));
+                    .map((c) => c.trim())
+                    .find((c) => c.startsWith(`${csrfCookieName}=`));
 
                 if (match) {
                     this.#csrfToken = decodeURIComponent(match.split('=')[1]);
@@ -367,8 +366,7 @@ class ApiHandler {
      * await this._handler._fetch(url, { method: 'DELETE' });
      * // 204 No Content → null 반환
      */
-async _fetch(url, options = {}) {
-
+    async _fetch(url, options = {}) {
         const method = (options.method ?? 'GET').toUpperCase();
 
         // 헤더를 변수로 먼저 구성한다.
@@ -376,7 +374,7 @@ async _fetch(url, options = {}) {
         // 별도 객체로 분리한다.
         const headers = {
             ...this._headers,
-            .../** @type {Record<string, string>} */(options.headers ?? {}),
+            .../** @type {Record<string, string>} */ (options.headers ?? {}),
         };
 
         // ── CSRF 토큰 삽입 ────────────────────────────────────────────────────
@@ -402,16 +400,16 @@ async _fetch(url, options = {}) {
 
         const res = await fetch(url, {
             ...options,
-            headers,   // 위에서 조립한 headers 객체로 덮어씀
+            headers, // 위에서 조립한 headers 객체로 덮어씀
         });
 
         const text = await res.text();
 
         if (!res.ok) {
             throw /** @type {HttpError} */ ({
-                status:     res.status,
+                status: res.status,
                 statusText: res.statusText,
-                body:       text,
+                body: text,
             });
         }
 
