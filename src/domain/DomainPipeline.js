@@ -72,6 +72,16 @@ import { broadcastError } from '../debug/debug-channel.js';
  * @property {boolean} [strict=false]
  *   `true`이면 fetch 또는 `after()` 핸들러 실패 시 즉시 reject.
  *   `false`(기본값)이면 `_errors`에 기록하고 계속 진행.
+ * @property {'ignore'|'rollback-all'|'fail-fast'} [failurePolicy='ignore']
+ *   파이프라인 실패 시 보상 트랜잭션 정책.
+ *
+ *   | 값              | 동작                                                                    |
+ *   |-----------------|-------------------------------------------------------------------------|
+ *   | `'ignore'`      | 기존 동작 유지. 실패를 `_errors`에 기록하고 계속 진행. 보상 없음.      |
+ *   | `'rollback-all'`| 모든 핸들러 완료 후 에러가 하나라도 있으면 전체 resolved에 restore(). |
+ *   | `'fail-fast'`   | 첫 번째 핸들러 실패 시 즉시 중단. 이전 성공 상태들에 LIFO restore().  |
+ *
+ *   `'ignore'`가 기본값이므로 `failurePolicy`를 지정하지 않으면 기존 동작과 완전히 동일하다.
  */
 
 /**
@@ -129,7 +139,7 @@ export class DomainPipeline {
      *     .after('roles', async roles => { ... })
      *     .run();
      */
-    constructor(resourceMap, { strict = false } = {}) {
+    constructor(resourceMap, { strict = false, failurePolicy = 'ignore' } = {}) {
         /**
          * 병렬 fetch 대상 리소스 맵.
          * 키: 리소스 식별자, 값: `Promise<DomainState>`.
@@ -154,6 +164,14 @@ export class DomainPipeline {
          * @type {QueueEntry[]}
          */
         this._queue = [];
+
+        /**
+         * 파이프라인 실패 시 보상 트랜잭션 정책.
+         * `'ignore'`(기본값)이면 기존 동작과 동일하다.
+         *
+         * @type {'ignore'|'rollback-all'|'fail-fast'}
+         */
+        this._failurePolicy = failurePolicy;
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -224,7 +242,14 @@ export class DomainPipeline {
      *   - `strict: true`  → 즉시 `throw`
      *   - 디버그 채널에 `broadcastError(key, err)` 전송
      *
-     * ### 3단계 — 결과 반환
+     * ### 3단계 — 보상 트랜잭션 (failurePolicy에 따라)
+     * - `'rollback-all'`: 모든 핸들러 완료 후 에러가 하나라도 있으면
+     *   전체 `resolved`에 `restore()`를 호출한다.
+     * - `'fail-fast'`: 첫 번째 핸들러 실패 시 즉시 중단하고
+     *   이전 성공 상태들에 **역순(LIFO)**으로 `restore()`를 호출한다.
+     * - `'ignore'`: 보상 없음. 기존 동작과 동일.
+     * 
+     * ### 4단계 — 결과 반환
      * `errors`가 있으면 `output._errors`에 포함하여 반환한다.
      *
      * @returns {Promise<PipelineResult>}
@@ -272,7 +297,7 @@ export class DomainPipeline {
         const resolved = {};
 
         for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
+            const key    = keys[i];
             const result = settled[i];
 
             if (result.status === 'fulfilled') {
@@ -288,11 +313,14 @@ export class DomainPipeline {
         console.debug(LOG.pipeline.fetchDone);
 
         // ── 2단계: after() 핸들러 순차 실행 ──────────────────────────────────
+        // fail-fast 정책에서 LIFO 보상을 위해 완료된 키를 순서대로 추적한다.
+        /** @type {string[]} */
+        const completedKeys = [];
+
         for (const { key, handler } of this._queue) {
             const state = resolved[key];
 
             if (!state) {
-                // fetch 단계에서 실패한 리소스의 핸들러는 자동으로 건너뜀
                 errors.push({
                     key,
                     error: new Error(`fetch 실패로 인해 "${key}" 핸들러를 건너뜁니다.`),
@@ -304,6 +332,7 @@ export class DomainPipeline {
             try {
                 await handler(state);
                 console.debug(formatMessage(LOG.pipeline.afterDone, { key }));
+                completedKeys.push(key);
             } catch (err) {
                 errors.push({ key, error: err });
                 broadcastError(key, err);
@@ -311,14 +340,82 @@ export class DomainPipeline {
                     formatMessage(LOG.pipeline.afterError, { key, error: String(err) }),
                     err
                 );
+
+                // ── fail-fast: 즉시 중단 + LIFO 보상 ─────────────────────────
+                if (this._failurePolicy === 'fail-fast') {
+                    // completedKeys를 역순으로 복사하여 LIFO 보상 순서 보장
+                    this._compensate(resolved, [...completedKeys].reverse());
+                    this._dispatchPipelineRollback(errors, resolved);
+                    if (this._strict) throw err;
+                    break;  // 나머지 핸들러 건너뜀
+                }
+
                 if (this._strict) throw err;
             }
         }
 
-        // ── 3단계: 결과 반환 ──────────────────────────────────────────────────
+        // ── 3단계: rollback-all 보상 트랜잭션 ────────────────────────────────
+        // 모든 핸들러 완료 후 에러가 하나라도 있으면 전체 resolved에 restore()
+        if (this._failurePolicy === 'rollback-all' && errors.length > 0) {
+            this._compensate(resolved, Object.keys(resolved));
+            this._dispatchPipelineRollback(errors, resolved);
+        }
+
+        // ── 4단계: 결과 반환 ──────────────────────────────────────────────────
         /** @type {PipelineResult} */
         const output = { ...resolved };
         if (errors.length > 0) output._errors = errors;
         return output;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // 내부 유틸 메서드 (보상 트랜잭션)
+    // ════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * 지정된 키 목록의 `DomainState`에 순서대로 `restore()`를 호출한다.
+     *
+     * `fail-fast` 정책에서는 완료 키를 **역순(LIFO)**으로 전달하고,
+     * `rollback-all` 정책에서는 `resolved`의 전체 키를 전달한다.
+     * `restore()`는 멱등성이 보장되므로 스냅샷이 없는 인스턴스에 호출해도 안전하다.
+     *
+     * @param {Record<string, import('./DomainState.js').DomainState>} resolved
+     *   1단계 fetch에서 성공한 DomainState 맵
+     * @param {string[]} keys
+     *   `restore()`를 호출할 키 목록. 배열 순서가 실행 순서가 된다.
+     * @returns {void}
+     */
+    _compensate(resolved, keys) {
+        console.warn(ERR.PIPELINE_ROLLBACK_WARN);
+        for (const key of keys) {
+            const state = resolved[key];
+            if (state && typeof state.restore === 'function') {
+                state.restore();
+            }
+        }
+    }
+
+    /**
+     * 파이프라인 보상 트랜잭션 완료 후 `dsm:pipeline-rollback` CustomEvent를 발행한다.
+     *
+     * 소비자 앱이 이 이벤트를 구독하여 어느 리소스가 실패했는지 파악하고
+     * 서버 롤백 API 호출 또는 UI 에러 모달 표시를 직접 구현할 수 있다.
+     * Node.js / Vitest 환경에서는 window가 없으므로 건너뛴다.
+     *
+     * @param {PipelineError[]} errors - 실패한 에러 목록
+     * @param {Record<string, import('./DomainState.js').DomainState>} resolved - 성공한 DomainState 맵
+     * @returns {void}
+     */
+    _dispatchPipelineRollback(errors, resolved) {
+        if (typeof window === 'undefined') return;
+        window.dispatchEvent(new CustomEvent('dsm:pipeline-rollback', {
+            detail: {
+                errors,
+                // 성공한 리소스 레이블 맵 — 소비자가 서버 롤백 대상을 식별하는 데 사용
+                resolved: Object.fromEntries(
+                    Object.entries(resolved).map(([k, v]) => [k, v._label ?? k])
+                ),
+            },
+        }));
     }
 }
