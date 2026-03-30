@@ -1,3 +1,9 @@
+## [0.10.2](https://github.com/2davi/rest-domain-state-manager/compare/v0.10.1...v0.10.2) (2026-03-30)
+
+### 🐛 Bug Fixes
+
+* **lint:** just edited for resolve lint warnings - Missing JSDoc [@param](https://github.com/param)  descriptions. ([08b48f6](https://github.com/2davi/rest-domain-state-manager/commit/08b48f6515643e2c620103942128295b0f4a1aa1))
+
 ## [0.10.1](https://github.com/2davi/rest-domain-state-manager/compare/v0.10.0...v0.10.1) (2026-03-30)
 
 ### 🐛 Bug Fixes

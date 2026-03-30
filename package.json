@@ -1,6 +1,6 @@
 {
   "name": "@2davi/rest-domain-state-manager",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Proxy-based REST Domain State Manager for smart change tracking and auto-branching HTTP methods.",
   "publishConfig": {
     "access": "public"
