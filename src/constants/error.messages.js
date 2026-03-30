@@ -25,12 +25,12 @@ export const ERR = Object.freeze({
 
     URL_MISSING: `${PREFIX} URL을 특정할 수 없습니다. save(path) 또는 baseURL/host를 설정하세요.`,
 
-    /** @param {string} val */
+    /** @param {string} val - 프로토콜 파라미터 */
     PROTOCOL_INVALID: (val) =>
         `${PREFIX} 유효하지 않은 protocol 값: "${val}". HTTP | HTTPS | FILE | SSH 중 하나를 사용하세요.`,
 
     // ── DomainState 팩토리 ─────────────────────────────────────────────────
-    /** @param {string} method */
+    /** @param {string} method - DomainState의 메서드 명 */
     HANDLER_MISSING: (method) =>
         `${PREFIX} DomainState.${method}(): ApiHandler가 주입되지 않았습니다. ` +
         'fromJSON / fromForm / fromVO의 두 번째 인자로 api를 전달하세요.',
@@ -39,21 +39,21 @@ export const ERR = Object.freeze({
 
     FROM_FORM_TYPE: `${PREFIX} DomainState.fromForm(): HTMLFormElement 또는 form id 문자열을 전달해야 합니다.`,
 
-    /** @param {string} id */
+    /** @param {string} id - Form요소의 id 속성 문자열 */
     FORM_NOT_FOUND: (id) =>
         `${PREFIX} DomainState.fromForm(): id="${id}"인 form 요소를 찾을 수 없습니다.`,
 
     // ── DomainState 동기화 ─────────────────────────────────────────────────
-    /** @param {number} status */
+    /** @param {number} status - HTTP 상태 코드 */
     SAVE_ROLLBACK: (status) =>
         `${PREFIX} save() HTTP ${status} 오류 — 서버 동기화 실패. 도메인 상태를 save() 호출 이전으로 롤백합니다.`,
 
     // ── DomainVO 정합성 ────────────────────────────────────────────────────
-    /** @param {string} key */
+    /** @param {string} key - DomainVO의 필드명 */
     VO_SCHEMA_MISSING_KEY: (key) =>
         `${PREFIX} DomainVO 정합성 오류: 응답 데이터에 VO 스키마의 "${key}" 필드가 없습니다.`,
 
-    /** @param {string} key */
+    /** @param {string} key - DomainVO의 필드명 */
     VO_SCHEMA_EXTRA_KEY: (key) =>
         `${PREFIX} DomainVO 정합성 경고: 응답 데이터에 VO 스키마에 없는 "${key}" 필드가 포함되어 있습니다.`,
 
@@ -83,21 +83,21 @@ export const ERR = Object.freeze({
         `${PREFIX} DomainState.all(): pipelineFactory가 주입되지 않았습니다. ` +
         'index.js 진입점을 통해 라이브러리를 import하거나, DomainState.configure({ pipelineFactory })를 직접 호출하세요.',
 
-    /** @param {string} key */
+    /** @param {string} key - DomainPipeline 체인에서 사용한 Key 값 */
     PIPELINE_INVALID_KEY: (key) =>
         `${PREFIX} DomainPipeline.after(): "${key}"는 등록되지 않은 리소스 키입니다. ` +
         'DomainState.all()에 전달한 키를 확인하세요.',
 
-    /** @param {string} key */
+    /** @param {string} key - DomainPipeline 체인에서 사용한 Key 값 */
     PIPELINE_HANDLER_TYPE: (key) =>
         `${PREFIX} DomainPipeline.after("${key}"): 핸들러는 함수여야 합니다.`,
 
     // ── Renderer (플러그인) ────────────────────────────────────────────────
-    /** @param {string} id */
+    /** @param {string} id - Form 요소를 렌더링할 컨테이너의 id 속성 문자열 */
     RENDERER_CONTAINER_NOT_FOUND: (id) =>
         `${PREFIX} renderTo(): id="${id}"인 컨테이너 요소를 찾을 수 없습니다.`,
 
-    /** @param {string} type */
+    /** @param {string} type - 렌더링할 Form 요소의 분류값 */
     RENDERER_TYPE_UNKNOWN: (type) =>
         `${PREFIX} renderTo(): 지원하지 않는 type="${type}"입니다. select | radio | checkbox | button 중 하나를 사용하세요.`,
 
@@ -105,7 +105,7 @@ export const ERR = Object.freeze({
 
     RENDERER_LABEL_FIELD_MISSING: `${PREFIX} renderTo(): labelField는 필수 옵션입니다.`,
 
-    /** @param {string} key */
+    /** @param {string} key - Array Data의 필드명 */
     RENDERER_DATA_NOT_ARRAY: (key) =>
         `${PREFIX} renderTo(): DomainState.data가 배열이 아닙니다. ` +
         `renderTo()는 배열 형태의 DomainState에서만 사용할 수 있습니다. (key: "${key}")`,

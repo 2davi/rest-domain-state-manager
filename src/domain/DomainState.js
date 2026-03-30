@@ -273,7 +273,7 @@ export class DomainState {
      * Vitest 환경에서는 `configure({ pipelineFactory: vi.fn() })`으로 DomainPipeline을
      * 로드하지 않고도 DomainState 단독 테스트가 가능하다.
      *
-     * @param {object}   [config={}]
+     * @param {object}   [config={}] - configure()의 config 파라미터
      * @param {(...args: any[]) => object} [config.pipelineFactory]
      *   `(resourceMap, options) => DomainPipeline` 형태의 팩토리 함수.
      *   `DomainState.all()` 호출 전에 반드시 주입되어야 한다.
