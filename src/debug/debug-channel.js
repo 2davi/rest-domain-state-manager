@@ -162,6 +162,17 @@ const TAB_ID = `dsm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 let _channel = null;
 
 /**
+ * `_stateRegistry` 직렬화 및 BroadcastChannel 발화를 오프로딩하는 Worker 싱글톤.
+ *
+ * `getSerializeWorker()` 최초 호출 시 Lazy하게 생성된다.
+ * `closeDebugChannel()` 호출 시 `terminate()` 후 `null`로 리셋된다.
+ * Worker API가 없는 환경(Node.js, Vitest)에서는 영구적으로 `null`을 유지한다.
+ *
+ * @type {Worker | null}
+ */
+let _serializeWorker = null;
+
+/**
  * 이 탭에서 생성된 모든 `DomainState`의 최신 스냅샷을 보관하는 레지스트리.
  *
  * - 키: `DomainState` 식별 레이블 (개발자가 지정하거나 자동 생성)
@@ -194,25 +205,75 @@ function getChannel() {
 }
 
 /**
+ * Serialize Worker 싱글톤 인스턴스를 반환한다.
+ *
+ * 최초 호출 시 Worker를 생성하고, 이후에는 캐싱된 인스턴스를 반환한다.
+ * `Worker` API가 없는 환경(Node.js, Vitest)에서는 `null`을 반환하여
+ * `registerTab()` 폴백 경로가 실행되도록 한다.
+ *
+ * ## 번들러 호환성
+ * `new Worker(new URL('./serializer.worker.js', import.meta.url))` 패턴은
+ * Rollup / Vite / Webpack이 Worker 파일을 정적으로 분석하여 별도 청크로
+ * 번들링하는 표준 방식이다. 상대 경로 문자열만 사용하면 번들러가 파일을 인식하지 못한다.
+ *
+ * @returns {Worker | null} Worker 인스턴스 또는 미지원 환경에서 `null`
+ */
+function getSerializeWorker() {
+    if (_serializeWorker) return _serializeWorker;
+    if (typeof Worker === 'undefined') return null;
+
+    _serializeWorker = new Worker(
+        new URL('./serializer.worker.js', import.meta.url),
+        { type: 'module' }   // ESM Worker
+    );
+    return _serializeWorker;
+}
+
+/**
  * 현재 탭의 정보와 모든 `DomainState` 스냅샷을 채널에 등록 알림으로 전송한다.
  *
  * 다음 두 시점에 호출된다:
  * 1. 모듈 로드 직후 — 페이지가 열렸을 때 팝업에 자기 존재를 알림
  * 2. `TAB_PING` 수신 시 — 팝업의 Heartbeat에 응답하여 살아있음을 알림
  *
- * 전송하는 `states`는 `_stateRegistry`의 현재 내용을 `Object.fromEntries()`로 변환한 것이다.
+ * ## Worker 오프로딩
+ * `_stateRegistry` 전체를 직렬화하는 `Object.fromEntries()` + `postMessage` 내부
+ * `structuredClone` 조합이 대규모 애플리케이션에서 Long Task를 유발할 수 있다.
+ * Serialize Worker가 이용 가능하면 직렬화와 BroadcastChannel 발화를 Worker에 위임한다.
+ *
+ * ## postMessage 전송 최적화
+ * Worker에는 `JSON.stringify()` 후 문자열로 전달한다.
+ * `postMessage`가 문자열을 zero-copy에 가깝게 처리하기 때문이다.
+ *
+ * ## 폴백
+ * Worker API가 없는 환경(Node.js, Vitest)에서는 기존 방식으로 직접 처리한다.
  *
  * @returns {void}
  */
 function registerTab() {
-    getChannel()?.postMessage(
-        /** @type {TabRegisterMessage} */ ({
-            type: MSG_TYPE.TAB_REGISTER,
-            tabId: TAB_ID,
-            tabUrl: location.href,
-            states: Object.fromEntries(_stateRegistry),
-        })
-    );
+    const worker = getSerializeWorker();
+
+    if (worker) {
+        // ── Worker 오프로딩 경로 ────────────────────────────────────────────
+        // _stateRegistry 직렬화를 메인 스레드 밖으로 위임한다.
+        // JSON.stringify 후 문자열로 전달 — structuredClone보다 빠를 수 있음.
+        worker.postMessage({
+            type:    'REGISTER_TAB',
+            tabId:   TAB_ID,
+            tabUrl:  location.href,
+            payload: JSON.stringify(Object.fromEntries(_stateRegistry)),
+        });
+    } else {
+        // ── 폴백 경로 (Worker 미지원 환경) ──────────────────────────────────
+        getChannel()?.postMessage(
+            /** @type {TabRegisterMessage} */ ({
+                type:   MSG_TYPE.TAB_REGISTER,
+                tabId:  TAB_ID,
+                tabUrl: location.href,
+                states: Object.fromEntries(_stateRegistry),
+            })
+        );
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -313,6 +374,18 @@ export function closeDebugChannel() {
         _channel = null;
         console.debug('[DSM] Debug BroadcastChannel closed.');
     }
+
+    // ── Worker 생명주기 정리 ─────────────────────────────────────────────────
+    // terminate() 미호출 시 Worker 스레드가 페이지 언로드 후에도 살아남아
+    // 메모리 누수가 발생할 수 있다.
+    // initDebugChannel()의 beforeunload 핸들러가 closeDebugChannel()을
+    // 호출하므로 Worker 종료는 beforeunload 경로에서도 자동 보장된다.
+    if (_serializeWorker) {
+        _serializeWorker.terminate();
+        _serializeWorker = null;
+        console.debug('[DSM] Serialize Worker terminated.');
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 }
 
 /**
@@ -401,8 +474,9 @@ export function broadcastError(key, error) {
  * ## 동작 흐름
  * 1. `window.open()`으로 팝업을 열거나 기존 창에 포커스한다.
  * 2. 팝업 내 `#dsm-root` 요소 존재 여부로 초기화 여부를 판단한다.
- * 3. 초기화되지 않은 경우: `_buildPopupHTML()`로 생성한 HTML을 주입한다.
- * 4. 팝업 `load` 이벤트 후 `_initPopupChannel()`로 채널을 연결한다.
+ * 3. `_serializeWorker.terminate()`로 Worker 스레드를 종료하고 참조를 해제한다.
+ * 4. 초기화되지 않은 경우: `_buildPopupHTML()`로 생성한 HTML을 주입한다.
+ * 5. 팝업 `load` 이벤트 후 `_initPopupChannel()`로 채널을 연결한다.
  *    (현재 팝업 내부 스크립트가 자체적으로 채널을 처리하므로 실질적으로는 No-op)
  *
  * 팝업 차단으로 `window.open()`이 `null`을 반환하면 콘솔 경고 후 조기 반환한다.
