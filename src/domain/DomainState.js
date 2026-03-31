@@ -754,6 +754,14 @@ export class DomainState {
      * 2. 없음 → `this._urlConfig` 또는 `handler.getUrlConfig()` 사용
      * 3. 둘 다 없음 → `buildURL` 내부에서 `Error` throw
      *
+     * ## Idempotency-Key 자동 발급
+     * `ApiHandler` 인스턴스의 `_idempotent` 옵션이 활성화된 경우:
+     * - `save()` 최초 진입 시 `crypto.randomUUID()`로 UUID를 발급하여 `#idempotencyKey`에 저장한다.
+     * - 모든 `_fetch()` 호출의 `headers`에 `Idempotency-Key: {uuid}` 헤더를 자동 주입한다.
+     * - 성공 시: `#idempotencyKey = undefined` (다음 `save()`는 신규 UUID 발급).
+     * - 실패 시: `#idempotencyKey` 유지 — 소비자 `catch` 블록에서 `save()`를 재호출하면
+     *   동일 UUID가 자동으로 재사용되어 서버 측 중복 처리를 방지한다.
+     *
      * @param {string} [requestPath] - 엔드포인트 경로 (예: `'/api/users/1'`). `urlConfig`와 조합된다.
      * @returns {Promise<void>}
      * @throws {Error} `handler`가 주입되지 않은 경우 (`_assertHandler`)
@@ -787,6 +795,15 @@ export class DomainState {
         const handler = this._assertHandler('save');
         const url = this._resolveURL(requestPath);
 
+        // ── Idempotency-Key UUID 발급 ────────────────────────────────────────
+        // handler._idempotent가 true이고 #idempotencyKey가 undefined인 경우에만 신규 발급.
+        // 이미 string인 경우(실패 후 재시도 중): 기존 UUID를 그대로 재사용한다.
+        // → 동일 UUID로 재시도하면 서버가 중복 처리를 방지할 수 있다.
+        if (handler._idempotent && this.#idempotencyKey === undefined) {
+            this.#idempotencyKey = _generateUUID();
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         // ── 스냅샷 캡처 — save() 진입 직전 상태를 인스턴스 필드에 저장 ─────────
         // - 실패 시: _rollback()이 이 스냅샷으로 4개 상태를 복원한다.
         // - 성공 시: DomainPipeline 보상 트랜잭션을 위해 유지된다.
@@ -798,12 +815,23 @@ export class DomainState {
             isNew: this._isNew,
         };
 
+        // ── Idempotency-Key 헤더 구성 ────────────────────────────────────────
+        // UUID가 발급된 경우에만 헤더에 포함한다.
+        // 빈 객체({})일 때 _fetch() 내부의 스프레드 병합에서 no-op으로 처리된다.
+        // 한 번 구성하여 POST / PUT / PATCH 세 분기 모두에 재사용한다.
+        /** @type {Record<string, string>} */
+        const idempotencyHeaders = typeof this.#idempotencyKey === 'string'
+            ? { 'Idempotency-Key': this.#idempotencyKey }
+            : {};
+        // ─────────────────────────────────────────────────────────────────────
+
         try {
             if (this._isNew) {
                 // ── POST: 서버에 아직 존재하지 않는 신규 리소스 ─────────────
                 await handler._fetch(url, {
                     method: 'POST',
                     body: toPayload(this._getTarget),
+                    headers: idempotencyHeaders,
                 });
                 this._isNew = false;
             } else {
@@ -816,11 +844,13 @@ export class DomainState {
                     await handler._fetch(url, {
                         method: 'PUT',
                         body: toPayload(this._getTarget),
+                        headers: idempotencyHeaders,
                     });
                 } else {
                     await handler._fetch(url, {
                         method: 'PATCH',
                         body: JSON.stringify(toPatch(this._getChangeLog)),
+                        headers: idempotencyHeaders,
                     });
                 }
             }
@@ -829,6 +859,7 @@ export class DomainState {
             this._clearChangeLog();
             this._clearDirtyFields();
             // #snapshot은 유지한다. DomainPipeline 보상 트랜잭션 기준점 역할.
+            this.#idempotencyKey = undefined; // UUID 소멸. 다음 save()는 신규 발급.
             if (this._debug) this._broadcast();
         } catch (err) {
             // ── HTTP 오류 또는 네트워크 오류 — 상태 롤백 ────────────────────
@@ -839,6 +870,8 @@ export class DomainState {
             // 에러를 반드시 re-throw한다.
             // 호출자의 try/catch가 HttpError를 받아 적절히 처리할 수 있어야 한다.
             // #snapshot은 유지한다. 재시도 시 동일 기준점으로 다시 rollback 가능.
+            // #idempotencyKey는 유지한다. 소비자 catch 블록에서 save()를 재호출하면
+            // 동일 UUID가 자동으로 재사용되어 서버 측 중복 처리를 방지한다.
             throw err;
         }
     }
@@ -916,6 +949,13 @@ export class DomainState {
         this.#snapshot = undefined;
         // ───────────────────────────────────────────────────────────────────
 
+        // ── Idempotency-Key 초기화 ───────────────────────────────────────────
+        // restore()는 save() 이전 상태로 완전히 되돌아가는 것을 의미한다.
+        // 재시도 맥락 자체가 소멸했으므로 UUID도 함께 초기화한다.
+        // 이후 save()를 다시 호출하면 신규 UUID가 발급된다.
+        this.#idempotencyKey = undefined;
+        // ───────────────────────────────────────────────────────────────────
+
         // ── dsm:rollback 이벤트 발행 ─────────────────────────────────────────
         // 소비자 앱이 구독하여 서버 롤백 API 호출 또는 UI 알림 표시 가능.
         // Node.js / Vitest 환경에서는 window가 없으므로 건너뛴다.
@@ -936,6 +976,14 @@ export class DomainState {
      *
      * 응답 본문은 사용하지 않는다. 성공/실패는 `response.ok`로만 판단한다.
      *
+     * `ApiHandler._idempotent`가 `true`이면 요청마다 신규 UUID를 발급하여
+     * `Idempotency-Key` 헤더를 자동 주입한다.
+     * DELETE는 HTTP 스펙상 이미 멱등성을 가지나, `idempotent: true` 설정 시
+     * API Gateway 또는 미들웨어 레이어에서의 중복 처리 방지에 활용할 수 있다.
+     *
+     * `save()`와 달리 재시도 UUID를 저장하지 않는다.
+     * DELETE 실패 재시도 시에는 신규 UUID가 발급된다.
+     *
      * @param {string} [requestPath] - 엔드포인트 경로. 미입력 시 `urlConfig` 사용.
      * @returns {Promise<void>}
      * @throws {Error} `handler`가 주입되지 않은 경우
@@ -947,7 +995,16 @@ export class DomainState {
     async remove(requestPath) {
         const handler = this._assertHandler('remove');
         const url = this._resolveURL(requestPath);
-        await handler._fetch(url, { method: 'DELETE' });
+
+        // DELETE 요청에도 idempotent 옵션 적용.
+        // save()와 달리 재시도 UUID를 #idempotencyKey에 저장하지 않는다.
+        // DELETE 실패 재시도 시 신규 UUID를 발급한다.
+        /** @type {Record<string, string>} */
+        const idempotencyHeaders = handler._idempotent
+            ? { 'Idempotency-Key': _generateUUID() }
+            : {};
+
+        await handler._fetch(url, { method: 'DELETE', headers: idempotencyHeaders });
     }
 
     /**
