@@ -321,7 +321,7 @@ class ApiHandler {
         return DomainState.fromJSON(text, this, {
             urlConfig: resolved,
             debug: this._debug,
-            vo:     vo   ?? null,
+            vo: vo ?? null,
             strict: strict,
         });
     }

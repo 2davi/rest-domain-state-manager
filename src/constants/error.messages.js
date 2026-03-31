@@ -62,7 +62,7 @@ export const ERR = Object.freeze({
         `${PREFIX} DomainVO 스키마 엄격 검증 실패: ` +
         `"${keys.join('", "')}" 필드가 응답 데이터에 없습니다. ` +
         '서버 응답 구조와 DomainVO.fields 선언을 확인하세요.',
-        
+
     // ── 플러그인 ───────────────────────────────────────────────────────────
     PLUGIN_NO_INSTALL: `${PREFIX} DomainState.use(): 플러그인은 install(DomainState) 메서드를 가져야 합니다.`,
 
