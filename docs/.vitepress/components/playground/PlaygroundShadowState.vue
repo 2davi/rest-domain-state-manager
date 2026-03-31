@@ -7,13 +7,13 @@
  *   필드를 변경하면 새 snapshot 참조가 생성되고,
  *   변경되지 않은 중첩 객체는 기존 참조가 재사용됨(Structural Sharing)을 확인한다.
  */
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { shallowRef, ref, reactive, onMounted, onUnmounted } from 'vue'
 
 const ready   = ref(false)
 const err     = ref(null)
 let DomainState, MockApiHandler, unsub
 
-const stateRef    = ref(null)
+const stateRef    = shallowRef(null)
 const snapHistory = ref([])   // { snap, changedKeys, ts }
 const updateCount = ref(0)
 const loading     = ref(false)

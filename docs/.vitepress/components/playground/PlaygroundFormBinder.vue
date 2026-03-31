@@ -5,14 +5,14 @@
  * TC-FB-002: text input blur → data 갱신
  * TC-FB-003: bindForm() — DomainState.data → 폼 역동기화
  */
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { shallowRef, ref, reactive, onMounted, nextTick } from 'vue'
 
 const ready = ref(false)
 const mode  = ref('fromForm')   // 'fromForm' | 'bindForm'
 const log   = ref([])
 
 let DomainState, FormBinder, MockApiHandler
-const stateRef = ref(null)
+const stateRef = shallowRef(null)
 
 const display = reactive({ data: {}, changeLog: [], isNew: false })
 

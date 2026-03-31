@@ -10,12 +10,12 @@
  * 핵심 변화: _broadcast 내부 스파이 제거 →
  *   subscribe()로 스냅샷 참조 변경 횟수를 카운팅하는 방식으로 전환.
  */
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { shallowRef, ref, reactive, onMounted, onUnmounted } from 'vue'
 
 const ready = ref(false)
 let DomainState, MockApiHandler, unsub
 
-const stateRef = ref(null)
+const stateRef = shallowRef(null)
 
 const INITIAL = { name: 'Davi', email: 'davi@example.com', role: 'admin' }
 
