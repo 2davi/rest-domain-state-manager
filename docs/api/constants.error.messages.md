@@ -7,5 +7,6 @@
 
 ## Namespaces
 
+- [DEPRECATED](constants.error.messages.Namespace.DEPRECATED.md)
 - [ERR](constants.error.messages.Namespace.ERR.md)
 - [WARN](constants.error.messages.Namespace.WARN.md)

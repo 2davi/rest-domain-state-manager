@@ -130,7 +130,7 @@ export const WARN = Object.freeze({
 
 /**
  * DEPRECATED: devWarn으로 출력되는 deprecated 경고 상수
- * 
+ *
  * @readonly
  * @namespace
  */
@@ -139,12 +139,10 @@ export const DEPRECATED = Object.freeze({
     /** @param {string} version @param {string | null} alternative */
     DEPRECATED_TEMPLATE: (version, alternative) =>
         `${PREFIX} ${version}에서 deprecated됩니다. ${alternative}를 사용하세요.`,
-    
-    /** */
-    FORM_BINDER_V1:
-        `${PREFIX} FormBinder는 v1.0.0에서 deprecated됩니다.`,
 
     /** */
-    DOMAIN_RENDERER_V1:
-        `${PREFIX} DomainRenderer는 v1.0.0에서 deprecated됩니다.`,
+    FORM_BINDER_V1: `${PREFIX} FormBinder는 v1.0.0에서 deprecated됩니다.`,
+
+    /** */
+    DOMAIN_RENDERER_V1: `${PREFIX} DomainRenderer는 v1.0.0에서 deprecated됩니다.`,
 });

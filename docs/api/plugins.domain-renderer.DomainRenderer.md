@@ -43,4 +43,4 @@ DomainState.use(DomainRenderer); // 앱 초기화 시 1회
 
 ## Variables
 
-- [DomainRenderer](plugins.domain-renderer.DomainRenderer.Variable.DomainRenderer.md)
+- [~~DomainRenderer~~](plugins.domain-renderer.DomainRenderer.Variable.DomainRenderer.md)

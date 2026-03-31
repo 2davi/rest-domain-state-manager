@@ -1,16 +1,12 @@
-# Variable: FormBinder
+# ~~Variable: FormBinder~~
 
 > `const` **FormBinder**: `object`
 
 `DomainState`에 HTML 폼 바인딩 기능을 주입하는 플러그인 객체.
 
-`DomainState.use(FormBinder)` 한 번으로 설치한다.
-설치 후 `DomainState.fromForm()` 정적 팩토리와
-`domainState.bindForm()` 인스턴스 메서드가 활성화된다.
-
 ## Type Declaration
 
-### install
+### ~~install~~
 
 > **install**: (`DomainStateClass`) => `void`
 
@@ -23,6 +19,14 @@
 #### Returns
 
 `void`
+
+## Deprecated
+
+v1.0.0에서 deprecated됩니다. UIComposer#bind를 사용하세요.
+
+`DomainState.use(FormBinder)` 한 번으로 설치한다.
+설치 후 `DomainState.fromForm()` 정적 팩토리와
+`domainState.bindForm()` 인스턴스 메서드가 활성화된다.
 
 ## Example
 
