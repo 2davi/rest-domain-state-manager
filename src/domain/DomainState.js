@@ -51,7 +51,47 @@ import { DIRTY_THRESHOLD } from '../constants/dirty.const.js';
 import { broadcastUpdate, openDebugPopup } from '../debug/debug-channel.js';
 import { DomainVO } from './DomainVO.js';
 import { maybeDeepFreeze } from '../common/freeze.js';
-import { setSilent } from '../common/logger.js';
+import { setSilent, devWarn } from '../common/logger.js';
+
+// ════════════════════════════════════════════════════════════════════════════════
+// 모듈 레벨 유틸리티
+// ════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Idempotency-Key로 사용할 UUID v4 문자열을 생성한다.
+ *
+ * `crypto.randomUUID()`를 1순위로 사용한다. 이 API는 Node.js 14.17.0+,
+ * Chrome 92+, Firefox 95+, Safari 15.4+ 이상에서 지원된다.
+ * 라이브러리의 `engines.node >= 20.0.0` 요구사항을 만족하는 환경에서는
+ * 항상 `crypto.randomUUID()`가 사용된다.
+ *
+ * 구형 브라우저 환경에서는 `Math.random()` 기반 UUID 폴백을 사용하며,
+ * 이 경우 `devWarn()`으로 경고를 출력한다. 폴백 UUID는 보안 강도가 낮으므로
+ * 프로덕션 환경에서는 `crypto.randomUUID()`를 지원하는 환경을 사용해야 한다.
+ *
+ * 이 함수는 클래스 외부의 모듈 레벨에 위치한다.
+ * 인스턴스마다 함수를 생성하지 않고, 모든 DomainState 인스턴스가 공유한다.
+ *
+ * @returns {string} UUID v4 형식의 문자열 (예: `'110e8400-e29b-41d4-a716-446655440000'`)
+ */
+function _generateUUID() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // 폴백: 구형 브라우저 환경 대응 (Math.random() 기반 UUID v4)
+    // crypto.randomUUID()보다 보안 강도가 낮다.
+    // Node.js 20+ 및 모던 브라우저에서는 이 분기가 절대 실행되지 않는다.
+    devWarn(
+        '[DSM] crypto.randomUUID() 미지원 환경입니다. ' +
+        'Math.random() 기반 UUID 폴백을 사용합니다. ' +
+        '프로덕션 환경에서는 crypto.randomUUID()를 지원하는 환경을 사용하세요.'
+    );
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+}
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 모듈 레벨 의존성 저장소
@@ -199,6 +239,32 @@ export class DomainState {
      * @type {{ data: object, changeLog: import('../core/api-proxy.js').ChangeLogEntry[], dirtyFields: Set<string>, isNew: boolean } | undefined}
      */
     #snapshot = undefined;
+
+    // ── Idempotency-Key ───────────────────────────────────────────────────────
+
+    /**
+     * Idempotency-Key UUID 저장소.
+     *
+     * `ApiHandler` 인스턴스의 `_idempotent` 옵션이 `true`인 경우에만 사용된다.
+     * `save()` 진입 시 UUID를 발급하고, 성공 시 즉시 초기화한다.
+     * 실패(네트워크 오류, HTTP 오류) 시에는 유지되어 소비자 `catch` 블록에서
+     * `save()`를 재호출할 때 동일 UUID를 서버에 전송한다.
+     *
+     * ## 2-상태 설계 (`#csrfToken`의 3-상태와 다른 이유)
+     * `#csrfToken`은 "init() 호출 후 파싱 실패"라는 별도의 에러 상태(`null`)가 필요하다.
+     * `#idempotencyKey`는 파싱 실패 시나리오가 없으므로 2-상태로 단순화한다.
+     *
+     * | 상태        | 의미                                             | `save()` 동작                  |
+     * |-------------|--------------------------------------------------|-------------------------------|
+     * | `undefined` | 기능 비활성 또는 이전 요청 성공 후 초기화 상태    | Idempotency-Key 헤더 미삽입   |
+     * | `string`    | 요청 진행 중 또는 실패 후 재시도 대기 중 UUID     | Idempotency-Key 헤더 자동 주입 |
+     *
+     * `restore()` 호출 시: `#snapshot = undefined`와 동시에 `undefined`로 초기화된다.
+     * 재시도 맥락 자체가 소멸했으므로 다음 `save()`는 신규 UUID를 발급한다.
+     *
+     * @type {string | undefined}
+     */
+    #idempotencyKey = undefined;
 
     // ── Shadow State ──────────────────────────────────────────────────────────
 
