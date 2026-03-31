@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/2davi/rest-domain-state-manager/compare/v1.0.1...v1.0.2) (2026-03-31)
+
+### 🐛 Bug Fixes
+
+* **build:** do missed prettier --write. ([7293619](https://github.com/2davi/rest-domain-state-manager/commit/72936195b0d1b1de10875a0ec2c05488fd8a8b49))
+
 ## [1.0.1](https://github.com/2davi/rest-domain-state-manager/compare/v1.0.0...v1.0.1) (2026-03-31)
 
 ### 🐛 Bug Fixes
