@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/2davi/rest-domain-state-manager/compare/v1.0.0...v1.0.1) (2026-03-31)
+
+### 🐛 Bug Fixes
+
+* **docs:** add few details on WebDocs with api.get() error throws switch feature. ([040bfc3](https://github.com/2davi/rest-domain-state-manager/commit/040bfc389c92f63cf5cf73c7020b40963c06651f))
+
 ## [1.0.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.11.0...v1.0.0) (2026-03-31)
 
 ### ⚠ BREAKING CHANGES
