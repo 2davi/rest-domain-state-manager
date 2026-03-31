@@ -24,11 +24,11 @@ DomainState.save(requestPath)
 `_fetch()` 호출 시 어떤 멱등성 키도 포함되지 않는다. 네트워크 타임아웃으로
 클라이언트가 응답을 받지 못했을 때, 서버가 요청을 이미 처리했는지 확인할 수단이 없다.
 
-| 상황 | 현재 동작 | 문제 |
-|---|---|---|
-| 타임아웃 → 재시도 (POST) | 동일 body로 POST 재전송 | 리소스 중복 생성 |
-| 타임아웃 → 재시도 (PUT/PATCH) | 동일 body로 재전송 | 이론상 멱등이나 서버 구현에 따라 중복 처리 가능 |
-| `restore()` 후 재시도 | 새 save()로 진입 | UUID 기준점이 없어 이전 요청과 구분 불가 |
+| 상황                          | 현재 동작               | 문제                                            |
+| ----------------------------- | ----------------------- | ----------------------------------------------- |
+| 타임아웃 → 재시도 (POST)      | 동일 body로 POST 재전송 | 리소스 중복 생성                                |
+| 타임아웃 → 재시도 (PUT/PATCH) | 동일 body로 재전송      | 이론상 멱등이나 서버 구현에 따라 중복 처리 가능 |
+| `restore()` 후 재시도         | 새 save()로 진입        | UUID 기준점이 없어 이전 요청과 구분 불가        |
 
 ### 현재 `ApiHandler` 생성자 — idempotent 옵션 없음
 
@@ -301,13 +301,13 @@ await user.save('/api/users/1');
 
 ### 수정 파일 목록 및 변경 범위
 
-| 파일 | 변경 종류 | 변경 내용 |
-|---|---|---|
-| `src/network/api-handler.js` | **수정** | 생성자에 `idempotent` 옵션 추가, `this._idempotent` 필드 추가, JSDoc 갱신 |
-| `src/domain/DomainState.js` | **수정** | `#idempotencyKey` private field 추가, `save()` UUID 발급/헤더 주입/초기화 로직 추가, `restore()` UUID 초기화 추가, JSDoc 갱신 |
-| `src/common/logger.js` | **수정** | `crypto.randomUUID` 미지원 환경 경고 메시지 추가 |
-| `tests/network/api-handler.test.js` | **수정** | `idempotent` 옵션 관련 테스트 케이스 추가 |
-| `tests/domain/DomainState.test.js` | **수정** | UUID 생명주기, 재시도 UUID 재사용, `restore()` UUID 초기화 테스트 케이스 추가 |
+| 파일                                | 변경 종류  | 변경 내용                                                                                                                     |
+| ----------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `src/network/api-handler.js`        |  **수정**  | 생성자에 `idempotent` 옵션 추가, `this._idempotent` 필드 추가, JSDoc 갱신                                                     |
+| `src/domain/DomainState.js`         |  **수정**  | `#idempotencyKey` private field 추가, `save()` UUID 발급/헤더 주입/초기화 로직 추가, `restore()` UUID 초기화 추가, JSDoc 갱신 |
+| `src/common/logger.js`              |  **수정**  | `crypto.randomUUID` 미지원 환경 경고 메시지 추가                                                                              |
+| `tests/network/api-handler.test.js` |  **수정**  | `idempotent` 옵션 관련 테스트 케이스 추가                                                                                     |
+| `tests/domain/DomainState.test.js`  |  **수정**  | UUID 생명주기, 재시도 UUID 재사용, `restore()` UUID 초기화 테스트 케이스 추가                                                 |
 
 ### Feature 브랜치명
 
@@ -363,13 +363,13 @@ test(domain,network): add idempotency key lifecycle test cases
 
 ## (f) 검증 기준 (Definition of Done)
 
-| 항목 | 기준 |
-|---|---|
-| `npm run lint` | error 0건 |
-| `npm test` | 전체 테스트 통과 (기존 TC 회귀 없음) |
+| 항목                       | 기준                                                      |
+| -------------------------- | --------------------------------------------------------- |
+| `npm run lint`             | error 0건                                                 |
+| `npm test`                 | 전체 테스트 통과 (기존 TC 회귀 없음)                      |
 | `idempotent: false` (기본) | `save()` 동작 기존과 완전 동일, Idempotency-Key 헤더 없음 |
-| 첫 번째 `save()` 성공 | `#idempotencyKey` → `undefined` 초기화 확인 |
-| 타임아웃 후 재시도 | 동일 UUID가 두 번째 요청 헤더에 포함됨 확인 |
-| `restore()` 후 `save()` | 신규 UUID 발급 (이전 UUID와 상이) 확인 |
-| GET 요청 | `idempotent: true`여도 Idempotency-Key 헤더 미삽입 확인 |
-| 하위 호환 | `idempotent` 옵션 없는 기존 소비자 코드 에러 없음 확인 |
+| 첫 번째 `save()` 성공      | `#idempotencyKey` → `undefined` 초기화 확인               |
+| 타임아웃 후 재시도         | 동일 UUID가 두 번째 요청 헤더에 포함됨 확인               |
+| `restore()` 후 `save()`    | 신규 UUID 발급 (이전 UUID와 상이) 확인                    |
+| GET 요청                   | `idempotent: true`여도 Idempotency-Key 헤더 미삽입 확인   |
+| 하위 호환                  | `idempotent` 옵션 없는 기존 소비자 코드 에러 없음 확인    |
