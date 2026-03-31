@@ -10,13 +10,19 @@
 
 `object`
 
+각 유틸 함수의 target 파라미터
+
 ### keys
 
 `string`[]
 
+각 유틸 함수의 KEY값 배열 파라미터
+
 ### value
 
 `any`
+
+각 유틸 함수의 value 파라미터
 
 ## Returns
 

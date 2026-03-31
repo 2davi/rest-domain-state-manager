@@ -192,18 +192,6 @@
 
 > **\_validators**: [`ValidatorMap`](domain.DomainState.TypeAlias.ValidatorMap.md)
 
-***
-
-### PipelineConstructor
-
-> `static` **PipelineConstructor**: *typeof* [`DomainPipeline`](domain.DomainPipeline.Class.DomainPipeline.md) \| `null` = `null`
-
-`DomainPipeline` 클래스 생성자.
-진입점(`rest-domain-state-manager.js`)에서 주입된다.
-
-`DomainState`와 `DomainPipeline`의 상호 참조를 피하기 위해
-직접 import 대신 생성자 주입(Constructor Injection) 패턴을 사용한다.
-
 ## Accessors
 
 ### data
@@ -266,6 +254,60 @@ delete user.data.phone;             // 삭제 → op: 'remove'
 
 `debug: false`이면 호출해도 `broadcastUpdate`가 채널을 초기화하지 않으므로
 실질적으로 아무 동작도 하지 않는다.
+
+#### Returns
+
+`void`
+
+***
+
+### \_buildSnapshot()
+
+> **\_buildSnapshot**(`currentData`, `prevSnapshot`): `object`
+
+Structural Sharing 기반 불변 스냅샷을 빌드한다.
+
+## 알고리즘 (depth-1 Structural Sharing)
+`dirtyFields`(변경된 최상위 키 집합)를 기준으로 스냅샷을 구성한다.
+
+| 조건                              | 처리 방식                              |
+|-----------------------------------|----------------------------------------|
+| `prevSnapshot !== null` + dirty 없음 | `prevSnapshot` 그대로 반환 (캐시 히트) |
+| dirty 있음 / 최초 생성            | 변경 키: 얕은 복사 / 나머지: 참조 재사용 |
+
+배열: `[...val]`, plain Object: `{ ...val }`, Primitive: 값 그대로.
+`Date` / `Map` / `Set`은 참조를 그대로 공유한다.
+현 VO 레이어에서 이들 타입이 실질적으로 사용되지 않으므로 단순화하였다.
+
+#### Parameters
+
+##### currentData
+
+`object`
+
+`_getTarget()`으로 얻은 원본 객체
+
+##### prevSnapshot
+
+`object` \| `null`
+
+이전 스냅샷. 최초 호출 시 `null`.
+
+#### Returns
+
+`object`
+
+새로 조립된 스냅샷 객체 (freeze 이전 단계)
+
+***
+
+### \_notifyListeners()
+
+> **\_notifyListeners**(): `void`
+
+`#listeners`에 등록된 모든 리스너를 동기적으로 호출한다.
+
+개별 리스너 에러를 격리하여 한 리스너의 실패가 나머지 실행을 막지 않는다.
 
 #### Returns
 
@@ -359,39 +401,64 @@ URL을 확정할 수 없는 경우 (`buildURL` 내부에서 throw)
 
 > **\_scheduleFlush**(): `void`
 
-동일 동기 블록 내 다중 상태 변경을 단일 `_broadcast()` 호출로 병합하는
-마이크로태스크(Microtask) 배칭 스케줄러.
+동일 동기 블록 내 다중 상태 변경을 단일 flush로 병합하는 마이크로태스크 배칭 스케줄러.
 
 ## 동작 원리
-`onMutate` 콜백이 `_broadcast()`를 직접 호출하는 대신 이 메서드를 거친다.
-`_pendingFlush`가 `false`일 때만 `queueMicrotask()`로 flush를 예약하고
-플래그를 `true`로 세운다. 이후 동일 동기 블록에서 발생하는 추가 변경은
-플래그 체크에서 걸러져 중복 예약 없이 차단된다.
-현재 Call Stack이 비워지면 Microtask Queue가 실행되어 `_broadcast()`가
-정확히 한 번 호출되고 플래그가 `false`로 복원된다.
+`_pendingFlush`가 `false`일 때만 `queueMicrotask()`로 flush를 예약한다.
+동일 동기 블록의 추가 변경은 플래그 체크에서 차단되어 중복 예약 없이 건너뛴다.
+Call Stack이 비워지면 Microtask Queue가 실행되어 flush가 정확히 한 번 실행된다.
 
-## 이벤트 루프 상의 위치
+## flush 실행 순서
 ```
-[Call Stack 동기 코드]          → proxy.name = 'A', proxy.email = 'B', ...
-  ↓ Call Stack 비워짐
-[Microtask Queue]              → flush() → _broadcast() (1회)
-  ↓
-[Task Queue (렌더링, setTimeout)]
+1. pendingFlush = false          (다음 flush 예약 허용)
+2. _buildSnapshot()              (Structural Sharing 기반 스냅샷 재빌드)
+3. #shadowCache 갱신             (새 참조일 때만)
+4. _notifyListeners()            (React / 외부 구독자 알림)
+5. if (debug) _broadcast()       (디버그 채널 전파)
 ```
-
-## `queueMicrotask` vs `Promise.resolve().then()`
-두 방법 모두 Microtask Queue에 작업을 넣는다. `queueMicrotask()`를 선택한 이유:
-1. `Promise` 객체 생성·GC 오버헤드가 없다.
-2. 코드 의도("microtask에 작업을 직접 예약한다")가 명시적으로 드러난다.
 
 ## 배칭에서 제외되는 두 호출
-- `constructor` 초기 `_broadcast()` : 인스턴스 초기화 시점의 단발 스냅샷.
-- `save()` 완료 후 `_broadcast()`   : 서버 동기화 완료 이벤트. 즉시 반영 필요.
-이 두 곳은 `onMutate` 경로가 아니므로 이 메서드를 거치지 않는다.
+- `constructor` 초기 스냅샷 빌드 : 인스턴스 생성 시 `_buildSnapshot()` 직접 호출.
+- `save()` 완료 후 `_broadcast()` : 서버 동기화 완료. `onMutate` 경로 미경유.
 
 #### Returns
 
 `void`
+
+***
+
+### getSnapshot()
+
+> **getSnapshot**(): `object`
+
+가장 최근에 생성된 불변 스냅샷을 반환한다.
+
+## `useSyncExternalStore` 규약 준수
+- **변경이 없으면 반드시 이전과 동일한 참조를 반환한다.**
+  매번 새 객체를 반환하면 React가 무한 리렌더링 루프에 빠진다.
+- **반환값은 동결된 불변 객체다.**
+  개발 환경에서만 `deepFreeze` 적용, 프로덕션에서는 no-op.
+
+## Vanilla JS / Vue 환경
+React 없이도 사용 가능하다.
+Proxy가 아닌 순수 불변 객체가 필요할 때 이 메서드를 직접 호출한다.
+
+#### Returns
+
+`object`
+
+현재 상태의 불변 스냅샷. 변경 시 새 참조 반환.
+
+#### Example
+
+```ts
+const snap1 = state.getSnapshot();
+state.data.name = 'Davi';
+await Promise.resolve(); // microtask flush 대기
+const snap2 = state.getSnapshot();
+console.log(snap1 === snap2);           // false — 새 참조
+console.log(snap1.email === snap2.email); // true  — 미변경 키 Structural Sharing
+```
 
 ***
 
@@ -472,6 +539,71 @@ HTTP 에러
 
 ```ts
 await user.remove('/api/users/user_001');
+```
+
+***
+
+### restore()
+
+> **restore**(): `boolean`
+
+인메모리 도메인 상태를 `save()` 진입 이전 스냅샷으로 복원한다.
+
+`DomainPipeline`의 보상 트랜잭션(Compensating Transaction)에서
+파이프라인이 자동으로 호출한다. 소비자가 직접 호출할 수도 있다.
+
+## 복원 대상 (4가지)
+`save()` 진입 직전 캡처된 `#snapshot`의 네 가지 상태를 복원한다.
+- `domainObject` (원본 데이터)
+- `changeLog` (변경 이력)
+- `dirtyFields` (변경된 필드 집합)
+- `isNew` 플래그
+
+## 멱등성 보장
+`#snapshot`이 `undefined`이면 경고 로그 후 `false`를 반환한다.
+동일 인스턴스에 여러 번 호출해도 에러 없이 동일 결과를 낸다.
+
+## 책임 범위
+이 메서드는 **프론트엔드 인메모리 상태만 복원**한다.
+서버에 이미 커밋된 상태를 되돌리는 것은 라이브러리 책임 범위 밖이며,
+소비자가 `dsm:rollback` 이벤트를 구독하여 서버 롤백 API를 직접 호출해야 한다.
+
+## `dsm:rollback` 이벤트
+복원 완료 후 브라우저 환경에서 `CustomEvent('dsm:rollback')`를 발행한다.
+소비자 앱이 이 이벤트를 구독하여 사용자 알림을 표시할 수 있다.
+
+#### Returns
+
+`boolean`
+
+복원 성공 시 `true`, 스냅샷 없어 no-op 시 `false`
+
+#### Examples
+
+```ts
+const result = await DomainState.all({ a: ..., b: ..., c: ... }, {
+    failurePolicy: 'rollback-all',
+}).after('a', s => s.save('/api/a'))
+  .after('b', s => s.save('/api/b'))
+  .after('c', s => s.save('/api/c'))
+  .run();
+```
+
+```ts
+try {
+    await userState.save('/api/users/1');
+    await profileState.save('/api/profiles/1');
+} catch (err) {
+    userState.restore();  // 인메모리 상태 복원
+    // 서버 롤백은 소비자 책임: DELETE /api/users/1 등
+}
+```
+
+```ts
+window.addEventListener('dsm:rollback', (e) => {
+    console.warn(`[UI] ${e.detail.label} 상태가 복원되었습니다.`);
+    showErrorNotification('저장에 실패하여 이전 상태로 복원되었습니다.');
+});
 ```
 
 ***
@@ -572,16 +704,54 @@ for (let attempt = 0; attempt < 3; attempt++) {
 
 ***
 
+### subscribe()
+
+> **subscribe**(`listener`): () => `void`
+
+상태 변경 시 호출될 리스너를 등록한다.
+
+`useSyncExternalStore`의 `subscribe` 인자로 직접 전달할 수 있다.
+Proxy 변경 → microtask 배치 완료 → `_buildSnapshot()` 직후 리스너가 호출된다.
+
+#### Parameters
+
+##### listener
+
+() => `void`
+
+상태 변경 시 호출될 콜백. 인자를 받지 않는다.
+
+#### Returns
+
+구독 해제 함수. `useSyncExternalStore`에 전달하는 cleanup.
+
+() => `void`
+
+#### Examples
+
+```ts
+const data = useSyncExternalStore(
+    (cb) => state.subscribe(cb),
+    ()   => state.getSnapshot()
+);
+```
+
+```ts
+// import { useDomainState } from '@2davi/rest-domain-state-manager/adapters/react';
+const data = useDomainState(state);
+```
+
+***
+
 ### all()
 
-> `static` **all**(`resourceMap`, `options?`): [`DomainPipeline`](domain.DomainPipeline.Class.DomainPipeline.md)
+> `static` **all**(`resourceMap`, `options?`): `object`
 
 여러 `DomainState`를 병렬로 fetch하고, 후처리 핸들러를 순서대로 체이닝하는
 `DomainPipeline` 인스턴스를 반환한다.
 
-내부적으로 `DomainState.PipelineConstructor`를 통해 `DomainPipeline`을 생성한다.
-`rest-domain-state-manager.js` 진입점을 통해 `PipelineConstructor`가 주입되지 않으면
-즉시 `Error`를 throw한다.
+내부적으로 `_pipelineFactory`(모듈 클로저 변수)를 호출한다.
+`DomainState.configure()`를 통해 팩토리가 주입되지 않으면 즉시 `Error`를 throw한다.
 
 #### Parameters
 
@@ -599,13 +769,13 @@ for (let attempt = 0; attempt < 3; attempt++) {
 
 #### Returns
 
-[`DomainPipeline`](domain.DomainPipeline.Class.DomainPipeline.md)
+`object`
 
-체이닝 가능한 파이프라인 인스턴스
+체이닝 가능한 DomainPipeline 인스턴스. after() / run() 메서드를 제공한다.
 
 #### Throws
 
-`PipelineConstructor`가 주입되지 않은 경우
+`configure()`가 호출되지 않은 경우
 
 #### Example
 
@@ -619,6 +789,73 @@ const result = await DomainState.all({
 .run();
 
 if (result._errors?.length) console.warn(result._errors);
+```
+
+***
+
+### configure()
+
+> `static` **configure**(`config?`): *typeof* `DomainState`
+
+라이브러리 의존성 및 전역 동작을 설정하는 메서드.
+
+`DomainState`와 `DomainPipeline`의 순환 참조를 제거하기 위해,
+`DomainPipeline` 생성자를 직접 import하지 않고 팩토리 함수로 주입받는다.
+
+**`pipelineFactory`는 직접 호출 불필요.** 라이브러리 진입점(`index.js`)이
+모듈 평가 시점에 자동으로 주입한다.
+
+Vitest 환경에서는 `configure({ pipelineFactory: vi.fn() })`으로 DomainPipeline을
+로드하지 않고도 DomainState 단독 테스트가 가능하다.
+
+#### Parameters
+
+##### config?
+
+configure()의 config 파라미터
+
+###### pipelineFactory?
+
+(...`args`) => `object`
+
+`(resourceMap, options) => DomainPipeline` 형태의 팩토리 함수.
+  `DomainState.all()` 호출 전에 반드시 주입되어야 한다.
+
+###### silent?
+
+`boolean`
+
+`true`이면 라이브러리 내부의 모든 `console` 출력을 억제한다.
+  통합 테스트 또는 콘솔 오염을 막아야 하는 운영 환경에서 사용한다.
+
+#### Returns
+
+*typeof* `DomainState`
+
+체이닝용 `DomainState` 클래스 반환
+
+#### Throws
+
+`pipelineFactory`가 전달됐지만 함수가 아닐 때
+
+#### Examples
+
+```ts
+DomainState.configure({
+    pipelineFactory: (resourceMap, options) => new DomainPipeline(resourceMap, options)
+});
+```
+
+```ts
+DomainState.configure({ pipelineFactory: vi.fn(() => ({ run: vi.fn() })) });
+```
+
+```ts
+DomainState.configure({ silent: true });
+```
+
+```ts
+DomainState.configure({ pipelineFactory: factory, silent: true }).use(FormBinder);
 ```
 
 ***

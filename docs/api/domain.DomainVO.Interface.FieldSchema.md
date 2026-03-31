@@ -7,8 +7,10 @@
 > `optional` **default?**: `any`
 
 필드의 기본값. `toSkeleton()`이 초기 객체를 생성할 때 사용한다.
-  `object` 또는 `array`이면 `JSON.parse(JSON.stringify(val))`로 deep copy하여
+  `object` 또는 `array`이면 `safeClone(val)`로 deep copy하여
   인스턴스 간 참조 공유를 방지한다.
+  `structuredClone()`을 우선 사용하고, 미지원 환경에서는 재귀 폴백으로 처리한다.
+  `Date`·`RegExp` 등 특수 타입의 타입 손실을 방지한다.
 
 ***
 

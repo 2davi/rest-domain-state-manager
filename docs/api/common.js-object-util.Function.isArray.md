@@ -10,6 +10,8 @@ isArray() : 값이 배열인지 확인한다.
 
 `any`
 
+각 유틸 함수의 value 파라미터
+
 ## Returns
 
 `boolean`

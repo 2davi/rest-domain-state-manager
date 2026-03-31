@@ -11,6 +11,8 @@ null 포함.
 
 `any`
 
+각 유틸 함수의 value 파라미터
+
 ## Returns
 
 `boolean`

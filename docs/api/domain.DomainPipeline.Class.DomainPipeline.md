@@ -47,6 +47,15 @@ const result = await DomainState.all({ roles: api.get('/api/roles') }, { strict:
 
 ## Properties
 
+### \_failurePolicy
+
+> **\_failurePolicy**: `"ignore"` \| `"rollback-all"` \| `"fail-fast"`
+
+파이프라인 실패 시 보상 트랜잭션 정책.
+`'ignore'`(기본값)이면 기존 동작과 동일하다.
+
+***
+
 ### \_queue
 
 > **\_queue**: [`QueueEntry`](domain.DomainPipeline.Interface.QueueEntry.md)[]
@@ -74,6 +83,66 @@ strict 모드 플래그.
 `true`이면 첫 실패에서 즉시 `reject`, `false`이면 `_errors`에 기록 후 계속.
 
 ## Methods
+
+### \_compensate()
+
+> **\_compensate**(`resolved`, `keys`): `void`
+
+지정된 키 목록의 `DomainState`에 순서대로 `restore()`를 호출한다.
+
+`fail-fast` 정책에서는 완료 키를 **역순(LIFO)**으로 전달하고,
+`rollback-all` 정책에서는 `resolved`의 전체 키를 전달한다.
+`restore()`는 멱등성이 보장되므로 스냅샷이 없는 인스턴스에 호출해도 안전하다.
+
+#### Parameters
+
+##### resolved
+
+`Record`\<`string`, [`DomainState`](domain.DomainState.Class.DomainState.md)\>
+
+1단계 fetch에서 성공한 DomainState 맵
+
+##### keys
+
+`string`[]
+
+`restore()`를 호출할 키 목록. 배열 순서가 실행 순서가 된다.
+
+#### Returns
+
+`void`
+
+***
+
+### \_dispatchPipelineRollback()
+
+> **\_dispatchPipelineRollback**(`errors`, `resolved`): `void`
+
+파이프라인 보상 트랜잭션 완료 후 `dsm:pipeline-rollback` CustomEvent를 발행한다.
+
+소비자 앱이 이 이벤트를 구독하여 어느 리소스가 실패했는지 파악하고
+서버 롤백 API 호출 또는 UI 에러 모달 표시를 직접 구현할 수 있다.
+Node.js / Vitest 환경에서는 window가 없으므로 건너뛴다.
+
+#### Parameters
+
+##### errors
+
+[`PipelineError`](domain.DomainPipeline.Interface.PipelineError.md)[]
+
+실패한 에러 목록
+
+##### resolved
+
+`Record`\<`string`, [`DomainState`](domain.DomainState.Class.DomainState.md)\>
+
+성공한 DomainState 맵
+
+#### Returns
+
+`void`
+
+***
 
 ### after()
 
@@ -166,7 +235,14 @@ pipeline.after('nonExistent', handler);
   - `strict: true`  → 즉시 `throw`
   - 디버그 채널에 `broadcastError(key, err)` 전송
 
-### 3단계 — 결과 반환
+### 3단계 — 보상 트랜잭션 (failurePolicy에 따라)
+- `'rollback-all'`: 모든 핸들러 완료 후 에러가 하나라도 있으면
+  전체 `resolved`에 `restore()`를 호출한다.
+- `'fail-fast'`: 첫 번째 핸들러 실패 시 즉시 중단하고
+  이전 성공 상태들에 **역순(LIFO)**으로 `restore()`를 호출한다.
+- `'ignore'`: 보상 없음. 기존 동작과 동일.
+
+### 4단계 — 결과 반환
 `errors`가 있으면 `output._errors`에 포함하여 반환한다.
 
 #### Returns

@@ -7,6 +7,8 @@ ERR : throw되는 Error 메시지 상수
 
 - [FROM\_FORM\_TYPE](constants.error.messages.ERR.Variable.FROM_FORM_TYPE.md)
 - [FROM\_VO\_TYPE](constants.error.messages.ERR.Variable.FROM_VO_TYPE.md)
+- [PIPELINE\_NOT\_CONFIGURED](constants.error.messages.ERR.Variable.PIPELINE_NOT_CONFIGURED.md)
+- [PIPELINE\_ROLLBACK\_WARN](constants.error.messages.ERR.Variable.PIPELINE_ROLLBACK_WARN.md)
 - [PLUGIN\_NO\_INSTALL](constants.error.messages.ERR.Variable.PLUGIN_NO_INSTALL.md)
 - [RENDERER\_LABEL\_FIELD\_MISSING](constants.error.messages.ERR.Variable.RENDERER_LABEL_FIELD_MISSING.md)
 - [RENDERER\_VALUE\_FIELD\_MISSING](constants.error.messages.ERR.Variable.RENDERER_VALUE_FIELD_MISSING.md)

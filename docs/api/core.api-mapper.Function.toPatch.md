@@ -23,6 +23,13 @@
 ## 호출 시점
 - `DomainState.save()` 에서 `changeLog.length > 0` → PATCH
 
+## 성능 계측 (개발 환경 전용)
+개발 환경에서 `performance.mark()`로 실행 시간을 측정한다.
+10ms 이상 소요 시 `console.debug`로 경보 출력한다.
+Long Task 기준(50ms) 초과 여부가 Worker 오프로딩 Phase 2 판단 근거가 된다.
+`process.env.NODE_ENV`를 소비자 번들러가 치환하면 프로덕션 빌드에서
+Tree-shaking으로 해당 블록이 완전히 제거된다.
+
 ## Parameters
 
 ### getChangeLogFn

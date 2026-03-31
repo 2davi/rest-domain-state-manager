@@ -10,6 +10,8 @@ isReference() : 값이 null이 아닌 참조 타입(object | function)인지 확
 
 `any`
 
+각 유틸 함수의 value 파라미터
+
 ## Returns
 
 `boolean`

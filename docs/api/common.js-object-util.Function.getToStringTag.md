@@ -10,6 +10,8 @@ getToStringTag() : 값의 Object.prototype.toString() 태그를 반환한다.
 
 `any`
 
+각 유틸 함수의 value 파라미터
+
 ## Returns
 
 `string`

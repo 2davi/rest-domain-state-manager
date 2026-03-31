@@ -2,7 +2,11 @@
 
 ## Modules
 
+- [adapters/react](adapters.react.md)
+- [common/clone](common.clone.md)
+- [common/freeze](common.freeze.md)
 - [common/js-object-util](common.js-object-util.md)
+- [common/logger](common.logger.md)
 - [constants/channel.const](constants.channel.const.md)
 - [constants/dirty.const](constants.dirty.const.md)
 - [constants/error.messages](constants.error.messages.md)
@@ -24,3 +28,4 @@
 - [plugins/domain-renderer/renderers/select.renderer](plugins.domain-renderer.renderers.select.renderer.md)
 - [plugins/form-binder/FormBinder](plugins.form-binder.FormBinder.md)
 - [rest-domain-state-manager](rest-domain-state-manager.md)
+- [workers/serializer.worker](workers.serializer.worker.md)

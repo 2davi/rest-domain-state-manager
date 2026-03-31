@@ -1,8 +1,5 @@
 # Class: ApiHandler
 
-`ApiHandler` 생성자에 전달하는 URL 입력 설정 객체.
-상세 정의는 `url-resolver.js`의 `UrlConfig`를 참조한다.
-
 ## Constructors
 
 ### Constructor
@@ -88,9 +85,12 @@ const api = new ApiHandler({ host: 'api.example.com', protocol: 'HTTPS' });
 
 ## 처리 내용
 1. `this._headers`와 `options.headers`를 병합하여 공통 헤더를 주입한다.
-2. `response.ok` 검사 → `false`이면 `HttpError` 구조체를 throw한다.
-3. 응답 본문을 `response.text()`로 읽어 반환한다.
-4. 응답 본문이 비어있으면 (`204 No Content` 등) `null`을 반환한다.
+2. **CSRF 토큰 삽입** — `init()`으로 토큰이 주입된 상태이고 뮤테이션 메서드
+   (`POST` / `PUT` / `PATCH` / `DELETE`)인 경우 `X-CSRF-Token` 헤더를 추가한다.
+   `init()` 미호출(`#csrfToken === undefined`) 시 이 단계를 건너뛴다.
+3. `response.ok` 검사 → `false`이면 `HttpError` 구조체를 throw한다.
+4. 응답 본문을 `response.text()`로 읽어 반환한다.
+5. 응답 본문이 비어있으면 (`204 No Content` 등) `null`을 반환한다.
 
 ## 헤더 병합 우선순위
 `options.headers`가 `this._headers`보다 우선 적용된다. (스프레드 오버라이드)
@@ -121,6 +121,11 @@ const api = new ApiHandler({ host: 'api.example.com', protocol: 'HTTPS' });
 #### Throws
 
 `response.ok === false`인 경우 (`{ status, statusText, body }`)
+
+#### Throws
+
+`init()` 호출 후 토큰 파싱에 실패한 상태(`#csrfToken === null`)에서
+                    뮤테이션 메서드 요청 시. 요청은 서버에 전달되지 않는다.
 
 #### Examples
 
@@ -241,6 +246,77 @@ _resolveURL(requestPath) {
     const config = this._urlConfig ?? this._handler?.getUrlConfig() ?? {};
     return buildURL(config, requestPath ?? '');
 }
+```
+
+***
+
+### init()
+
+> **init**(`config?`): `ApiHandler`
+
+CSRF 토큰을 초기화한다. DOM이 준비된 시점에 1회 호출한다.
+
+## 탐색 우선순위
+1. `csrfToken` 직접 주입 — Vitest / SSR 환경용
+2. `csrfSelector` CSS 선택자로 meta 태그 `content` 파싱
+3. `csrfSelector` 미지정 시 `'meta[name="_csrf"]'` 기본값으로 탐색 (Spring Security 기본)
+4. `csrfCookieName` 지정 시 `document.cookie` 파싱 (Double-Submit Cookie 패턴)
+5. 모두 실패 → `#csrfToken = null` (뮤테이션 요청 발생 시 throw)
+
+## 환경 호환성
+`typeof document === 'undefined'`인 Node.js / Vitest 환경에서는
+DOM 탐색을 건너뛴다. 이 환경에서는 `csrfToken` 직접 주입만 동작한다.
+
+#### Parameters
+
+##### config?
+
+CSRF 토큰 탐색 전략을 구성하는 옵션 객체.
+
+###### csrfCookieName?
+
+`string`
+
+Double-Submit Cookie 방식의 쿠키명.
+                                          csrfSelector 탐색 실패 시 fallback.
+
+###### csrfSelector?
+
+`string`
+
+CSRF 토큰 meta 태그 CSS 선택자.
+                                          기본값: `'meta[name="_csrf"]'`
+
+###### csrfToken?
+
+`string`
+
+토큰 직접 주입. 지정 시 다른 탐색보다 우선.
+
+#### Returns
+
+`ApiHandler`
+
+체이닝용 `this` 반환
+
+#### Examples
+
+```ts
+// 서버가 렌더링한 HTML: <meta name="_csrf" content="abc123">
+api.init({});
+```
+
+```ts
+// HTML: <meta name="csrf-token" content="abc123">
+api.init({ csrfSelector: 'meta[name="csrf-token"]' });
+```
+
+```ts
+api.init({ csrfCookieName: 'XSRF-TOKEN' });
+```
+
+```ts
+api.init({ csrfToken: 'test-csrf-token' });
 ```
 
 ***

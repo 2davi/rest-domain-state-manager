@@ -41,6 +41,11 @@ if (result._errors?.length) {
 }
 ```
 
+## 의존성 방향
+`DomainPipeline → DomainState` 단방향. `DomainState`는 `DomainPipeline`을 알지 못한다.
+아래 @typedef의 `import('./DomainState.js')` 참조는 IDE 자동완성 전용 JSDoc hinting이며,
+런타임 의존성이 아니다. (ES Module import 구문 없음)
+
 ## See
 
  - module:domain/DomainState DomainState
