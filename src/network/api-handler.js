@@ -71,7 +71,10 @@ import { ERR } from '../constants/error.messages.js';
  * @typedef {object} GetOptions
  * @property {import('../core/url-resolver.js').UrlConfig} [urlConfig]
  *   이 요청에만 적용할 URL 설정 오버라이드.
- *   미입력 시 `ApiHandler` 인스턴스의 `_urlConfig`가 사용된다.
+ * @property {import('../domain/DomainVO.js').DomainVO}    [vo]
+ *   스키마 검증 및 변환기 주입용 DomainVO 인스턴스.
+ * @property {boolean} [strict=false]
+ *   `true`이면 VO 스키마 불일치 시 Error를 throw한다.
  */
 
 /**
@@ -308,7 +311,7 @@ class ApiHandler {
      *     if (err.status === 404) console.error('사용자를 찾을 수 없습니다.');
      * }
      */
-    async get(requestPath, { urlConfig } = {}) {
+    async get(requestPath, { urlConfig, vo, strict = false } = {}) {
         const resolved = urlConfig ? normalizeUrlConfig(urlConfig) : this._urlConfig;
         const url = buildURL(resolved, requestPath);
         const text = await this._fetch(url, { method: 'GET' });
@@ -318,6 +321,8 @@ class ApiHandler {
         return DomainState.fromJSON(text, this, {
             urlConfig: resolved,
             debug: this._debug,
+            vo:     vo   ?? null,
+            strict: strict,
         });
     }
 

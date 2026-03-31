@@ -194,4 +194,5 @@ data.name = 'Davi'
 // ✅ 올바른 방법 — Proxy를 통한 변경
 userState.data.name = 'Davi'
 ```
+
 :::

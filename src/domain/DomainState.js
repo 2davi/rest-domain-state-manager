@@ -92,8 +92,10 @@ let _pipelineFactory = null;
  * @typedef {object} FromJsonOptions
  * @property {NormalizedUrlConfig|null} [urlConfig=null] - URL 설정 오버라이드.
  * @property {boolean}                  [debug=false]    - 디버그 모드 활성화.
- * @property {string|null}              [label=null]     - 디버그 팝업 표시 이름. 미입력 시 `json_{timestamp}`.
+ * @property {string|null}              [label=null]     - 디버그 팝업 표시 이름.
  * @property {DomainVO|null}            [vo=null]        - DomainVO 인스턴스. 스키마 검증 + validators/transformers 주입.
+ * @property {boolean}                  [strict=false]   - `true`이면 스키마 불일치(missingKeys) 시 Error를 throw한다.
+ *                                                         `false`(기본값)이면 콘솔 에러 출력 후 계속 진행한다.
  */
 
 /**
@@ -473,7 +475,7 @@ export class DomainState {
     static fromJSON(
         jsonText,
         handler,
-        { urlConfig = null, debug = false, label = null, vo = null } = {}
+        { urlConfig = null, debug = false, label = null, vo = null, strict = false } = {}
     ) {
         /** @type {DomainState|null} */
         let state = null;
@@ -493,7 +495,10 @@ export class DomainState {
 
         // DomainVO 스키마 검증 및 validators / transformers 주입
         if (vo instanceof DomainVO) {
-            const { valid } = vo.checkSchema(wrapper.getTarget());
+            const { valid, missingKeys } = vo.checkSchema(wrapper.getTarget());
+            if (!valid && strict) {
+                throw new Error(ERR.VO_SCHEMA_STRICT_FAIL(missingKeys));
+            }
             if (valid) {
                 state._validators = vo.getValidators();
                 state._transformers = vo.getTransformers();

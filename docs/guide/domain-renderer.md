@@ -1,6 +1,7 @@
 # DomainRenderer 플러그인
 
 <span class="badge badge-stable">Stable</span>
+<span class="badge badge-deprecated">@deprecated</span>
 
 `DomainRenderer` 는 목록형 API 응답(배열 데이터)을 HTML UI 요소로 렌더링하는 플러그인입니다. `select`, `radio`, `checkbox`, `button` 그룹을 반복적으로 수동 생성하는 코드를 대체합니다.
 
@@ -99,10 +100,6 @@ roles.renderTo('#roleBtns', {
     }
 })
 ```
-
-## 인터랙티브 시연
-
-<PlaygroundRenderer />
 
 ## 인터랙티브 시연
 

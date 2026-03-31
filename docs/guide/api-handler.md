@@ -86,9 +86,6 @@ const api = new ApiHandler({ baseURL: 'http://localhost:8080/app/api' })
 // ── 다중 서버 연결 ────────────────────────────────────────────
 const userApi = new ApiHandler({ host: 'users.my-service.com', env: 'production' })
 const authApi = new ApiHandler({ host: 'auth.my-service.com',  env: 'production' })
-
-const user  = await userApi.get('/users/1')
-const token = await authApi.get('/tokens/current')
 ```
 
 ---
@@ -102,8 +99,6 @@ api.init(config?)
 ```
 
 `init()` 을 호출하지 않으면 CSRF 기능은 완전히 비활성 상태입니다. GET 요청 전용으로만 사용하는 경우 호출하지 않아도 됩니다.
-
-<PlaygroundCsrf />
 
 ### CSRF 토큰 탐색 우선순위
 
@@ -159,15 +154,11 @@ api.init({})
 
 #### Spring Security — 커스텀 선택자
 
-메타 태그 이름을 커스터마이징한 경우 선택자를 명시합니다.
-
 ```javascript
 api.init({ csrfSelector: 'meta[name="X-CSRF-TOKEN"]' })
 ```
 
 #### Laravel / Django
-
-Ruby on Rails, Laravel, Django는 `<meta name="csrf-token">` 를 사용합니다.
 
 ```javascript
 api.init({ csrfSelector: 'meta[name="csrf-token"]' })
@@ -175,33 +166,21 @@ api.init({ csrfSelector: 'meta[name="csrf-token"]' })
 
 #### Double-Submit Cookie 패턴
 
-쿠키에서 토큰을 읽어 헤더로 전송하는 패턴입니다.
-
 ```javascript
 api.init({ csrfCookieName: 'XSRF-TOKEN' })
 ```
 
 ### CSRF 3-상태 설계
 
-`init()` 호출 여부와 토큰 파싱 결과를 세 가지 상태로 구분합니다. 이 구분이 `_fetch()` 내부 동작을 결정합니다.
-
-| `#csrfToken` 값 | 의미 | `_fetch()` 동작 |
-|---|---|---|
-| `undefined` | `init()` 미호출. CSRF 기능 비활성. | 토큰 삽입 로직 전체 건너뜀 |
-| `null` | `init()` 호출됐으나 토큰 파싱 실패. | 변이 요청 발생 시 즉시 throw |
-| `string` | 정상 파싱된 토큰 값. | `X-CSRF-Token` 헤더 자동 주입 |
-
-`init()` 을 호출했는데 `null` 이 되는 상황(meta 태그가 없거나 쿠키가 없는 경우)에 조용히 요청을 보내는 것은 보안 허점입니다. 이 라이브러리는 그 경우 변이 요청을 서버로 전달하기 전에 `Error` 를 throw합니다.
+| `#csrfToken` 값 | 의미                                | `_fetch()` 동작               |
+| --------------- | ----------------------------------- | ----------------------------- |
+| `undefined`     | `init()` 미호출. CSRF 기능 비활성.  | 토큰 삽입 로직 전체 건너뜀    |
+| `null`          | `init()` 호출됐으나 토큰 파싱 실패. | 변이 요청 발생 시 즉시 throw  |
+| `string`        | 정상 파싱된 토큰 값.                | `X-CSRF-Token` 헤더 자동 주입 |
 
 ### 체이닝
 
-`init()` 은 `this` 를 반환하므로 생성과 초기화를 한 줄로 작성할 수 있습니다.
-
 ```javascript
-const api = new ApiHandler({ host: 'localhost:8080', basePath: '/api' })
-api.init({})
-
-// 또는 체이닝
 const api = new ApiHandler({ host: 'localhost:8080' }).init({})
 ```
 
@@ -216,33 +195,62 @@ const api = new ApiHandler({ host: 'localhost:8080' }).init({})
 ```javascript
 const user = await api.get('/users/user_001')
 // → DomainState { _isNew: false, data: { userId: 'user_001', ... } }
-
-// DomainVO를 전달하면 스키마 검증 및 변환기가 주입됩니다.
-const user = await api.get('/users/user_001', { vo: new UserVO() })
 ```
 
 <table class="param-table">
   <thead>
-    <tr><th>옵션</th><th>타입</th><th>설명</th></tr>
+    <tr><th>옵션</th><th>타입</th><th>기본값</th><th>설명</th></tr>
   </thead>
   <tbody>
     <tr>
       <td><code>vo</code></td>
       <td><code>DomainVO</code></td>
+      <td>—</td>
       <td>스키마 검증 및 변환기 주입. 응답 데이터와 VO 스키마의 불일치 시 콘솔 경고.</td>
+    </tr>
+    <tr>
+      <td><code>strict</code></td>
+      <td><code>boolean</code></td>
+      <td><code>false</code></td>
+      <td><code>true</code>이면 VO 스키마 불일치(누락 필드) 시 <code>Error</code>를 throw한다. <code>vo</code> 옵션과 함께 사용한다.</td>
     </tr>
     <tr>
       <td><code>label</code></td>
       <td><code>string</code></td>
+      <td>—</td>
       <td>디버그 팝업에 표시될 인스턴스 레이블.</td>
     </tr>
     <tr>
       <td><code>debug</code></td>
       <td><code>boolean</code></td>
+      <td><code>false</code></td>
       <td><code>true</code>이면 BroadcastChannel 디버그 채널에 상태를 broadcast합니다.</td>
     </tr>
   </tbody>
 </table>
+
+### vo + strict 옵션 — 스키마 정합성 강제
+
+서버 응답 구조가 `DomainVO` 스키마와 일치하는지 검증합니다. `strict: false`(기본값)이면 불일치 시 콘솔 경고만 출력하고 계속 진행합니다. `strict: true`이면 누락 필드가 있을 때 즉시 `Error`를 throw하여 실행을 중단합니다.
+
+```javascript
+// strict: false (기본값) — 불일치 시 콘솔 경고 후 계속 진행
+const user = await api.get('/users/1', { vo: new UserVO() })
+
+// strict: true — 누락 필드 발생 시 Error throw
+try {
+    const user = await api.get('/users/1', { vo: new UserVO(), strict: true })
+} catch (err) {
+    // err.message: '[DSM] DomainVO 스키마 엄격 검증 실패: "email" 필드가 응답 데이터에 없습니다.'
+    console.error('서버 응답이 스키마와 다릅니다:', err.message)
+}
+```
+
+::: tip strict 모드 권장 사용 시점
+개발 환경에서 서버 API 변경을 즉시 감지하려면 `strict: true` 를 사용하세요. 운영 환경에서는 `false`(기본값)로 두어 예상치 못한 API 변경이 화면 전체를 중단시키지 않도록 하는 것이 일반적입니다.
+:::
+
+스키마 검증의 상세 동작(missingKeys, extraKeys, valid 판정 기준)은 [DomainVO 가이드](/guide/domain-vo)를 참고하세요.
 
 ::: warning HTTP 오류 처리
 서버가 `4xx` 또는 `5xx` 를 반환하면 `{ status, statusText, body }` 형태의 객체가 throw됩니다. `try/catch` 로 반드시 처리해야 합니다.

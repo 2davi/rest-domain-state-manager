@@ -1,6 +1,7 @@
 # FormBinder 플러그인
 
 <span class="badge badge-stable">Stable</span>
+<span class="badge badge-deprecated">@deprecated</span>
 
 `FormBinder` 는 HTML 폼 요소와 `DomainState` 인스턴스를 양방향으로 연결하는 플러그인입니다. `getElementById()` 로 값을 하나씩 긁어모으는 작업을 완전히 대체합니다. DSM 코어는 DOM 의존성 없이 동작하므로, 이 기능은 선택적 플러그인으로 분리되어 있습니다.
 
@@ -93,10 +94,6 @@ await user.save('/api/users/user_001')
     </tr>
   </tbody>
 </table>
-
-## 인터랙티브 시연
-
-<PlaygroundFormBinder />
 
 ## 인터랙티브 시연
 

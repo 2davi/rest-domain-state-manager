@@ -74,9 +74,9 @@ export default defineConfig({
                         { text: 'DomainVO 스키마 <span class="nav-badge heavy">2-3</span>',          link: '/guide/domain-vo' },
                         { text: 'DomainPipeline <span class="nav-badge heavy">2-4</span>',           link: '/guide/pipeline' },
                         { text: 'React 어댑터 <span class="nav-badge heavy">2-5</span>',             link: '/guide/react-adapter' },
-                        { text: '디버거 <span class="nav-badge light">2-7</span>',                   link: '/guide/debugger' },
-                        { text: 'FormBinder 플러그인 <span class="nav-badge heavy">2-6</span>',      link: '/guide/form-binder' },
-                        { text: 'DomainRenderer 플러그인 <span class="nav-badge heavy">2-7</span>',  link: '/guide/domain-renderer' },
+                        { text: '디버거 <span class="nav-badge light">2-6</span>',                   link: '/guide/debugger' },
+                        { text: 'FormBinder 플러그인 <span class="nav-badge">2-7</span>',      link: '/guide/form-binder' },
+                        { text: 'DomainRenderer 플러그인 <span class="nav-badge">2-8</span>',  link: '/guide/domain-renderer' },
                     ],
                 },
                 {
@@ -112,6 +112,7 @@ export default defineConfig({
                 {
                     text: 'Playground ▶', collapsed: true,
                     items: [
+                        { text: 'Playground 모음',      link: '/playground/index' },   // ← 추가
                         { text: 'Playground 구현 원리', link: '/playground/how-it-works' },
                     ],
                 },

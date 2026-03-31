@@ -9,12 +9,12 @@
  *
  * TC: TC-DS-006 (4xx → 롤백), TC-DS-009 (롤백 후 재시도 → 동일 메서드)
  */
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { shallowRef, ref, reactive, onMounted, onUnmounted } from 'vue'
 
 const ready = ref(false)
 let DomainState, MockApiHandler, unsub
 
-const stateRef = ref(null)
+const stateRef = shallowRef(null)
 const apiRef   = ref(null)
 const INITIAL  = { userId:'user_001', name:'Davi', email:'davi@example.com', role:'admin' }
 

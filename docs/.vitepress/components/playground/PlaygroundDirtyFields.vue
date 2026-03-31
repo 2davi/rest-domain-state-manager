@@ -10,12 +10,12 @@
  *
  * TC: TC-C-010, TC-C-011
  */
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { shallowRef, ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 
 const ready = ref(false)
 let DomainState, MockApiHandler, unsub
 
-const stateRef = ref(null)
+const stateRef = shallowRef(null)
 const lastAdded = ref(null)  // 방금 새로 등록된 key (하이라이트용)
 
 const INITIAL = {

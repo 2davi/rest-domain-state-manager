@@ -8,14 +8,14 @@
  * TC: TC-DS-001 (POST), TC-DS-003 (PUT 변경없음),
  *     TC-DS-004 (PUT dirtyRatio≥0.7), TC-DS-005 (PATCH)
  */
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { shallowRef, ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 
 const ready  = ref(false)
 const err    = ref(null)
 
 let DomainState, MockApiHandler, unsub
 
-const stateRef  = ref(null)
+const stateRef = shallowRef(null)
 const apiRef    = ref(null)
 const isNewMode = ref(false)
 

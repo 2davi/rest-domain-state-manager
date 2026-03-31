@@ -60,12 +60,12 @@ user.data.address.city  = 'Seoul'
 
 `save()` 는 HTTP 요청 실패 시 **4가지 상태를 자동으로 복원**합니다. 개발자가 명시적으로 롤백을 처리할 필요가 없습니다.
 
-| 복원 대상 | 내용 |
-|---|---|
-| `domainObject` | Proxy 내부 원본 데이터 |
-| `changeLog` | 변경 이력 배열 |
-| `dirtyFields` | 변경된 필드 집합 |
-| `_isNew` 플래그 | POST 여부 |
+| 복원 대상       | 내용                   |
+| --------------- | ---------------------- |
+| `domainObject`  | Proxy 내부 원본 데이터 |
+| `changeLog`     | 변경 이력 배열         |
+| `dirtyFields`   | 변경된 필드 집합       |
+| `_isNew` 플래그 | POST 여부              |
 
 ```javascript
 try {

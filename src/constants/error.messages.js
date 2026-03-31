@@ -57,6 +57,12 @@ export const ERR = Object.freeze({
     VO_SCHEMA_EXTRA_KEY: (key) =>
         `${PREFIX} DomainVO 정합성 경고: 응답 데이터에 VO 스키마에 없는 "${key}" 필드가 포함되어 있습니다.`,
 
+    /** @param {string[]} keys - 응답 데이터에 없는 VO 스키마 필드 목록 */
+    VO_SCHEMA_STRICT_FAIL: (keys) =>
+        `${PREFIX} DomainVO 스키마 엄격 검증 실패: ` +
+        `"${keys.join('", "')}" 필드가 응답 데이터에 없습니다. ` +
+        '서버 응답 구조와 DomainVO.fields 선언을 확인하세요.',
+        
     // ── 플러그인 ───────────────────────────────────────────────────────────
     PLUGIN_NO_INSTALL: `${PREFIX} DomainState.use(): 플러그인은 install(DomainState) 메서드를 가져야 합니다.`,
 
