@@ -1,3 +1,13 @@
+## [1.0.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.11.0...v1.0.0) (2026-03-31)
+
+### ⚠ BREAKING CHANGES
+
+* Really release v1.0.0
+
+### ✨ Features
+
+* Really release v1.0.0 ([3b45974](https://github.com/2davi/rest-domain-state-manager/commit/3b4597402e55553e3b27c3bd1d4c133677f92c44))
+
 ## [0.11.0](https://github.com/2davi/rest-domain-state-manager/compare/v0.10.2...v0.11.0) (2026-03-31)
 
 ### ⚠ BREAKING CHANGES
