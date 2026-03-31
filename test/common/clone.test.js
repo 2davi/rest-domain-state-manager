@@ -6,7 +6,6 @@ import { safeClone } from '../../src/common/clone.js';
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('safeClone — structuredClone 경로', () => {
-
     it('SC-001: null을 그대로 반환한다', () => {
         expect(safeClone(null)).toBeNull();
     });
@@ -23,7 +22,7 @@ describe('safeClone — structuredClone 경로', () => {
 
         expect(copy).toEqual(obj);
         copy.nested.b = 99;
-        expect(obj.nested.b).toBe(2);  // 원본 불변
+        expect(obj.nested.b).toBe(2); // 원본 불변
     });
 
     it('SC-004: 배열을 deep copy한다', () => {
@@ -32,7 +31,7 @@ describe('safeClone — structuredClone 경로', () => {
 
         expect(copy).toEqual(arr);
         /** @type {any} */ (copy)[1].x = 99;
-        expect(arr[1]).toEqual({ x: 2 });  // 원본 불변
+        expect(arr[1]).toEqual({ x: 2 }); // 원본 불변
     });
 
     it('SC-005: Date 객체를 Date 타입으로 보존한다', () => {
@@ -42,7 +41,7 @@ describe('safeClone — structuredClone 경로', () => {
         expect(copy.createdAt).toBeInstanceOf(Date);
         expect(copy.createdAt.getTime()).toBe(obj.createdAt.getTime());
         copy.createdAt.setFullYear(2025);
-        expect(obj.createdAt.getFullYear()).toBe(2026);  // 원본 불변
+        expect(obj.createdAt.getFullYear()).toBe(2026); // 원본 불변
     });
 
     it('SC-006: RegExp 객체를 RegExp 타입으로 보존한다', () => {

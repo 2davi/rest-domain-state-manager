@@ -17,7 +17,7 @@ beforeEach(() => {
 
 afterEach(() => {
     vi.restoreAllMocks();
-    document.head.innerHTML = '';  // meta 태그 정리
+    document.head.innerHTML = ''; // meta 태그 정리
     document.cookie = '';
 });
 
@@ -26,12 +26,11 @@ afterEach(() => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('ApiHandler.init() — DOM meta 태그 파싱 (jsdom)', () => {
-
     it('TC-N-012: meta[name="_csrf"] 기본 선택자 자동 탐색 성공', async () => {
         document.head.innerHTML = `<meta name="_csrf" content="spring-token-001">`;
 
         const handler = new ApiHandler({ host: 'localhost:8080' });
-        handler.init({});  // csrfSelector 미지정 → 기본값으로 탐색
+        handler.init({}); // csrfSelector 미지정 → 기본값으로 탐색
 
         await handler._fetch('/api/test', { method: 'POST', body: '{}' });
 
@@ -57,9 +56,9 @@ describe('ApiHandler.init() — DOM meta 태그 파싱 (jsdom)', () => {
         const handler = new ApiHandler({ host: 'localhost:8080' });
         handler.init({});
 
-        await expect(
-            handler._fetch('/api/test', { method: 'POST', body: '{}' })
-        ).rejects.toThrow('CSRF 토큰이 필요하지만');
+        await expect(handler._fetch('/api/test', { method: 'POST', body: '{}' })).rejects.toThrow(
+            'CSRF 토큰이 필요하지만'
+        );
     });
 
     it('TC-N-015: csrfToken 직접 주입은 jsdom 환경에서도 DOM 탐색 건너뜀', async () => {

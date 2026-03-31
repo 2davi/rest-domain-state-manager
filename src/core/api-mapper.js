@@ -161,7 +161,7 @@ export function toPayload(getTargetFn) {
  * Long Task 기준(50ms) 초과 여부가 Worker 오프로딩 Phase 2 판단 근거가 된다.
  * `process.env.NODE_ENV`를 소비자 번들러가 치환하면 프로덕션 빌드에서
  * Tree-shaking으로 해당 블록이 완전히 제거된다.
- * 
+ *
  * @param {() => ChangeLogEntry[]} getChangeLogFn
  *   `createProxy()`의 반환값에서 꺼낸 `getChangeLog` 함수.
  *   호출 시 현재 변경 이력의 얕은 복사본을 반환한다.
@@ -209,7 +209,9 @@ export function toPatch(getChangeLogFn) {
         const m = performance.measure('dsm:toPatch', 'dsm:toPatch:start', 'dsm:toPatch:end');
         // 10ms 이상이면 경보 (Long Task 기준 50ms의 조기 경보 임계값)
         if (m.duration > 10) {
-            console.debug(`[DSM] toPatch() ${m.duration.toFixed(2)}ms — changeLog ${result.length}항목. 50ms 초과 시 Worker 오프로딩 검토.`);
+            console.debug(
+                `[DSM] toPatch() ${m.duration.toFixed(2)}ms — changeLog ${result.length}항목. 50ms 초과 시 Worker 오프로딩 검토.`
+            );
         }
     }
     // ─────────────────────────────────────────────────────────────────────────

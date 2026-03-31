@@ -39,12 +39,12 @@
  *     result._errors.forEach(({ key, error }) => console.warn(key, error));
  * }
  * ```
- * 
+ *
  * ## 의존성 방향
  * `DomainPipeline → DomainState` 단방향. `DomainState`는 `DomainPipeline`을 알지 못한다.
  * 아래 @typedef의 `import('./DomainState.js')` 참조는 IDE 자동완성 전용 JSDoc hinting이며,
  * 런타임 의존성이 아니다. (ES Module import 구문 없음)
- * 
+ *
  * @module domain/DomainPipeline
  * @see {@link module:domain/DomainState DomainState}
  * @see {@link https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled MDN — Promise.allSettled}
@@ -248,7 +248,7 @@ export class DomainPipeline {
      * - `'fail-fast'`: 첫 번째 핸들러 실패 시 즉시 중단하고
      *   이전 성공 상태들에 **역순(LIFO)**으로 `restore()`를 호출한다.
      * - `'ignore'`: 보상 없음. 기존 동작과 동일.
-     * 
+     *
      * ### 4단계 — 결과 반환
      * `errors`가 있으면 `output._errors`에 포함하여 반환한다.
      *
@@ -297,7 +297,7 @@ export class DomainPipeline {
         const resolved = {};
 
         for (let i = 0; i < keys.length; i++) {
-            const key    = keys[i];
+            const key = keys[i];
             const result = settled[i];
 
             if (result.status === 'fulfilled') {
@@ -347,7 +347,7 @@ export class DomainPipeline {
                     this._compensate(resolved, [...completedKeys].reverse());
                     this._dispatchPipelineRollback(errors, resolved);
                     if (this._strict) throw err;
-                    break;  // 나머지 핸들러 건너뜀
+                    break; // 나머지 핸들러 건너뜀
                 }
 
                 if (this._strict) throw err;
@@ -408,14 +408,16 @@ export class DomainPipeline {
      */
     _dispatchPipelineRollback(errors, resolved) {
         if (typeof window === 'undefined') return;
-        window.dispatchEvent(new CustomEvent('dsm:pipeline-rollback', {
-            detail: {
-                errors,
-                // 성공한 리소스 레이블 맵 — 소비자가 서버 롤백 대상을 식별하는 데 사용
-                resolved: Object.fromEntries(
-                    Object.entries(resolved).map(([k, v]) => [k, v._label ?? k])
-                ),
-            },
-        }));
+        window.dispatchEvent(
+            new CustomEvent('dsm:pipeline-rollback', {
+                detail: {
+                    errors,
+                    // 성공한 리소스 레이블 맵 — 소비자가 서버 롤백 대상을 식별하는 데 사용
+                    resolved: Object.fromEntries(
+                        Object.entries(resolved).map(([k, v]) => [k, v._label ?? k])
+                    ),
+                },
+            })
+        );
     }
 }

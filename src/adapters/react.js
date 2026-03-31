@@ -60,8 +60,8 @@ import { useSyncExternalStore } from 'react';
  */
 export function useDomainState(domainState) {
     return useSyncExternalStore(
-        /** @param {() => void} listener */
+        /** @param {() => void} listener - useSyncExternalStore에서 주입되는 상태 변경 콜백 */
         (listener) => domainState.subscribe(listener),
-        ()         => domainState.getSnapshot()
+        () => domainState.getSnapshot()
     );
 }

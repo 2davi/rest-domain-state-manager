@@ -85,7 +85,6 @@ describe('ApiHandler.get()', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('ApiHandler.init() + _fetch() — CSRF 인터셉터', () => {
-
     // ── TC-N-005: init() 미호출 → 뮤테이션 요청도 그냥 통과 (CSRF 비활성) ──
     it('TC-N-005: init() 미호출 시 POST 요청에 X-CSRF-Token 헤더 없음', async () => {
         const handler = new ApiHandler({ host: 'localhost:8080' });
@@ -156,8 +155,8 @@ describe('ApiHandler.init() + _fetch() — CSRF 인터셉터', () => {
         // csrfToken 직접 주입도 없음
         handler.init({});
 
-        await expect(
-            handler._fetch('/api/test', { method: 'POST', body: '{}' })
-        ).rejects.toThrow('CSRF 토큰이 필요하지만');
+        await expect(handler._fetch('/api/test', { method: 'POST', body: '{}' })).rejects.toThrow(
+            'CSRF 토큰이 필요하지만'
+        );
     });
 });

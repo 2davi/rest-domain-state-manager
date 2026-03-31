@@ -120,11 +120,10 @@ describe('DomainVO — getBaseURL()', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainVO.toSkeleton() — safeClone deep copy', () => {
-
     it('SC-V-001: Date 기본값이 Date 인스턴스로 복사된다', () => {
         class EventVO extends DomainVO {
             static fields = {
-                title:     { default: '' },
+                title: { default: '' },
                 startDate: { default: new Date('2026-01-01') },
             };
         }
@@ -143,8 +142,8 @@ describe('DomainVO.toSkeleton() — safeClone deep copy', () => {
         const s2 = new AddressVO().toSkeleton();
 
         s1.address.city = 'Busan';
-        expect(s2.address.city).toBe('Seoul');  // 오염 없음
-        expect(s1.address).not.toBe(s2.address);  // 다른 참조
+        expect(s2.address.city).toBe('Seoul'); // 오염 없음
+        expect(s1.address).not.toBe(s2.address); // 다른 참조
     });
 });
 
@@ -153,7 +152,6 @@ describe('DomainVO.toSkeleton() — safeClone deep copy', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('DomainVO.checkSchema() — 로그 레벨 분류', () => {
-
     it('SC-V-003: extraKeys 감지 시 프로덕션 환경에서 console.warn이 발화하지 않는다', () => {
         const originalEnv = process.env.NODE_ENV;
         process.env.NODE_ENV = 'production';
@@ -185,7 +183,7 @@ describe('DomainVO.checkSchema() — 로그 레벨 분류', () => {
     it('SC-V-005: configure({ silent: true }) 후 missing/extra 모두 콘솔 출력 억제된다', () => {
         DomainState.configure({ silent: true });
 
-        const warnSpy  = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         // missing + extra 동시 유발

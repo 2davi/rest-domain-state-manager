@@ -27,7 +27,7 @@
  */
 export function deepFreeze(obj, seen = new WeakSet()) {
     if (obj === null || typeof obj !== 'object') return obj;
-    if (seen.has(obj)) return obj;  // 순환 참조 방어
+    if (seen.has(obj)) return obj; // 순환 참조 방어
 
     seen.add(obj);
     Object.freeze(obj);

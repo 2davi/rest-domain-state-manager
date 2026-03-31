@@ -90,7 +90,7 @@ self.onmessage = function (event) {
         }
 
         getWorkerChannel()?.postMessage({
-            type:   'TAB_REGISTER',
+            type: 'TAB_REGISTER',
             tabId,
             tabUrl,
             states,

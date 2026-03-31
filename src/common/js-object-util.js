@@ -47,7 +47,7 @@ export const TOSTRING_TAG = Object.freeze({
 
 /**
  * getToStringTag() : 값의 Object.prototype.toString() 태그를 반환한다.
- * @param {*} value
+ * @param {*} value - 각 유틸 함수의 value 파라미터
  * @returns {string}
  */
 export const getToStringTag = (value) => Object.prototype.toString.call(value);
@@ -55,7 +55,7 @@ export const getToStringTag = (value) => Object.prototype.toString.call(value);
 /**
  * isPrimitive() : 값이 원시 타입(primitive)인지 확인한다.
  * null 포함.
- * @param {*} value
+ * @param {*} value - 각 유틸 함수의 value 파라미터
  * @returns {boolean}
  */
 export const isPrimitive = (value) => {
@@ -66,7 +66,7 @@ export const isPrimitive = (value) => {
 
 /**
  * isReference() : 값이 null이 아닌 참조 타입(object | function)인지 확인한다.
- * @param {*} value
+ * @param {*} value - 각 유틸 함수의 value 파라미터
  * @returns {boolean}
  */
 export const isReference = (value) =>
@@ -74,7 +74,7 @@ export const isReference = (value) =>
 
 /**
  * isArray() : 값이 배열인지 확인한다.
- * @param {*} value
+ * @param {*} value - 각 유틸 함수의 value 파라미터
  * @returns {boolean}
  */
 export const isArray = (value) => Array.isArray(value);
@@ -82,7 +82,7 @@ export const isArray = (value) => Array.isArray(value);
 /**
  * isPlainObject() : 값이 plain object({})인지 확인한다.
  * null, Array, Date, Map, Set, Promise 등을 제외한다.
- * @param {*} value
+ * @param {*} value - 각 유틸 함수의 value 파라미터
  * @returns {boolean}
  */
 export const isPlainObject = (value) => {
@@ -94,7 +94,7 @@ export const isPlainObject = (value) => {
 
 /**
  * isThenable() : 값이 thenable(Promise-like)인지 확인한다.
- * @param {*} value
+ * @param {*} value - 각 유틸 함수의 value 파라미터
  * @returns {boolean}
  */
 export const isThenable = (value) =>
@@ -126,9 +126,9 @@ export const shouldBypassDeepProxy = (prop) => {
 /**
  * 점(dot) 분해된 키 배열로 중첩 객체에 값을 설정한다.
  *
- * @param {object}   target
- * @param {string[]} keys
- * @param {*}        value
+ * @param {object}   target - 각 유틸 함수의 target 파라미터
+ * @param {string[]} keys - 각 유틸 함수의 KEY값 배열 파라미터
+ * @param {*}        value - 각 유틸 함수의 value 파라미터
  */
 export function _setNestedValue(target, keys, value) {
     let cursor = /** @type {any} */ (target);
