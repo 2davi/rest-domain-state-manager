@@ -54,9 +54,18 @@ user.data.address.city  = 'Seoul'
 
 중첩 객체의 경로는 JSON Pointer(RFC 6901) 표기법을 따르며 `/` 구분자를 사용합니다.
 
-## Optimistic Update와 자동 롤백
+---
 
-`save()` 는 낙관적 업데이트(Optimistic Update) 패턴을 내장하고 있습니다. HTTP 요청이 실패(`4xx` / `5xx` / 네트워크 오류)하면 `domainObject`, `changeLog`, `dirtyFields`, `_isNew` 네 개의 상태를 `save()` 호출 이전 시점으로 자동 복원한 뒤 에러를 re-throw합니다. 이로 인해 서버와 클라이언트 상태의 불일치가 발생하지 않습니다.
+## save() 내 자동 롤백
+
+`save()` 는 HTTP 요청 실패 시 **4가지 상태를 자동으로 복원**합니다. 개발자가 명시적으로 롤백을 처리할 필요가 없습니다.
+
+| 복원 대상 | 내용 |
+|---|---|
+| `domainObject` | Proxy 내부 원본 데이터 |
+| `changeLog` | 변경 이력 배열 |
+| `dirtyFields` | 변경된 필드 집합 |
+| `_isNew` 플래그 | POST 여부 |
 
 ```javascript
 try {
@@ -69,6 +78,72 @@ try {
 ```
 
 재시도도 안전합니다. 롤백 후 `changeLog` 와 `dirtyFields` 가 복원되어 있으므로 `save()` 를 다시 호출하면 동일한 분기로 동일한 페이로드를 전송합니다.
+
+---
+
+## restore() — 파이프라인 보상 트랜잭션용
+
+`restore()` 는 `save()` 의 자동 롤백과 별개입니다. `DomainPipeline` 이 여러 `DomainState` 를 처리하다가 하나가 실패했을 때, **이미 성공한 다른 인스턴스의 인메모리 상태를 복원**하기 위한 메서드입니다.
+
+```text
+자동 롤백 (save() 내부)        restore() (외부 호출)
+─────────────────────────      ──────────────────────────────
+save() 실패 시 자동 실행        DomainPipeline 또는 소비자가
+                               명시적으로 호출
+                               
+save()를 호출한 인스턴스        save()는 성공했으나 다른
+자신의 상태만 복원              인스턴스 실패로 파이프라인이
+                               보상을 요구하는 인스턴스 복원
+```
+
+### DomainPipeline을 통한 자동 보상
+
+`failurePolicy: 'rollback-all'` 또는 `'fail-fast'` 설정 시 파이프라인이 자동으로 호출합니다.
+
+```javascript
+const result = await DomainState.all({
+    order:   api.get('/api/orders/1'),
+    payment: api.get('/api/payments/1'),
+}, { failurePolicy: 'rollback-all' })
+.after('order',   async s => { await s.save('/api/orders/1') })     // 성공
+.after('payment', async s => { await s.save('/api/payments/1') })   // 실패 가정
+.run()
+
+// payment 실패 → order.restore() 자동 호출
+// order.data는 save('/api/orders/1') 이전 상태로 복원됨
+```
+
+### 소비자가 직접 호출
+
+파이프라인 없이 직접 제어하는 경우 소비자가 명시적으로 호출합니다.
+
+```javascript
+try {
+    await orderState.save('/api/orders/1')
+    await paymentState.save('/api/payments/1')  // 실패 가정
+} catch (err) {
+    orderState.restore()  // 인메모리 상태 복원
+    console.error('결제 실패. 주문 상태가 복원되었습니다.')
+    // 서버의 order 레코드 롤백은 소비자 책임 (DELETE /api/orders/1 등)
+}
+```
+
+### dsm:rollback 이벤트
+
+`restore()` 완료 후 `dsm:rollback` CustomEvent 가 발행됩니다.
+
+```javascript
+window.addEventListener('dsm:rollback', (e) => {
+    console.warn(`[UI] ${e.detail.label} 상태가 복원되었습니다.`)
+    showErrorNotification('저장에 실패하여 이전 상태로 복원되었습니다.')
+})
+```
+
+::: warning restore()의 책임 범위
+`restore()` 는 **프론트엔드 인메모리 상태만 복원**합니다. 서버에 이미 커밋된 요청을 되돌리는 것은 라이브러리 책임 범위 밖입니다. 서버 롤백이 필요한 경우 소비자 코드에서 별도의 DELETE 또는 PUT 요청을 구현해야 합니다.
+:::
+
+---
 
 ## 성공 후 처리
 

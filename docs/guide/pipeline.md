@@ -7,8 +7,7 @@
 ## 기본 구조
 
 ```javascript
-import { DomainState, DomainPipeline } from '@2davi/rest-domain-state-manager'
-DomainState.PipelineConstructor = DomainPipeline  // 진입점 없이 직접 사용 시 필요
+import { DomainState } from '@2davi/rest-domain-state-manager'
 
 const result = await DomainState.all({
     user:  api.get('/users/user_001'),
@@ -67,6 +66,71 @@ try {
 }
 ```
 
+## failurePolicy — 보상 트랜잭션 정책
+
+파이프라인 내부에서 `after()` 핸들러가 실패했을 때 이미 처리된 상태들을 어떻게 처리할지 결정합니다. `save()` 호출 포함 핸들러에서 특히 유용합니다.
+
+| 값 | 동작 |
+|---|---|
+| `'ignore'` (기본값) | 실패를 `_errors`에 기록하고 계속 진행. 보상 없음. |
+| `'rollback-all'` | 모든 핸들러 완료 후 에러가 하나라도 있으면 성공한 모든 DomainState에 `restore()` 호출. |
+| `'fail-fast'` | 첫 번째 핸들러 실패 시 즉시 중단. 이전 성공 상태들에 역순(LIFO)으로 `restore()` 호출. |
+
+::: tip failurePolicy 선택 기준
+독립적인 리소스(공통코드 로딩 등)에는 `'ignore'`가 적합합니다. 부모-자식 관계처럼 순차적으로 저장해야 하는 리소스에는 `'fail-fast'` 또는 `'rollback-all'` 을 사용하여 상태 불일치를 방지하세요.
+:::
+
+### rollback-all 예시
+
+A, B, C 세 리소스를 저장하는 중 C가 실패하면 A, B를 `restore()` 합니다.
+
+```javascript
+const result = await DomainState.all({
+    a: api.get('/api/orders/1'),
+    b: api.get('/api/items/1'),
+    c: api.get('/api/shipments/1'),
+}, { failurePolicy: 'rollback-all' })
+.after('a', async a => { await a.save('/api/orders/1') })
+.after('b', async b => { await b.save('/api/items/1') })
+.after('c', async c => { await c.save('/api/shipments/1') })  // 실패 가정
+.run()
+
+// c 실패 → a, b 의 save() 이전 인메모리 상태가 restore()
+// result._errors 에 실패 정보 포함
+```
+
+### fail-fast 예시
+
+직렬 의존 관계(b는 a가 성공해야 의미가 있는 경우)에서 사용합니다.
+
+```javascript
+const result = await DomainState.all({
+    a: api.get('/api/members/1'),
+    b: api.get('/api/certs/1'),
+}, { failurePolicy: 'fail-fast' })
+.after('a', async a => { await a.save('/api/members/1') })  // 실패 가정
+.after('b', async b => { await b.save('/api/certs/1') })    // 실행되지 않음
+.run()
+
+// a 실패 → 즉시 중단, a를 restore(), b 핸들러는 실행되지 않음
+```
+
+### dsm:pipeline-rollback 이벤트
+
+보상 트랜잭션이 완료되면 `dsm:pipeline-rollback` CustomEvent 가 발행됩니다. 소비자 앱이 이 이벤트를 구독하여 서버 롤백 API 호출 또는 사용자 알림을 구현할 수 있습니다.
+
+```javascript
+window.addEventListener('dsm:pipeline-rollback', (e) => {
+    console.warn('파이프라인 롤백 발생:', e.detail.errors)
+    // e.detail.resolved — 성공했다가 rollback된 리소스 레이블 맵
+    showNotification('일부 저장에 실패하여 이전 상태로 복원되었습니다.')
+})
+```
+
+::: warning 인메모리 상태만 복원됩니다
+`restore()` 는 프론트엔드 메모리 상태만 복원합니다. 서버에 이미 커밋된 요청을 되돌리는 것은 소비자 책임입니다. `dsm:pipeline-rollback` 이벤트를 구독하여 필요한 서버 롤백 API를 직접 호출하세요.
+:::
+
 ## after() 핸들러 유효성 검사
 
 `after()` 에 전달하는 키는 `all()` 의 `resourceMap` 에 선언된 키여야 합니다. 존재하지 않는 키를 지정하면 즉시 `Error` 가 throw됩니다. 이는 타이핑 실수를 런타임에 조기 발견하기 위한 설계입니다.
@@ -76,22 +140,31 @@ const pipeline = new DomainPipeline({ user: api.get('/users/1') })
 
 pipeline.after('usr', () => {})
 // → Error: 'usr' 키는 resourceMap에 존재하지 않습니다. ('user'를 의도하셨나요?)
-
-pipeline.after('admin', 'not a function')
-// → TypeError: after() 핸들러는 함수여야 합니다.
 ```
 
-## 진입점 없이 직접 사용
+## 실행 흐름 요약
 
-`index.js` 진입점을 통해 임포트하면 `PipelineConstructor` 가 자동으로 주입됩니다. 직접 파일을 import하는 경우에는 수동으로 주입이 필요합니다.
-
-```javascript
-// 진입점 사용 (권장)
-import { DomainState } from '@2davi/rest-domain-state-manager'
-// PipelineConstructor 자동 주입됨
-
-// 직접 사용 (테스트 환경 등)
-import { DomainState }    from '../../src/domain/DomainState.js'
-import { DomainPipeline } from '../../src/domain/DomainPipeline.js'
-DomainState.PipelineConstructor = DomainPipeline
+```text
+DomainState.all(resourceMap, { strict?, failurePolicy? })
+  │
+  ▼
+1단계: Promise.allSettled() — 모든 리소스 병렬 fetch
+  │  fulfilled → resolved[key] 에 DomainState 저장
+  │  rejected  → errors 에 기록 (strict: true 이면 즉시 throw)
+  │
+  ▼
+2단계: _queue 순차 실행 (after() 등록 순서)
+  │  핸들러 성공  → completedKeys 에 추가
+  │  핸들러 실패  → errors 에 기록
+  │               fail-fast: LIFO restore() + break
+  │               strict: true 이면 즉시 throw
+  │
+  ▼
+3단계: 보상 트랜잭션 (failurePolicy 에 따라)
+  │  rollback-all: errors > 0 이면 전체 restore()
+  │  fail-fast:    2단계에서 이미 처리됨
+  │  ignore:       건너뜀
+  │
+  ▼
+4단계: { ...resolved, _errors? } 반환
 ```
