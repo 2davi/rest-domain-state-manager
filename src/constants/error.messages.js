@@ -127,3 +127,24 @@ export const WARN = Object.freeze({
         `${PREFIX}[경고] baseURL("${baseURL}")의 시작이 host와 같아 ` +
         `basePath("${resolved}")로 해석했습니다. 의도대로 동작했다면 다음부터는 basePath를 사용하세요.`,
 });
+
+/**
+ * DEPRECATED: devWarn으로 출력되는 deprecated 경고 상수
+ * 
+ * @readonly
+ * @namespace
+ */
+export const DEPRECATED = Object.freeze({
+    // ── Deprecated ─────────────────────────────────────────────────────────
+    /** @param {string} version @param {string | null} alternative */
+    DEPRECATED_TEMPLATE: (version, alternative) =>
+        `${PREFIX} ${version}에서 deprecated됩니다. ${alternative}를 사용하세요.`,
+    
+    /** */
+    FORM_BINDER_V1:
+        `${PREFIX} FormBinder는 v1.0.0에서 deprecated됩니다.`,
+
+    /** */
+    DOMAIN_RENDERER_V1:
+        `${PREFIX} DomainRenderer는 v1.0.0에서 deprecated됩니다.`,
+});

@@ -38,7 +38,8 @@ import { renderSelect } from './renderers/select.renderer.js';
 import { renderRadioCheckbox } from './renderers/radio-checkbox.renderer.js';
 import { renderButton } from './renderers/button.renderer.js';
 import { RENDERER_TYPE } from './renderer.const.js';
-import { ERR } from '../../constants/error.messages.js';
+import { ERR, DEPRECATED } from '../../constants/error.messages.js';
+import { devWarn } from '../../common/logger.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -88,6 +89,9 @@ import { ERR } from '../../constants/error.messages.js';
 /**
  * `DomainState`에 `renderTo()` DOM 렌더링 기능을 주입하는 플러그인 객체.
  *
+ * @deprecated v1.0.0에서 deprecated됩니다. ...를 사용하세요.
+ * 
+ *
  * `DomainState.use(DomainRenderer)` 한 번으로 설치한다.
  * 설치 후 모든 `DomainState` 인스턴스에서 `renderTo()`를 호출할 수 있다.
  *
@@ -123,6 +127,7 @@ export const DomainRenderer = {
      * @returns {void}
      */
     install(DomainStateClass) {
+        devWarn(DEPRECATED.DOMAIN_RENDERER_V1);
         /**
          * `DomainState`의 배열 데이터를 DOM 요소로 렌더링한다.
          *
