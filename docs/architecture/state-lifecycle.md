@@ -149,6 +149,8 @@ const unsubscribe = state.subscribe(() => {
 unsubscribe()  // 구독 해제
 ```
 
+<PlaygroundShadowState />
+
 React 컴포넌트와 연동하려면 [React 어댑터 가이드](/guide/react-adapter)를 참고하세요.
 
 ---

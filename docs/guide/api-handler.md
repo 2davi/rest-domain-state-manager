@@ -103,6 +103,8 @@ api.init(config?)
 
 `init()` 을 호출하지 않으면 CSRF 기능은 완전히 비활성 상태입니다. GET 요청 전용으로만 사용하는 경우 호출하지 않아도 됩니다.
 
+<PlaygroundCsrf />
+
 ### CSRF 토큰 탐색 우선순위
 
 ```markdown

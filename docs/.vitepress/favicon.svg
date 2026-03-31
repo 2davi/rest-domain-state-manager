@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <path d="M 50 10 L 85 30 L 85 70 L 50 90 L 15 70 L 15 30 Z" stroke="#CBD5E1" stroke-width="2" stroke-linejoin="round" />
+  <path d="M 15 30 L 85 70 M 15 70 L 85 30" stroke="#E2E8F0" stroke-width="1" opacity="0.3" /> <g>
+    <path d="M 50 30 L 70 40 L 50 50 L 30 40 Z" fill="#A78BFA" />
+    
+    <path d="M 30 40 L 50 50 L 50 70 L 30 60 Z" fill="#7C3AED" />
+    
+    <path d="M 70 40 L 50 50 L 50 70 L 70 60 Z" fill="#5B21B6" />
+    
+    <path d="M 15 30 L 30 40" stroke="#E2E8F0" stroke-width="1" />
+    <path d="M 85 30 L 70 40" stroke="#E2E8F0" stroke-width="1" />
+    <path d="M 15 70 L 30 60" stroke="#E2E8F0" stroke-width="1" />
+    <path d="M 85 70 L 70 60" stroke="#E2E8F0" stroke-width="1" />
+  </g>
+  
+  <path d="M 50 30 L 70 40 L 50 40 Z" fill="#FFFFFF" opacity="0.4" />
+</svg>

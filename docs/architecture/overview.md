@@ -6,56 +6,56 @@
 
 라이브러리는 다섯 개의 계층으로 구성됩니다. 의존성은 단방향이며 상위 계층이 하위 계층을 호출합니다. 역방향 의존은 허용되지 않습니다.
 
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                      진입점 (Entry Point)                           │
-│                          src/index.js                               │
-│                  Composition Root — 의존성 조립                      │
-│    { DomainState, ApiHandler, DomainVO, DomainPipeline,             │
-│      DomainRenderer, FormBinder, closeDebugChannel }                │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-        ┌──────────────────┼─────────────────────┐
-        ▼                  ▼                     ▼
-┌───────────────┐  ┌──────────────┐  ┌────────────────────────────┐
-│  src/domain/  │  │ src/network/ │  │       src/plugins/         │
-│               │  │              │  │                            │
-│  DomainState  │  │  ApiHandler  │  │  domain-renderer/          │
-│  DomainVO     │  │              │  │    DomainRenderer.js       │
-│  DomainPipeline│  │              │  │  form-binder/              │
-│               │  │              │  │    FormBinder.js           │
-└───────┬───────┘  └──────┬───────┘  └────────────────────────────┘
-        │                 │
-        │                 │    ┌────────────────────────────┐
-        │                 │    │     src/adapters/          │
-        │                 │    │                            │
-        │                 │    │  react.js (React 어댑터)  │
-        │                 │    │  (subpath export)          │
-        │                 │    └────────────────────────────┘
-        │                 │
-        │                 │    ┌────────────────────────────┐
-        │                 │    │      src/workers/          │
-        │                 │    │                            │
-        │                 │    │  serializer.worker.js      │
-        │                 │    │  (BroadcastChannel 오프로드)│
-        │                 │    └────────────────────────────┘
-        │                 │
-        └────────┬─────────┘
-                 ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        src/ (내부 계층)                             │
-│                                                                     │
-│  core/               debug/            common/                      │
-│  api-proxy.js        debug-channel.js  clone.js (safeClone)         │
-│  api-mapper.js                         freeze.js (deepFreeze)       │
-│  url-resolver.js     constants/        logger.js (devWarn)          │
-│                      dirty.const.js                                 │
-│                      error.messages.js                              │
-│                      log.messages.js                                │
-│                      op.const.js                                    │
-│                      channel.const.js                               │
-│                      protocol.const.js                              │
-└─────────────────────────────────────────────────────────────────────┘
+```javascript
+           ┌─────────────────────────────────────────────────────────────────────┐
+           │                      진입점 (Entry Point)                           │// [!code highlight]
+           │                          src/index.js                               │
+           │                  Composition Root — 의존성 조립                     │
+           │    { DomainState, ApiHandler, DomainVO, DomainPipeline,             │
+           │      DomainRenderer, FormBinder, closeDebugChannel }                │
+           └───────────────────────────┬─────────────────────────────────────────┘
+                                       │
+                   ┌───────────────────┼─────────────────────┐
+                   ▼                   ▼                     ▼
+           ┌─────────────────┐  ┌──────────────┐  ┌────────────────────────────┐
+           │  src/domain/    │  │ src/network/ │  │       src/plugins/         │// [!code highlight]
+           │                 │  │              │  │                            │
+           │  DomainState    │  │  ApiHandler  │  │   domain-renderer/         │
+           │  DomainVO       │  │              │  │   DomainRenderer.js        │
+           │  DomainPipeline │  │              │  │   form-binder/             │
+           │                 │  │              │  │   FormBinder.js            │
+           └───────┬─────────┘  └──────┬───────┘  └────────────────────────────┘
+                   │                   │
+                   │                   │     ┌─────────────────────────────┐
+                   │                   │     │     src/adapters/           │// [!code highlight]
+                   │                   │     │                             │
+                   │                   │     │  react.js (React 어댑터)    │
+                   │                   │     │  (subpath export)           │
+                   │                   │     └─────────────────────────────┘
+                   │                   │ 
+                   │                   │     ┌─────────────────────────────┐
+                   │                   │     │      src/workers/           │// [!code highlight]
+                   │                   │     │                             │
+                   │                   │     │  serializer.worker.js       │
+                   │                   │     │  (BroadcastChannel 오프로드)│
+                   │                   │     └─────────────────────────────┘
+                   │                   │
+                   └────────┬──────────┘
+                            ▼
+           ┌─────────────────────────────────────────────────────────────────────┐
+           │                        src/ (내부 계층)                             │// [!code highlight]
+           │                                                                     │
+           │  core/               debug/            common/                      │
+           │  api-proxy.js        debug-channel.js  clone.js (safeClone)         │
+           │  api-mapper.js                         freeze.js (deepFreeze)       │
+           │  url-resolver.js     constants/        logger.js (devWarn)          │
+           │                      dirty.const.js                                 │
+           │                      error.messages.js                              │
+           │                      log.messages.js                                │
+           │                      op.const.js                                    │
+           │                      channel.const.js                               │
+           │                      protocol.const.js                              │
+           └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 핵심 모듈 역할
@@ -134,8 +134,8 @@
 
 이 문제는 **Composition Root 패턴**으로 해소됩니다. `src/index.js` 진입점이 두 모듈을 각각 import한 뒤 `DomainState.configure({ pipelineFactory })` 를 호출하여 의존성을 조립합니다. 소비자 코드에서 이 조립 과정을 직접 수행할 필요가 없습니다.
 
-```text
-의존 방향 (단방향)
+```javascript
+의존 방향 (단방향) // [!code highlight]
 
   DomainPipeline ──→ DomainState
        ↑                  ↑
@@ -161,7 +161,8 @@ DOM에 의존하는 기능(`FormBinder`, `DomainRenderer`)은 `DomainState.use(p
 `DomainState.configure({ silent: true })` 를 호출하면 라이브러리 내부의 모든 `console` 출력이 억제됩니다. 운영 환경의 콘솔 노이즈를 막거나 통합 테스트에서 불필요한 로그를 제거할 때 사용합니다.
 
 ```javascript
-// 운영 환경
+// 운영 환경 // [!code highlight]
+
 if (process.env.NODE_ENV === 'production') {
     DomainState.configure({ silent: true })
 }

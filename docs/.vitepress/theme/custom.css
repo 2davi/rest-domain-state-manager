@@ -323,3 +323,26 @@ mark,
     padding:       1px 5px;
     border-radius: 4px;
 }
+
+/* ── 16. 코드 블럭 폰트 ────────────────────────── */
+@font-face {
+  font-family: 'YourFont';
+  src: url('./fonts/D2Codingligature.woff2') format('woff2'),
+       url('./fonts/D2Codingligature.woff')  format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'YourFont';
+  src: url('./fonts/D2CodingligatureBold.woff2') format('woff2'),
+       url('./fonts/D2CodingligatureBold.woff')  format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --vp-font-family-mono: 'YourFont', ui-monospace, monospace;
+}

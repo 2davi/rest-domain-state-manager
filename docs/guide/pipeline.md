@@ -80,6 +80,8 @@ try {
 독립적인 리소스(공통코드 로딩 등)에는 `'ignore'`가 적합합니다. 부모-자식 관계처럼 순차적으로 저장해야 하는 리소스에는 `'fail-fast'` 또는 `'rollback-all'` 을 사용하여 상태 불일치를 방지하세요.
 :::
 
+<PlaygroundPipeline />
+
 ### rollback-all 예시
 
 A, B, C 세 리소스를 저장하는 중 C가 실패하면 A, B를 `restore()` 합니다.

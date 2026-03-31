@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { resolve }      from 'path'
+import { fileURLToPath } from 'url'
 
 export default defineConfig({
     title:       'DSM',
@@ -7,6 +8,7 @@ export default defineConfig({
     base:        '/rest-domain-state-manager/',
 
     head: [
+        ['link', { rel: 'icon', type: 'image/svg+xml', href: '/rest-domain-state-manager/favicon.svg' }],
         ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
         ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
         ['link', {
@@ -21,9 +23,17 @@ export default defineConfig({
             alias: {
                 // Playground 컴포넌트 내부의 import('/index.js') 가
                 // 레포지토리 루트의 index.js 를 가리키도록 설정
-                '/index.js': resolve(process.cwd(), 'index.js'),
+                //'/index.js': resolve(process.cwd(), 'index.js'),
+                '@2davi/rest-domain-state-manager': fileURLToPath(
+                    new URL('../../index.js', import.meta.url)
+                ),
             },
         },
+        // ── publicDir 수정 ──────────────────────────────────────────
+        // .vitepress 폴더 자체를 정적 자산 폴더로 사용 (네 고집대로)
+        // __dirname 대신 ESM 표준인 import.meta.url 을 사용해라.
+        // ────────────────────────────────────────────────────────────
+        publicDir: fileURLToPath(new URL('.', import.meta.url)),
     },
 
     locales: {
@@ -32,7 +42,7 @@ export default defineConfig({
     },
 
     themeConfig: {
-        logo: { light: '/logo-light.svg', dark: '/logo-dark.svg', alt: 'DSM' },
+        logo: { light: '/favicon.svg', dark: '/favicon.svg', alt: 'DSM' },
 
         outline: { level: [2, 3], label: '목차' },
 
