@@ -124,8 +124,14 @@ import { LOG, formatMessage } from '../constants/log.messages.js';
  * 원본 메서드를 실행하고, 이후 변경된 범위만 정밀하게 `record()`한다.
  * `push`/`pop`은 set 트랩의 자연스러운 동작으로 충분하므로 래핑하지 않는다.
  *
- * @param {object}               domainObject - Proxy로 감쌀 순수 JS 객체 또는 배열
- * @param {OnMutateCallback|null} [onMutate]  - 변경 기록 직후 호출되는 콜백. 기본값 `null`.
+ * @param {object}               domainObject  - Proxy로 감쌀 순수 JS 객체 또는 배열
+ * @param {OnMutateCallback|null} [onMutate]   - 변경 기록 직후 호출되는 콜백. 기본값 `null`.
+ * @param {'realtime'|'lazy'}    [trackingMode='realtime']
+ *   변경 추적 모드.
+ *   - `'realtime'` (기본): `set` 트랩 발화마다 `changeLog`와 `dirtyFields`에 즉시 기록.
+ *   - `'lazy'`: `changeLog`와 `dirtyFields` 기록을 건너뜀.
+ *     `onMutate` 콜백은 여전히 호출되어 Shadow State 갱신(`_scheduleFlush`)은 정상 동작.
+ *     `DomainState.save()` 시점에 `diff-worker-client.requestDiff()`로 diff를 계산한다.
  * @returns {ProxyWrapper} 도개교 세트 — proxy, getChangeLog, getTarget, clearChangeLog
  *
  * @example <caption>기본 사용</caption>
@@ -151,7 +157,7 @@ import { LOG, formatMessage } from '../constants/log.messages.js';
  * proxy.items.splice(1, 1, 'X', 'Y');
  * // changeLog: [REMOVE /items/1, ADD /items/1, ADD /items/2]
  */
-export function createProxy(domainObject, onMutate = null) {
+export function createProxy(domainObject, onMutate = null, trackingMode = 'realtime') {
     // ── 클로저 — 이 인스턴스 전용 변경 이력. 외부에서는 getChangeLog()로만 접근 ──
     /** @type {ChangeLogEntry[]} */
     const changeLog = [];
@@ -210,19 +216,24 @@ export function createProxy(domainObject, onMutate = null) {
     function record(op, path, oldValue, newValue) {
         if (isMuting) return;
 
-        /** @type {ChangeLogEntry} */
-        const entry = { op, path };
-        if (op !== OP.REMOVE) entry.newValue = newValue;
-        if (op !== OP.ADD) entry.oldValue = oldValue;
-        changeLog.push(entry);
+        // ── lazy 모드: changeLog / dirtyFields 기록 건너뜀 ───────────────────
+        // lazy 모드에서는 set 트랩 발화마다 changeLog에 기록하지 않는다.
+        // save() 호출 시점에 _initialSnapshot과 현재 상태를 diff-worker로 비교한다.
+        // onMutate()는 여전히 호출하여 Shadow State(_scheduleFlush)가 정상 갱신된다.
+        if (trackingMode !== 'lazy') {
+            /** @type {ChangeLogEntry} */
+            const entry = { op, path };
+            if (op !== OP.REMOVE) entry.newValue = newValue;
+            if (op !== OP.ADD) entry.oldValue = oldValue;
+            changeLog.push(entry);
 
-        // ── Dirty Tracking ────────────────────────────────────────────────────
-        // path는 항상 '/'로 시작하는 JSON Pointer 형태다 (예: '/address/city').
-        // split('/')[1]로 첫 번째 세그먼트(최상위 키)를 추출한다.
-        // path가 루트 자체를 가리키는 경우(sort/reverse의 basePath='')엔
-        // split('/')[1]이 빈 문자열('')이 되므로 falsy 체크로 건너뛴다.
-        const topLevelKey = path.split('/')[1];
-        if (topLevelKey) dirtyFields.add(topLevelKey);
+            // ── Dirty Tracking ────────────────────────────────────────────────
+            // path는 항상 '/'로 시작하는 JSON Pointer 형태다 (예: '/address/city').
+            // split('/')[1]로 첫 번째 세그먼트(최상위 키)를 추출한다.
+            const topLevelKey = path.split('/')[1];
+            if (topLevelKey) dirtyFields.add(topLevelKey);
+            // ─────────────────────────────────────────────────────────────────
+        }
         // ─────────────────────────────────────────────────────────────────────
 
         console.debug(formatMessage(LOG.proxy[op], { path, oldValue, newValue }));

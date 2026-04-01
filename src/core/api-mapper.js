@@ -80,10 +80,11 @@ import { OP } from '../constants/op.const.js';
  * `onMutate` 콜백은 `DomainState.fromJSON()` / `fromVO()`에서 클로저 패턴으로 주입된다.
  * Proxy 변경이 발생할 때마다 콜백이 실행되어 디버그 채널에 상태를 실시간 전파한다.
  *
- * @param {string}               jsonText           - `response.text()`로 읽은 GET 응답 JSON 문자열
- * @param {OnMutateCallback|null} [onMutate=null]   - Proxy 변경 시 호출되는 콜백. 기본값 `null`.
+ * @param {string}               jsonText              - GET 응답 JSON 문자열
+ * @param {OnMutateCallback|null} [onMutate=null]      - Proxy 변경 시 호출되는 콜백.
+ * @param {'realtime'|'lazy'}    [trackingMode='realtime'] - 변경 추적 모드.
  * @returns {ProxyWrapper} Proxy 래퍼 도개교 세트 (`proxy`, `getChangeLog`, `getTarget`, `clearChangeLog`)
- * @throws {SyntaxError} `jsonText`가 유효하지 않은 JSON 문자열일 때
+ * @throws {SyntaxError} `jsonText`가 유효하지 않은 JSON일 때
  *
  * @example <caption>ApiHandler.get() 내부에서의 사용 흐름</caption>
  * // ApiHandler.get() → this._fetch() → response.text() → DomainState.fromJSON(text, ...)
@@ -98,8 +99,8 @@ import { OP } from '../constants/op.const.js';
  * wrapper.proxy.name = 'Lee'; // changeLog: [{ op: 'replace', path: '/name', ... }]
  * console.log(wrapper.getChangeLog());
  */
-export function toDomain(jsonText, onMutate = null) {
-    return createProxy(JSON.parse(jsonText), onMutate);
+export function toDomain(jsonText, onMutate = null, trackingMode = 'realtime') {
+    return createProxy(JSON.parse(jsonText), onMutate, trackingMode);
 }
 
 /**
