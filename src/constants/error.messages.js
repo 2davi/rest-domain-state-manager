@@ -98,6 +98,36 @@ export const ERR = Object.freeze({
     PIPELINE_HANDLER_TYPE: (key) =>
         `${PREFIX} DomainPipeline.after("${key}"): 핸들러는 함수여야 합니다.`,
 
+    // ── DomainCollection ───────────────────────────────────────────────────────
+
+    /**
+     * `DomainCollection.fromJSONArray()` 에 배열이 아닌 JSON이 전달된 경우.
+     * @param {string} receivedType - `typeof parsed` 결과
+     */
+    COLLECTION_NOT_ARRAY: (receivedType) =>
+        `${PREFIX} DomainCollection.fromJSONArray(): ` +
+        `JSON 최상위가 배열이어야 합니다. 받은 타입: "${receivedType}". ` +
+        '서버 응답이 { data: [...] } 형태라면 data 필드만 추출하여 전달하세요.',
+
+    /** `saveAll()` 호출 시 `handler`가 없는 경우. */
+    COLLECTION_HANDLER_MISSING:
+        `${PREFIX} DomainCollection.saveAll(): ApiHandler가 주입되지 않았습니다. ` +
+        'create() 또는 fromJSONArray()의 두 번째 인자로 api를 전달하세요.',
+
+    /** `saveAll()` 호출 시 `path`가 없는 경우. */
+    COLLECTION_PATH_MISSING:
+        `${PREFIX} DomainCollection.saveAll(): path가 필요합니다. ` +
+        "saveAll({ strategy: 'batch', path: '/api/your-endpoint' })처럼 경로를 전달하세요.",
+
+    /**
+     * 지원하지 않는 `strategy`가 전달된 경우.
+     * @param {string} strategy - 전달된 strategy 값
+     */
+    COLLECTION_STRATEGY_UNSUPPORTED: (strategy) =>
+        `${PREFIX} DomainCollection.saveAll(): ` +
+        `strategy "${String(strategy)}"은 지원하지 않습니다. ` +
+        "현재 지원: 'batch'. sequential / parallel은 v2.x에서 지원 예정입니다.",
+
     // ── Renderer (플러그인) ────────────────────────────────────────────────
     /** @param {string} id - Form 요소를 렌더링할 컨테이너의 id 속성 문자열 */
     RENDERER_CONTAINER_NOT_FOUND: (id) =>

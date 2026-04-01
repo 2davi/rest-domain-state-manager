@@ -90,9 +90,11 @@ import { devWarn } from '../../common/logger.js';
 // ════════════════════════════════════════════════════════════════════════════════
 
 /**
- * `DomainState`에 HTML 폼 바인딩 기능을 주입하는 플러그인 객체.
+ * @deprecated v1.4.0 — UIComposer로 대체되었습니다.
+ * `DomainState.use(UIComposer)`를 사용하고 UILayout.columns로 바인딩을 선언하세요.
+ * v2.x에서 제거 예정. 기존 코드는 v2.x 전까지 정상 동작합니다.
  *
- * @deprecated v1.0.0에서 deprecated됩니다. {@link UIComposer#bind}를 사용하세요.
+ * `DomainState`에 HTML 폼 바인딩 기능을 주입하는 플러그인 객체.
  *
  * `DomainState.use(FormBinder)` 한 번으로 설치한다.
  * 설치 후 `DomainState.fromForm()` 정적 팩토리와
@@ -114,6 +116,10 @@ import { devWarn } from '../../common/logger.js';
  */
 export const FormBinder = {
     /**
+     * @deprecated v1.4.0 — UIComposer로 대체되었습니다.
+     * `DomainState.use(UIComposer)`를 사용하고 UILayout.columns로 바인딩을 선언하세요.
+     * v2.x에서 제거 예정. 기존 코드는 v2.x 전까지 정상 동작합니다.
+     *
      * `DomainState` 클래스에 폼 바인딩 기능을 주입한다.
      * `DomainState.use(FormBinder)` 호출 시 자동으로 실행된다.
      *

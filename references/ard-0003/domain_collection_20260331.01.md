@@ -32,12 +32,12 @@ function fnSave() {
 
 ### 두 가지 시나리오의 구조적 차이
 
-| 구분 | Nested Array | Root Array |
-|---|---|---|
-| 서버 수신 구조 | `PUT /api/users/{id}` → `UserVO { List<CertVO> }` | `POST /api/certificates` → `List<CertVO>` |
-| DomainState 관계 | 부모 DomainState 내부 필드가 배열 | N개의 독립적인 DomainState들의 컬렉션 |
-| changeLog 위치 | 배열 변경이 부모 DomainState의 changeLog에 기록 | 각 DomainState가 각자의 changeLog를 가짐 |
-| save() 흐름 | 부모 DomainState 1번의 `.save()` | `DomainCollection.saveAll()` |
+| 구분             | Nested Array                                      | Root Array                                |
+| ---------------- | ------------------------------------------------- | ----------------------------------------- |
+| 서버 수신 구조   | `PUT /api/users/{id}` → `UserVO { List<CertVO> }` | `POST /api/certificates` → `List<CertVO>` |
+| DomainState 관계 | 부모 DomainState 내부 필드가 배열                 | N개의 독립적인 DomainState들의 컬렉션     |
+| changeLog 위치   | 배열 변경이 부모 DomainState의 changeLog에 기록   | 각 DomainState가 각자의 changeLog를 가짐  |
+| save() 흐름      | 부모 DomainState 1번의 `.save()`                  | `DomainCollection.saveAll()`              |
 
 이 두 시나리오는 REST API 계층에서 완전히 다른 구조이며, 하나의 클래스로 통합하면 내부 복잡도가 폭발한다.
 `DomainCollection`은 **Root Array 시나리오** 전용 컨테이너다.
@@ -243,10 +243,10 @@ certCollection.removeChecked([0, 2])
 
 ### 수정/생성 파일 목록
 
-| 파일 | 변경 종류 | 변경 내용 |
-|---|---|---|
-| `src/domain/DomainCollection.js` | **신규 생성** | 팩토리 메서드 2종, 핵심 메서드, `saveAll({ strategy: 'batch' })` 구현 |
-| `index.js` | **수정** | `DomainCollection` import + export 추가, 순환 참조 사전 점검 |
+| 파일                                    | 변경 종류     | 변경 내용                                                              |
+| --------------------------------------- | ------------- | ---------------------------------------------------------------------- |
+| `src/domain/DomainCollection.js`        | **신규 생성** | 팩토리 메서드 2종, 핵심 메서드, `saveAll({ strategy: 'batch' })` 구현  |
+| `index.js`                              | **수정**      | `DomainCollection` import + export 추가, 순환 참조 사전 점검           |
 | `tests/domain/DomainCollection.test.js` | **신규 생성** | 팩토리, add/remove 역순 splice, saveAll batch, lazy diff 정확성 테스트 |
 
 ### Feature 브랜치명
@@ -301,14 +301,14 @@ test(domain): add DomainCollection unit tests
 
 ## (f) 검증 기준 (Definition of Done)
 
-| 항목 | 기준 |
-|---|---|
-| `npm run lint` | error 0건 |
-| `npm test` | 전체 테스트 통과 (기존 TC 회귀 없음) |
-| `create()` | 빈 컬렉션 생성, `getCount() === 0` 확인 |
-| `fromJSONArray()` | 배열 항목 수 == `getCount()` 확인 |
-| `add()` | `getCount()` 증가 확인 |
-| `remove()` 역순 | 2개 동시 삭제 시 올바른 항목만 제거 확인 |
-| `saveAll({ strategy: 'batch' })` | 단일 POST body에 배열 전체 포함 확인 |
-| lazy diff 정확성 | `remove` + `add` 생성 확인 (positional `replace` 아님) |
-| `DomainPipeline` 순환 참조 | `npm run lint` `import/no-cycle` 위반 0건 |
+| 항목                             | 기준                                                   |
+| -------------------------------- | ------------------------------------------------------ |
+| `npm run lint`                   | error 0건                                              |
+| `npm test`                       | 전체 테스트 통과 (기존 TC 회귀 없음)                   |
+| `create()`                       | 빈 컬렉션 생성, `getCount() === 0` 확인                |
+| `fromJSONArray()`                | 배열 항목 수 == `getCount()` 확인                      |
+| `add()`                          | `getCount()` 증가 확인                                 |
+| `remove()` 역순                  | 2개 동시 삭제 시 올바른 항목만 제거 확인               |
+| `saveAll({ strategy: 'batch' })` | 단일 POST body에 배열 전체 포함 확인                   |
+| lazy diff 정확성                 | `remove` + `add` 생성 확인 (positional `replace` 아님) |
+| `DomainPipeline` 순환 참조       | `npm run lint` `import/no-cycle` 위반 0건              |

@@ -2,6 +2,14 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DomainState } from '../../src/domain/DomainState.js';
 import { DomainVO } from '../../src/domain/DomainVO.js';
 import { makeUserDto, makeHttpError } from '../fixtures/index.js';
+import { isSilent, setSilent } from '../../src/common/logger.js';
+
+it('isSilent()는 setSilent() 설정값을 반환해야 한다', () => {
+    setSilent(true);
+    expect(isSilent()).toBe(true);
+    setSilent(false); // 복원
+    expect(isSilent()).toBe(false);
+});
 
 afterEach(() => {
     // _pipelineFactory는 모듈 클로저 변수라 외부 리셋 불가.

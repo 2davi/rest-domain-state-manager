@@ -45,13 +45,14 @@
 
 import { toDomain, toPayload, toPatch } from '../core/api-mapper.js';
 import { createProxy } from '../core/api-proxy.js';
+import { requestDiff } from '../workers/diff-worker-client.js';
 import { normalizeUrlConfig, buildURL } from '../core/url-resolver.js';
 import { ERR } from '../constants/error.messages.js';
 import { DIRTY_THRESHOLD } from '../constants/dirty.const.js';
 import { broadcastUpdate, openDebugPopup } from '../debug/debug-channel.js';
 import { DomainVO } from './DomainVO.js';
 import { maybeDeepFreeze } from '../common/freeze.js';
-import { setSilent, devWarn } from '../common/logger.js';
+import { setSilent, devWarn, logError } from '../common/logger.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 모듈 레벨 유틸리티
@@ -83,8 +84,8 @@ function _generateUUID() {
     // Node.js 20+ 및 모던 브라우저에서는 이 분기가 절대 실행되지 않는다.
     devWarn(
         '[DSM] crypto.randomUUID() 미지원 환경입니다. ' +
-        'Math.random() 기반 UUID 폴백을 사용합니다. ' +
-        '프로덕션 환경에서는 crypto.randomUUID()를 지원하는 환경을 사용하세요.'
+            'Math.random() 기반 UUID 폴백을 사용합니다. ' +
+            '프로덕션 환경에서는 crypto.randomUUID()를 지원하는 환경을 사용하세요.'
     );
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
@@ -124,6 +125,9 @@ let _pipelineFactory = null;
  * @property {string}       [label]        - 디버그 팝업에 표시될 식별 레이블. 미입력 시 `ds_{timestamp}` 자동 생성.
  * @property {ValidatorMap} [validators]   - 필드별 유효성 검사 함수 맵. `DomainVO.getValidators()` 결과.
  * @property {TransformerMap} [transformers] - 필드별 타입 변환 함수 맵. `DomainVO.getTransformers()` 결과.
+ * @property {'realtime'|'lazy'}  [trackingMode='realtime']  - 변경 추적 모드.
+ * @property {object|null}        [initialSnapshot=null]      - lazy 모드 diff 기준점.
+ * @property {string|undefined}   [lazyItemKey]               - lazy 모드 LCS 기준 필드명.
  */
 
 /**
@@ -136,6 +140,14 @@ let _pipelineFactory = null;
  * @property {DomainVO|null}            [vo=null]        - DomainVO 인스턴스. 스키마 검증 + validators/transformers 주입.
  * @property {boolean}                  [strict=false]   - `true`이면 스키마 불일치(missingKeys) 시 Error를 throw한다.
  *                                                         `false`(기본값)이면 콘솔 에러 출력 후 계속 진행한다.
+ * @property {'realtime'|'lazy'}        [trackingMode='realtime']
+ *   변경 추적 모드.
+ *   - `'realtime'` (기본): Proxy `set` 트랩 발화마다 changeLog에 즉시 기록.
+ *   - `'lazy'`: 변경 기록 건너뜀. `save()` 시점에 `_initialSnapshot`과 diff 계산.
+ *     서버로 전송되는 PATCH payload가 최종 변경 결과만 포함하여 네트워크 페이로드 최소화.
+ * @property {string | undefined}       [itemKey]
+ *   배열 항목 동일성 기준 필드명. `trackingMode: 'lazy'`일 때 LCS diff에 사용.
+ *   미지정 시 positional 비교. `UILayout.static itemKey`가 v1.4.x에서 이 값을 주입한다.
  */
 
 /**
@@ -145,6 +157,14 @@ let _pipelineFactory = null;
  * @property {NormalizedUrlConfig|null} [urlConfig=null] - URL 설정 오버라이드. 미입력 시 `vo.getBaseURL()` 폴백.
  * @property {boolean}                  [debug=false]    - 디버그 모드 활성화.
  * @property {string|null}              [label=null]     - 디버그 팝업 표시 이름. 미입력 시 `vo.constructor.name`.
+ * @property {'realtime'|'lazy'}        [trackingMode='realtime']
+ *   변경 추적 모드.
+ *   - `'realtime'` (기본): Proxy `set` 트랩 발화마다 changeLog에 즉시 기록.
+ *   - `'lazy'`: 변경 기록 건너뜀. `save()` 시점에 `_initialSnapshot`과 diff 계산.
+ *     서버로 전송되는 PATCH payload가 최종 변경 결과만 포함하여 네트워크 페이로드 최소화.
+ * @property {string | undefined}       [itemKey]
+ *   배열 항목 동일성 기준 필드명. `trackingMode: 'lazy'`일 때 LCS diff에 사용.
+ *   미지정 시 positional 비교. `UILayout.static itemKey`가 v1.4.x에서 이 값을 주입한다.
  */
 
 /**
@@ -265,6 +285,23 @@ export class DomainState {
      * @type {string | undefined}
      */
     #idempotencyKey = undefined;
+
+    // ── Lazy Tracking Mode ─────────────────────────────────────────────────────
+
+    /**
+     * 변경 추적 모드.
+     *
+     * | 값           | 동작                                                    |
+     * |--------------|--------------------------------------------------------|
+     * | `'realtime'` | Proxy `set` 트랩 발화마다 changeLog/dirtyFields에 즉시 기록 |
+     * | `'lazy'`     | 기록 건너뜀. `save()` 시점에 `_initialSnapshot`과 diff 계산 |
+     *
+     * `fromJSON()` / `fromVO()` options의 `trackingMode`로 설정된다.
+     * 기본값 `'realtime'` — 기존 소비자 코드와 완전 하위 호환.
+     *
+     * @type {'realtime'|'lazy'}
+     */
+    // _trackingMode는 constructor에서 options로 설정됨 (아래 참조)
 
     // ── Shadow State ──────────────────────────────────────────────────────────
 
@@ -488,6 +525,25 @@ export class DomainState {
         this._transformers = options.transformers ?? {};
         /** @type {Array<*>} — 인스턴스 수준 에러 목록 */
         this._errors = [];
+        /** @type {'realtime'|'lazy'} — 변경 추적 모드 */
+        this._trackingMode = options.trackingMode ?? 'realtime';
+        /**
+         * `lazy` tracking mode의 diff 기준점.
+         * 인스턴스 생성(fromJSON/fromVO) 시점의 domainObject 깊은 복사본.
+         * `save()` 성공 후 현재 상태로 갱신된다.
+         * `'realtime'` 모드에서는 `null`이며 사용되지 않는다.
+         *
+         * @type {object | null}
+         */
+        this._initialSnapshot = options.initialSnapshot ?? null;
+        /**
+         * `lazy` tracking mode에서 배열 LCS diff의 항목 동일성 기준 필드명.
+         * `UILayout.static itemKey`가 v1.4.x에서 덮어쓴다.
+         * 미지정 시 positional fallback.
+         *
+         * @type {string | undefined}
+         */
+        this._lazyItemKey = options.lazyItemKey ?? undefined;
 
         // ── Shadow State 초기화 ───────────────────────────────────────────────
         // getSnapshot()은 항상 유효한 참조를 반환해야 한다.
@@ -526,7 +582,7 @@ export class DomainState {
      * @returns {DomainState} `isNew: false`인 새 `DomainState` 인스턴스
      * @throws {SyntaxError} `jsonText`가 유효하지 않은 JSON일 때
      *
-     * @example <caption>기본 사용 (ApiHandler.get() 내부에서 자동 호출)</caption>
+     * @example <caption>기본 사용 — VO 없이도 완전히 동작한다</caption>
      * const user = await api.get('/api/users/1');
      * user.data.name = 'Davi'; // → changeLog에 replace 기록
      * await user.save('/api/users/1'); // → PATCH 전송
@@ -541,15 +597,33 @@ export class DomainState {
     static fromJSON(
         jsonText,
         handler,
-        { urlConfig = null, debug = false, label = null, vo = null, strict = false } = {}
+        {
+            urlConfig = null,
+            debug = false,
+            label = null,
+            vo = null,
+            strict = false,
+            trackingMode = 'realtime',
+            itemKey = undefined,
+        } = {}
     ) {
         /** @type {DomainState|null} */
         let state = null;
-        const wrapper = toDomain(jsonText, () => {
-            // _broadcast() 직접 호출 대신 배칭 스케줄러를 거친다.
-            // 동일 동기 블록 내 다중 변경이 단일 postMessage로 병합된다.
-            state?._scheduleFlush();
-        });
+        const wrapper = toDomain(
+            jsonText,
+            () => {
+                // _broadcast() 직접 호출 대신 배칭 스케줄러를 거친다.
+                // 동일 동기 블록 내 다중 변경이 단일 postMessage로 병합된다.
+                state?._scheduleFlush();
+            },
+            trackingMode
+        );
+
+        // lazy 모드: 생성 시점 초기 스냅샷 저장
+        // structuredClone은 동기적으로 수행된다.
+        // save() 스냅샷 오프로딩과 달리, 이 시점에는 비동기 구간이 없으므로 안전하다.
+        const initialSnapshot =
+            trackingMode === 'lazy' ? structuredClone(wrapper.getTarget()) : null;
 
         state = new DomainState(wrapper, {
             handler,
@@ -557,6 +631,9 @@ export class DomainState {
             isNew: false,
             debug,
             label: label ?? `json_${Date.now()}`,
+            trackingMode,
+            initialSnapshot,
+            lazyItemKey: itemKey,
         });
 
         // DomainVO 스키마 검증 및 validators / transformers 주입
@@ -609,7 +686,17 @@ export class DomainState {
      *     urlConfig: { host: 'staging.server.com', basePath: '/api' },
      * });
      */
-    static fromVO(vo, handler, { urlConfig = null, debug = false, label = null } = {}) {
+    static fromVO(
+        vo,
+        handler,
+        {
+            urlConfig = null,
+            debug = false,
+            label = null,
+            trackingMode = 'realtime',
+            itemKey = undefined,
+        } = {}
+    ) {
         if (!(vo instanceof DomainVO)) throw new TypeError(ERR.FROM_VO_TYPE);
 
         const resolvedUrlConfig =
@@ -621,9 +708,17 @@ export class DomainState {
         /** @type {DomainState|null} */
         let state = null;
 
-        const wrapper = createProxy(vo.toSkeleton(), () => {
-            state?._scheduleFlush();
-        });
+        const wrapper = createProxy(
+            vo.toSkeleton(),
+            () => {
+                state?._scheduleFlush();
+            },
+            trackingMode
+        );
+
+        // lazy 모드: 생성 시점 초기 스냅샷 저장
+        const initialSnapshot =
+            trackingMode === 'lazy' ? structuredClone(wrapper.getTarget()) : null;
 
         state = new DomainState(wrapper, {
             handler,
@@ -633,6 +728,9 @@ export class DomainState {
             label: label ?? vo.constructor.name,
             validators: vo.getValidators(),
             transformers: vo.getTransformers(),
+            trackingMode,
+            initialSnapshot,
+            lazyItemKey: itemKey,
         });
         return state;
     }
@@ -804,7 +902,7 @@ export class DomainState {
         }
         // ─────────────────────────────────────────────────────────────────────
 
-        // ── 스냅샷 캡처 — save() 진입 직전 상태를 인스턴스 필드에 저장 ─────────
+        // ── 스냅샷 캡처 — save() 진입 직전 상태를 인스턴스 필드에 저장 ───────
         // - 실패 시: _rollback()이 이 스냅샷으로 4개 상태를 복원한다.
         // - 성공 시: DomainPipeline 보상 트랜잭션을 위해 유지된다.
         // - 다음 save() 호출 시: 덮어쓰여 자동으로 최신 기준점으로 갱신된다.
@@ -814,15 +912,41 @@ export class DomainState {
             dirtyFields: this._getDirtyFields(), // 이미 new Set 복사본 반환
             isNew: this._isNew,
         };
+        // ─────────────────────────────────────────────────────────────────────
+
+        // ── Lazy Mode: diff 연산으로 effectiveChangeLog 사전 계산 ────────────
+        // lazy 모드에서는 changeLog가 항상 비어있다.
+        // save() 시점에 _initialSnapshot과 현재 상태를 비교하여
+        // PUT / PATCH 분기 판단에 사용할 effectiveChangeLog를 준비한다.
+        //
+        // POST(isNew: true) 경로는 toPayload()를 사용하므로 diff 불필요.
+        // 단, _initialSnapshot이 없는 경우(lazy 설정 오류)도 안전하게 처리한다.
+        //
+        // 이 await는 #snapshot 캡처 이후에 위치한다.
+        // diff 연산 중 소비자가 상태를 변경해도 Proxy set 트랩이
+        // lazy 모드에서는 changeLog 기록을 건너뛰므로 타이밍 충돌이 없다.
+
+        /** @type {import('../core/api-proxy.js').ChangeLogEntry[] | null} */
+        let _lazyChangeLog = null;
+
+        if (this._trackingMode === 'lazy' && !this._isNew && this._initialSnapshot !== null) {
+            _lazyChangeLog = await requestDiff(
+                this._getTarget(),
+                this._initialSnapshot,
+                this._lazyItemKey
+            );
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         // ── Idempotency-Key 헤더 구성 ────────────────────────────────────────
         // UUID가 발급된 경우에만 헤더에 포함한다.
         // 빈 객체({})일 때 _fetch() 내부의 스프레드 병합에서 no-op으로 처리된다.
         // 한 번 구성하여 POST / PUT / PATCH 세 분기 모두에 재사용한다.
         /** @type {Record<string, string>} */
-        const idempotencyHeaders = typeof this.#idempotencyKey === 'string'
-            ? { 'Idempotency-Key': this.#idempotencyKey }
-            : {};
+        const idempotencyHeaders =
+            typeof this.#idempotencyKey === 'string'
+                ? { 'Idempotency-Key': this.#idempotencyKey }
+                : {};
         // ─────────────────────────────────────────────────────────────────────
 
         try {
@@ -836,20 +960,39 @@ export class DomainState {
                 this._isNew = false;
             } else {
                 // ── PUT / PATCH: Dirty Checking 기반 자동 분기 ──────────────
-                const dirtyFields = this._getDirtyFields();
-                const totalFields = Object.keys(this._getTarget()).length;
-                const dirtyRatio = totalFields > 0 ? dirtyFields.size / totalFields : 0;
+                // lazy 모드: 위에서 계산한 _lazyChangeLog를 기준으로 판단한다.
+                // realtime 모드: 기존처럼 _getDirtyFields() 사용.
+                const isLazy = this._trackingMode === 'lazy' && _lazyChangeLog !== null;
 
-                if (dirtyFields.size === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
+                const effectiveDirtySize = isLazy
+                    ? // lazy: diff 결과에서 최상위 키 추출
+                      new Set(
+                          (_lazyChangeLog ?? []).map((e) => e.path.split('/')[1]).filter(Boolean)
+                      ).size
+                    : this._getDirtyFields().size;
+
+                const totalFields = Object.keys(this._getTarget()).length;
+                const dirtyRatio = totalFields > 0 ? effectiveDirtySize / totalFields : 0;
+
+                if (effectiveDirtySize === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
                     await handler._fetch(url, {
                         method: 'PUT',
                         body: toPayload(this._getTarget),
                         headers: idempotencyHeaders,
                     });
                 } else {
+                    // lazy 모드: _lazyChangeLog를 getter로 감싸 toPatch()에 전달
+                    // realtime 모드: 기존 this._getChangeLog 사용
+                    const getChangeLogFn = isLazy
+                        ? () =>
+                              /** @type {import('../core/api-proxy.js').ChangeLogEntry[]} */ (
+                                  _lazyChangeLog
+                              )
+                        : this._getChangeLog;
+
                     await handler._fetch(url, {
                         method: 'PATCH',
-                        body: JSON.stringify(toPatch(this._getChangeLog)),
+                        body: JSON.stringify(toPatch(getChangeLogFn)),
                         headers: idempotencyHeaders,
                     });
                 }
@@ -857,14 +1000,24 @@ export class DomainState {
 
             // ── 동기화 성공 후 상태 초기화 ──────────────────────────────────
             this._clearChangeLog();
+
+            // ── Lazy Mode: _initialSnapshot 갱신 ────────────────────────────
+            // save() 성공 후 현재 상태를 새로운 diff 기준점으로 설정한다.
+            // 다음 save()에서는 이 갱신된 스냅샷 기준으로 diff가 계산된다.
+            if (this._trackingMode === 'lazy') {
+                this._initialSnapshot = structuredClone(this._getTarget());
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             this._clearDirtyFields();
             // #snapshot은 유지한다. DomainPipeline 보상 트랜잭션 기준점 역할.
+
             this.#idempotencyKey = undefined; // UUID 소멸. 다음 save()는 신규 발급.
             if (this._debug) this._broadcast();
         } catch (err) {
             // ── HTTP 오류 또는 네트워크 오류 — 상태 롤백 ────────────────────
             // 어떤 이유로 서버 동기화가 실패했든 클라이언트 상태를 복원한다.
-            console.warn(ERR.SAVE_ROLLBACK(/** @type {any} */ (err)?.status ?? 0));
+            logError(ERR.SAVE_ROLLBACK(/** @type {any} */ (err)?.status ?? 0));
             this._rollback(this.#snapshot);
 
             // 에러를 반드시 re-throw한다.
@@ -932,7 +1085,7 @@ export class DomainState {
         // #snapshot이 undefined이면 no-op.
         // save() 미호출이거나 이미 restore()가 완료된 상태다.
         if (this.#snapshot === undefined) {
-            console.warn(
+            devWarn(
                 `[DSM][${this._label}] restore(): 스냅샷이 없습니다. ` +
                     'save() 호출 없이 restore()를 호출했거나 이미 복원된 상태입니다.'
             );

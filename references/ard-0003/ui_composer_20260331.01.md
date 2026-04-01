@@ -157,24 +157,34 @@ $('#checkboxAll').on('change', (e) => checkAll(e.target.checked));
 
 ### CollectionBinder MVP 기능 목록
 
-**[기본 행 조작] — MVP:**
+>
+> **[기본 행 조작] — MVP:**
+
 - `addEmpty()`: DomainCollection.add() + `<template>` 복제 + DOM 삽입 + 행 번호 갱신
 - `removeChecked()`: 체크 행 인덱스 수집 → **역순 정렬** → DomainCollection.remove() + DOM 제거
 - `removeAll()`: 전체 삭제
 - `selectAll(checked)`: 전체 `.dsm-checkbox` 상태 설정
 - `invertSelection()`: 선택 반전
 
-**[UI 보조] — MVP (내부 자동 처리):**
+>
+> **[UI 보조] — MVP (내부 자동 처리):**
+
 - 행 번호 자동 갱신
 - 전체선택 체크박스 상태 동기화
 
-**[유효성 검사] — MVP:**
+>
+> **[유효성 검사] — MVP:**
+
 - `validate()`: `UILayout.columns`의 `required` 필드 순회 → 빈 값 행에 invalid-feedback 표시 → 전체 유효성 여부 반환
 
-**[행 순서 조작] — Extends (patch 버전):**
+>
+> **[행 순서 조작] — Extends (patch 버전):**
+
 - `moveUp()`, `moveDown()`, 드래그 앤 드롭 정렬
 
-**[데이터 조작] — Extends (patch 버전):**
+>
+> **[데이터 조작] — Extends (patch 버전):**
+
 - `duplicateChecked()`: 선택 행 복사
 - 선택 행 특정 필드 일괄 변경
 
@@ -243,10 +253,10 @@ export {
 
 `ard-0003-alignment.md § 6.3`에 따라 구현 완료 후 `performance.measure()`로 실측한다.
 
-| 측정 대상 | 측정 지점 |
-|---|---|
+| 측정 대상                                 | 측정 지점                                |
+| ----------------------------------------- | ---------------------------------------- |
 | `addEmpty()` 100회 연속 실행 시 누적 시간 | DOM 삽입 + `DomainCollection.add()` 포함 |
-| `save()` 직전 `structuredClone` 시간 | 행 100개 × 필드 10개 기준 |
+| `save()` 직전 `structuredClone` 시간      | 행 100개 × 필드 10개 기준                |
 
 50ms(Long Task 기준) 초과 행 수 확인 후 `console.warn` 임계값으로 설정.
 
@@ -323,19 +333,19 @@ bind() 내부에서 sources['certTypes'] 조회
 
 ### 수정/생성 파일 목록
 
-| 파일 | 변경 종류 | 변경 내용 |
-|---|---|---|
-| `src/ui/UILayout.js` | **신규 생성** | base class, static fields 선언, UIComposer 미설치 에러 throw |
-| `src/ui/UIComposer.js` | **신규 생성** | install() 메서드, bind/bindCollection 주입 로직 |
-| `src/ui/binder/` | **신규 생성** | FormBinder 역할 흡수 내부 모듈 |
-| `src/ui/renderer/` | **신규 생성** | DomainRenderer 역할 흡수 내부 모듈 |
-| `src/ui/collection/` | **신규 생성** | CollectionBinder MVP: addEmpty, removeChecked, removeAll, selectAll, invertSelection, validate |
-| `index.js` | **수정** | UIComposer, UILayout import + export 추가 |
-| `src/plugins/form-binder/FormBinder.js` | **수정** | `@deprecated` JSDoc 추가 + `console.warn` 안내 |
-| `src/plugins/domain-renderer/DomainRenderer.js` | **수정** | `@deprecated` JSDoc 추가 + `console.warn` 안내 |
-| `src/constants/error.messages.js` | **수정** | UIComposer 미설치 에러, readonlyTemplateSelector 미선언 에러, sourceKey 미주입 에러 상수 추가 |
-| `tests/ui/UIComposer.test.js` | **신규 생성** | addEmpty, removeChecked, sourceKey 연결, validate, deprecated 경고 테스트 |
-| `tests/ui/UILayout.test.js` | **신규 생성** | UIComposer 미설치 에러, readonlyTemplateSelector 미선언 에러 테스트 |
+| 파일                                            | 변경 종류     | 변경 내용                                                                                      |
+| ----------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
+| `src/ui/UILayout.js`                            | **신규 생성** | base class, static fields 선언, UIComposer 미설치 에러 throw                                   |
+| `src/ui/UIComposer.js`                          | **신규 생성** | install() 메서드, bind/bindCollection 주입 로직                                                |
+| `src/ui/binder/`                                | **신규 생성** | FormBinder 역할 흡수 내부 모듈                                                                 |
+| `src/ui/renderer/`                              | **신규 생성** | DomainRenderer 역할 흡수 내부 모듈                                                             |
+| `src/ui/collection/`                            | **신규 생성** | CollectionBinder MVP: addEmpty, removeChecked, removeAll, selectAll, invertSelection, validate |
+| `index.js`                                      | **수정**      | UIComposer, UILayout import + export 추가                                                      |
+| `src/plugins/form-binder/FormBinder.js`         | **수정**      | `@deprecated` JSDoc 추가 + `console.warn` 안내                                                 |
+| `src/plugins/domain-renderer/DomainRenderer.js` | **수정**      | `@deprecated` JSDoc 추가 + `console.warn` 안내                                                 |
+| `src/constants/error.messages.js`               | **수정**      | UIComposer 미설치 에러, readonlyTemplateSelector 미선언 에러, sourceKey 미주입 에러 상수 추가  |
+| `tests/ui/UIComposer.test.js`                   | **신규 생성** | addEmpty, removeChecked, sourceKey 연결, validate, deprecated 경고 테스트                      |
+| `tests/ui/UILayout.test.js`                     | **신규 생성** | UIComposer 미설치 에러, readonlyTemplateSelector 미선언 에러 테스트                            |
 
 ### Feature 브랜치명
 
@@ -413,15 +423,15 @@ test(ui): add UIComposer and UILayout integration tests
 
 ## (f) 검증 기준 (Definition of Done)
 
-| 항목 | 기준 |
-|---|---|
-| `npm run lint` | error 0건 |
-| `npm test` | 전체 테스트 통과 (기존 TC 회귀 없음) |
-| `addEmpty()` | DomainCollection.getCount() 증가 + DOM에 `<tr>` 추가 확인 |
-| `removeChecked()` 역순 | 2개 동시 삭제 시 올바른 항목만 제거 확인 |
-| `sourceKey` 연결 | sources 주입 후 `<select>` 내 `<option>` 수 == DomainCollection 항목 수 |
-| `sourceKey` 미주입 | Error throw 확인 (Silent Failure 없음) |
-| `validate()` | required 필드 빈 행 → `false` 반환 + invalid-feedback 표시 |
-| `mode: 'read'` + 미선언 | `readonlyTemplateSelector` 없을 때 Error throw |
-| FormBinder `use()` | `console.warn` deprecated 안내 발화 확인 |
-| guard 수치 | `performance.measure()` 실측 완료 + 임계값 결정 후 릴리즈 |
+| 항목                    | 기준                                                                    |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `npm run lint`          | error 0건                                                               |
+| `npm test`              | 전체 테스트 통과 (기존 TC 회귀 없음)                                    |
+| `addEmpty()`            | DomainCollection.getCount() 증가 + DOM에 `<tr>` 추가 확인               |
+| `removeChecked()` 역순  | 2개 동시 삭제 시 올바른 항목만 제거 확인                                |
+| `sourceKey` 연결        | sources 주입 후 `<select>` 내 `<option>` 수 == DomainCollection 항목 수 |
+| `sourceKey` 미주입      | Error throw 확인 (Silent Failure 없음)                                  |
+| `validate()`            | required 필드 빈 행 → `false` 반환 + invalid-feedback 표시              |
+| `mode: 'read'` + 미선언 | `readonlyTemplateSelector` 없을 때 Error throw                          |
+| FormBinder `use()`      | `console.warn` deprecated 안내 발화 확인                                |
+| guard 수치              | `performance.measure()` 실측 완료 + 임계값 결정 후 릴리즈               |
