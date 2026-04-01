@@ -52,7 +52,7 @@ import { DIRTY_THRESHOLD } from '../constants/dirty.const.js';
 import { broadcastUpdate, openDebugPopup } from '../debug/debug-channel.js';
 import { DomainVO } from './DomainVO.js';
 import { maybeDeepFreeze } from '../common/freeze.js';
-import { setSilent, devWarn } from '../common/logger.js';
+import { setSilent, devWarn, logError } from '../common/logger.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 모듈 레벨 유틸리티
@@ -582,7 +582,7 @@ export class DomainState {
      * @returns {DomainState} `isNew: false`인 새 `DomainState` 인스턴스
      * @throws {SyntaxError} `jsonText`가 유효하지 않은 JSON일 때
      *
-     * @example <caption>기본 사용 (ApiHandler.get() 내부에서 자동 호출)</caption>
+     * @example <caption>기본 사용 — VO 없이도 완전히 동작한다</caption>
      * const user = await api.get('/api/users/1');
      * user.data.name = 'Davi'; // → changeLog에 replace 기록
      * await user.save('/api/users/1'); // → PATCH 전송
@@ -1017,7 +1017,7 @@ export class DomainState {
         } catch (err) {
             // ── HTTP 오류 또는 네트워크 오류 — 상태 롤백 ────────────────────
             // 어떤 이유로 서버 동기화가 실패했든 클라이언트 상태를 복원한다.
-            console.warn(ERR.SAVE_ROLLBACK(/** @type {any} */ (err)?.status ?? 0));
+            logError(ERR.SAVE_ROLLBACK(/** @type {any} */ (err)?.status ?? 0));
             this._rollback(this.#snapshot);
 
             // 에러를 반드시 re-throw한다.
@@ -1085,7 +1085,7 @@ export class DomainState {
         // #snapshot이 undefined이면 no-op.
         // save() 미호출이거나 이미 restore()가 완료된 상태다.
         if (this.#snapshot === undefined) {
-            console.warn(
+            devWarn(
                 `[DSM][${this._label}] restore(): 스냅샷이 없습니다. ` +
                     'save() 호출 없이 restore()를 호출했거나 이미 복원된 상태입니다.'
             );

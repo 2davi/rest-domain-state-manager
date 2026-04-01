@@ -38,6 +38,15 @@
  * `static fields`가 없으면 `toSkeleton()`은 인스턴스의 own property를 그대로 반환한다.
  * 이 경우 `getValidators()` / `getTransformers()` / `checkSchema()`는 빈 결과를 반환한다.
  *
+ * ## 선택적 레이어
+ * `DomainVO`는 라이브러리의 **선택적 부가 기능**이다.
+ * `DomainState.fromJSON()`은 `vo` 옵션 없이도 완전히 동작한다.
+ * `DomainVO`를 사용하면 다음 이점을 얻는다:
+ * - 신규 INSERT 시 기본값 골격(`toSkeleton()`) 자동 생성
+ * - 필드별 유효성 검사 함수(`validators`) 중앙 선언
+ * - 필드별 타입 변환 함수(`transformers`) 중앙 선언
+ * - GET 응답과 VO 스키마 일치 여부 검증(`checkSchema()`)
+ * 
  * @module domain/DomainVO
  * @see {@link module:domain/DomainState DomainState}
  */
