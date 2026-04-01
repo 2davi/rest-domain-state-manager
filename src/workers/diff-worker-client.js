@@ -204,7 +204,7 @@ export async function requestDiff(target, initial, itemKey) {
         }
 
         worker.postMessage({
-            type:    'DIFF',
+            type: 'DIFF',
             id,
             payload,
             itemKey: itemKey ?? undefined,

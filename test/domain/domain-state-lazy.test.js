@@ -19,7 +19,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { DomainState } from '../../src/domain/DomainState.js';
-import { ApiHandler   } from '../../src/network/api-handler.js';
+import { ApiHandler } from '../../src/network/api-handler.js';
 import { DomainPipeline } from '../../src/domain/DomainPipeline.js';
 
 // ── 전역 설정 ─────────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ describe("DomainState — trackingMode: 'lazy' 기본 동작", () => {
             { trackingMode: 'lazy' }
         );
 
-        state.data.name  = 'Changed';
+        state.data.name = 'Changed';
         state.data.email = 'new@example.com';
 
         // lazy 모드: set 트랩이 changeLog 기록을 건너뜀
@@ -69,10 +69,7 @@ describe("DomainState — trackingMode: 'lazy' 기본 동작", () => {
     });
 
     it('[TC-LAZY-002] lazy 모드에서 data 변경 중 dirtyFields도 비어있어야 한다', () => {
-        const { state } = createTestState(
-            { name: 'Davi' },
-            { trackingMode: 'lazy' }
-        );
+        const { state } = createTestState({ name: 'Davi' }, { trackingMode: 'lazy' });
 
         state.data.name = 'Changed';
 
@@ -89,10 +86,7 @@ describe("DomainState — trackingMode: 'lazy' 기본 동작", () => {
     });
 
     it('[TC-LAZY-004] realtime 모드에서 _initialSnapshot은 null이어야 한다', () => {
-        const { state } = createTestState(
-            { name: 'Davi' },
-            { trackingMode: 'realtime' }
-        );
+        const { state } = createTestState({ name: 'Davi' }, { trackingMode: 'realtime' });
 
         expect(state._initialSnapshot).toBeNull();
     });
@@ -101,7 +95,7 @@ describe("DomainState — trackingMode: 'lazy' 기본 동작", () => {
 // ────────────────────────────────────────────────────────────────────────────
 // 2. lazy 모드에서 save() — PATCH 분기
 // ────────────────────────────────────────────────────────────────────────────
-describe("DomainState.save() — lazy 모드 PATCH 분기", () => {
+describe('DomainState.save() — lazy 모드 PATCH 분기', () => {
     it('[TC-LAZY-010] lazy 모드에서 단일 필드 변경 시 PATCH 요청이 전송되어야 한다', async () => {
         const { state, fetchSpy } = createTestState(
             { name: 'Davi', email: 'davi@example.com' },
@@ -129,7 +123,9 @@ describe("DomainState.save() — lazy 모드 PATCH 분기", () => {
         expect(Array.isArray(patchBody)).toBe(true);
         expect(patchBody.length).toBeGreaterThan(0);
 
-        const replaceOp = patchBody.find((/** @type {any} */ op) => op.op === 'replace' && op.path === '/name');
+        const replaceOp = patchBody.find(
+            (/** @type {any} */ op) => op.op === 'replace' && op.path === '/name'
+        );
         expect(replaceOp).toBeDefined();
         expect(replaceOp.value).toBe('Changed');
     });
@@ -159,7 +155,7 @@ describe("DomainState.save() — lazy 모드 PATCH 분기", () => {
 // ────────────────────────────────────────────────────────────────────────────
 // 3. lazy 모드에서 save() — PUT 분기
 // ────────────────────────────────────────────────────────────────────────────
-describe("DomainState.save() — lazy 모드 PUT 분기", () => {
+describe('DomainState.save() — lazy 모드 PUT 분기', () => {
     it('[TC-LAZY-020] 모든 필드가 변경되면 PUT이 전송되어야 한다', async () => {
         const { state, fetchSpy } = createTestState(
             { name: 'Davi', email: 'davi@example.com' },
@@ -167,7 +163,7 @@ describe("DomainState.save() — lazy 모드 PUT 분기", () => {
         );
 
         // 전체 필드 변경 → dirtyRatio 100% → PUT
-        state.data.name  = 'Changed';
+        state.data.name = 'Changed';
         state.data.email = 'new@example.com';
         await state.save('/api/users/1');
 
@@ -176,10 +172,7 @@ describe("DomainState.save() — lazy 모드 PUT 분기", () => {
     });
 
     it('[TC-LAZY-021] 변경이 없으면 PUT이 전송되어야 한다 (dirtyRatio 0)', async () => {
-        const { state, fetchSpy } = createTestState(
-            { name: 'Davi' },
-            { trackingMode: 'lazy' }
-        );
+        const { state, fetchSpy } = createTestState({ name: 'Davi' }, { trackingMode: 'lazy' });
 
         // 변경 없음 → diffResult 빈 배열 → effectiveDirtySize=0 → PUT
         await state.save('/api/users/1');
@@ -192,7 +185,7 @@ describe("DomainState.save() — lazy 모드 PUT 분기", () => {
 // ────────────────────────────────────────────────────────────────────────────
 // 4. save() 성공 후 _initialSnapshot 갱신
 // ────────────────────────────────────────────────────────────────────────────
-describe("DomainState.save() — 성공 후 _initialSnapshot 갱신", () => {
+describe('DomainState.save() — 성공 후 _initialSnapshot 갱신', () => {
     it('[TC-LAZY-030] save() 성공 후 _initialSnapshot이 현재 상태로 갱신되어야 한다', async () => {
         const { state } = createTestState(
             { name: 'Davi', email: 'davi@example.com' },
@@ -226,7 +219,7 @@ describe("DomainState.save() — 성공 후 _initialSnapshot 갱신", () => {
         const patchBody = JSON.parse(/** @type {string} */ (options?.body));
 
         // 2차 save에서는 score 변경만 포함 (name은 이미 _initialSnapshot에 반영됨)
-        const namePatches  = patchBody.filter((/** @type {any} */ op) => op.path === '/name');
+        const namePatches = patchBody.filter((/** @type {any} */ op) => op.path === '/name');
         const scorePatches = patchBody.filter((/** @type {any} */ op) => op.path === '/score');
 
         expect(namePatches).toHaveLength(0);
@@ -238,12 +231,13 @@ describe("DomainState.save() — 성공 후 _initialSnapshot 갱신", () => {
 // ────────────────────────────────────────────────────────────────────────────
 // 5. lazy 모드 실패 후 롤백
 // ────────────────────────────────────────────────────────────────────────────
-describe("DomainState.save() — lazy 모드 실패 롤백", () => {
-    it('[TC-LAZY-040] save() 실패 후 도메인 객체가 pre-save 상태로 복원되어야 한다', async () => {
-        const { state, fetchSpy } = createTestState(
-            { name: 'Davi' },
-            { trackingMode: 'lazy' }
-        );
+describe('DomainState.save() — lazy 모드 실패 롤백', () => {
+    it('[TC-LAZY-040] save() 실패 후 도메인 객체는 사용자 변경값을 그대로 유지해야 한다', async () => {
+        // 롤백의 목적은 changeLog / dirtyFields / isNew 같은 내부 추적 상태를
+        // save() 진입 직전으로 되돌려 retry를 가능하게 하는 것이다.
+        // 도메인 데이터 자체를 수정 이전 값('Davi')으로 되돌리지 않는다.
+        // 사용자가 입력한 값('Changed')이 사라지면 재시도 의미가 없다.
+        const { state, fetchSpy } = createTestState({ name: 'Davi' }, { trackingMode: 'lazy' });
 
         fetchSpy.mockRejectedValueOnce({ status: 500, statusText: 'Server Error', body: '' });
 
@@ -251,16 +245,14 @@ describe("DomainState.save() — lazy 모드 실패 롤백", () => {
         try {
             await state.save('/api/users/1');
         } catch {
-            // 롤백 후 원래 값으로 복원되었는지 확인
-            expect(state._getTarget()).toMatchObject({ name: 'Davi' });
+            // 롤백 후에도 사용자 변경값('Changed')이 유지되어야 한다
+            // — realtime / lazy 모드 모두 동일한 동작
+            expect(state._getTarget()).toMatchObject({ name: 'Changed' });
         }
     });
 
     it('[TC-LAZY-041] save() 실패 후 _initialSnapshot은 유지되어야 한다 (마지막 확정 상태)', async () => {
-        const { state, fetchSpy } = createTestState(
-            { name: 'Davi' },
-            { trackingMode: 'lazy' }
-        );
+        const { state, fetchSpy } = createTestState({ name: 'Davi' }, { trackingMode: 'lazy' });
 
         const originalSnapshot = structuredClone(state._initialSnapshot);
         fetchSpy.mockRejectedValueOnce({ status: 500, statusText: 'Server Error', body: '' });
@@ -278,7 +270,7 @@ describe("DomainState.save() — lazy 모드 실패 롤백", () => {
 // ────────────────────────────────────────────────────────────────────────────
 // 6. lazy + idempotent 동시 활성화
 // ────────────────────────────────────────────────────────────────────────────
-describe("DomainState.save() — lazy + idempotent 동시 활성화", () => {
+describe('DomainState.save() — lazy + idempotent 동시 활성화', () => {
     it('[TC-LAZY-050] lazy + idempotent: true 시 Idempotency-Key + PATCH 헤더가 모두 포함되어야 한다', async () => {
         const { state, fetchSpy } = createTestState(
             { name: 'Davi', email: 'davi@example.com' },
@@ -301,7 +293,7 @@ describe("DomainState.save() — lazy + idempotent 동시 활성화", () => {
 // ────────────────────────────────────────────────────────────────────────────
 // 7. realtime 모드 하위 호환성
 // ────────────────────────────────────────────────────────────────────────────
-describe("DomainState — realtime 모드 하위 호환성 (기존 동작 유지)", () => {
+describe('DomainState — realtime 모드 하위 호환성 (기존 동작 유지)', () => {
     it('[TC-LAZY-060] trackingMode 미지정 시 realtime으로 동작해야 한다', () => {
         const { state } = createTestState({ name: 'Davi' });
         state.data.name = 'Changed';
@@ -326,10 +318,7 @@ describe("DomainState — realtime 모드 하위 호환성 (기존 동작 유지
     });
 
     it('[TC-LAZY-062] realtime 모드에서 _initialSnapshot은 null이어야 한다 (save 후에도)', async () => {
-        const { state } = createTestState(
-            { name: 'Davi' },
-            { trackingMode: 'realtime' }
-        );
+        const { state } = createTestState({ name: 'Davi' }, { trackingMode: 'realtime' });
 
         state.data.name = 'Changed';
         await state.save('/api/users/1');
@@ -341,7 +330,7 @@ describe("DomainState — realtime 모드 하위 호환성 (기존 동작 유지
 // ────────────────────────────────────────────────────────────────────────────
 // 8. itemKey 옵션 (LCS diff)
 // ────────────────────────────────────────────────────────────────────────────
-describe("DomainState.save() — lazy 모드 itemKey (LCS diff)", () => {
+describe('DomainState.save() — lazy 모드 itemKey (LCS diff)', () => {
     it('[TC-LAZY-070] itemKey 지정 시 배열 삭제+추가가 replace가 아닌 remove+add로 처리되어야 한다', async () => {
         const initialData = {
             certList: [
@@ -349,10 +338,10 @@ describe("DomainState.save() — lazy 모드 itemKey (LCS diff)", () => {
                 { certId: 2, certName: 'B' },
             ],
         };
-        const { state, fetchSpy } = createTestState(
-            initialData,
-            { trackingMode: 'lazy', itemKey: 'certId' }
-        );
+        const { state, fetchSpy } = createTestState(initialData, {
+            trackingMode: 'lazy',
+            itemKey: 'certId',
+        });
 
         // id:1 제거, id:3 추가
         state.data.certList.splice(0, 1);
@@ -369,7 +358,7 @@ describe("DomainState.save() — lazy 모드 itemKey (LCS diff)", () => {
         // PATCH인 경우 body에 diff 결과 확인
         if (options?.method === 'PATCH') {
             const removes = body.filter((/** @type {any} */ op) => op.op === 'remove');
-            const adds    = body.filter((/** @type {any} */ op) => op.op === 'add');
+            const adds = body.filter((/** @type {any} */ op) => op.op === 'add');
             // remove와 add가 각각 있어야 함 (replace가 아님)
             expect(removes.length + adds.length).toBeGreaterThan(0);
         }

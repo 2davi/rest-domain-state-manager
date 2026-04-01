@@ -597,32 +597,43 @@ export class DomainState {
     static fromJSON(
         jsonText,
         handler,
-        { urlConfig = null, debug = false, label = null, vo = null, strict = false, trackingMode = 'realtime', itemKey = undefined } = {}
+        {
+            urlConfig = null,
+            debug = false,
+            label = null,
+            vo = null,
+            strict = false,
+            trackingMode = 'realtime',
+            itemKey = undefined,
+        } = {}
     ) {
         /** @type {DomainState|null} */
         let state = null;
-        const wrapper = toDomain(jsonText, () => {
-            // _broadcast() 직접 호출 대신 배칭 스케줄러를 거친다.
-            // 동일 동기 블록 내 다중 변경이 단일 postMessage로 병합된다.
-            state?._scheduleFlush();
-        }, trackingMode);
+        const wrapper = toDomain(
+            jsonText,
+            () => {
+                // _broadcast() 직접 호출 대신 배칭 스케줄러를 거친다.
+                // 동일 동기 블록 내 다중 변경이 단일 postMessage로 병합된다.
+                state?._scheduleFlush();
+            },
+            trackingMode
+        );
 
         // lazy 모드: 생성 시점 초기 스냅샷 저장
         // structuredClone은 동기적으로 수행된다.
         // save() 스냅샷 오프로딩과 달리, 이 시점에는 비동기 구간이 없으므로 안전하다.
-        const initialSnapshot = trackingMode === 'lazy'
-            ? structuredClone(wrapper.getTarget())
-            : null;
+        const initialSnapshot =
+            trackingMode === 'lazy' ? structuredClone(wrapper.getTarget()) : null;
 
         state = new DomainState(wrapper, {
             handler,
             urlConfig,
-            isNew:           false,
+            isNew: false,
             debug,
-            label:           label ?? `json_${Date.now()}`,
+            label: label ?? `json_${Date.now()}`,
             trackingMode,
             initialSnapshot,
-            lazyItemKey:     itemKey,
+            lazyItemKey: itemKey,
         });
 
         // DomainVO 스키마 검증 및 validators / transformers 주입
@@ -675,7 +686,17 @@ export class DomainState {
      *     urlConfig: { host: 'staging.server.com', basePath: '/api' },
      * });
      */
-    static fromVO(vo, handler, { urlConfig = null, debug = false, label = null, trackingMode = 'realtime', itemKey = undefined } = {}) {
+    static fromVO(
+        vo,
+        handler,
+        {
+            urlConfig = null,
+            debug = false,
+            label = null,
+            trackingMode = 'realtime',
+            itemKey = undefined,
+        } = {}
+    ) {
         if (!(vo instanceof DomainVO)) throw new TypeError(ERR.FROM_VO_TYPE);
 
         const resolvedUrlConfig =
@@ -687,26 +708,29 @@ export class DomainState {
         /** @type {DomainState|null} */
         let state = null;
 
-        const wrapper = createProxy(vo.toSkeleton(), () => {
-            state?._scheduleFlush();
-        }, trackingMode);
+        const wrapper = createProxy(
+            vo.toSkeleton(),
+            () => {
+                state?._scheduleFlush();
+            },
+            trackingMode
+        );
 
         // lazy 모드: 생성 시점 초기 스냅샷 저장
-        const initialSnapshot = trackingMode === 'lazy'
-            ? structuredClone(wrapper.getTarget())
-            : null;
+        const initialSnapshot =
+            trackingMode === 'lazy' ? structuredClone(wrapper.getTarget()) : null;
 
         state = new DomainState(wrapper, {
             handler,
-            urlConfig:       resolvedUrlConfig,
-            isNew:           true,
+            urlConfig: resolvedUrlConfig,
+            isNew: true,
             debug,
-            label:           label ?? vo.constructor.name,
-            validators:      vo.getValidators(),
-            transformers:    vo.getTransformers(),
+            label: label ?? vo.constructor.name,
+            validators: vo.getValidators(),
+            transformers: vo.getTransformers(),
             trackingMode,
             initialSnapshot,
-            lazyItemKey:     itemKey,
+            lazyItemKey: itemKey,
         });
         return state;
     }
@@ -941,11 +965,9 @@ export class DomainState {
                 const isLazy = this._trackingMode === 'lazy' && _lazyChangeLog !== null;
 
                 const effectiveDirtySize = isLazy
-                    // lazy: diff 결과에서 최상위 키 추출
-                    ? new Set(
-                        (_lazyChangeLog ?? [])
-                            .map((e) => e.path.split('/')[1])
-                            .filter(Boolean)
+                    ? // lazy: diff 결과에서 최상위 키 추출
+                      new Set(
+                          (_lazyChangeLog ?? []).map((e) => e.path.split('/')[1]).filter(Boolean)
                       ).size
                     : this._getDirtyFields().size;
 
@@ -955,19 +977,22 @@ export class DomainState {
                 if (effectiveDirtySize === 0 || dirtyRatio >= DIRTY_THRESHOLD) {
                     await handler._fetch(url, {
                         method: 'PUT',
-                        body:   toPayload(this._getTarget),
+                        body: toPayload(this._getTarget),
                         headers: idempotencyHeaders,
                     });
                 } else {
                     // lazy 모드: _lazyChangeLog를 getter로 감싸 toPatch()에 전달
                     // realtime 모드: 기존 this._getChangeLog 사용
                     const getChangeLogFn = isLazy
-                        ? () => /** @type {import('../core/api-proxy.js').ChangeLogEntry[]} */ (_lazyChangeLog)
+                        ? () =>
+                              /** @type {import('../core/api-proxy.js').ChangeLogEntry[]} */ (
+                                  _lazyChangeLog
+                              )
                         : this._getChangeLog;
 
                     await handler._fetch(url, {
                         method: 'PATCH',
-                        body:   JSON.stringify(toPatch(getChangeLogFn)),
+                        body: JSON.stringify(toPatch(getChangeLogFn)),
                         headers: idempotencyHeaders,
                     });
                 }

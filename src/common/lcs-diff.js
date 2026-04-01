@@ -273,10 +273,7 @@ function _diffObject(initial, current, itemKey, basePath) {
     const result = [];
 
     // 초기 객체와 현재 객체의 키를 union하여 모든 변경을 탐지한다
-    const allKeys = new Set([
-        ...Object.keys(initial ?? {}),
-        ...Object.keys(current ?? {}),
-    ]);
+    const allKeys = new Set([...Object.keys(initial ?? {}), ...Object.keys(current ?? {})]);
 
     for (const key of allKeys) {
         const path = `${basePath}/${key}`;

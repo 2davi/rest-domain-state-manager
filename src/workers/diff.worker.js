@@ -80,7 +80,7 @@ self.onmessage = function (event) {
     } catch (parseErr) {
         // JSON 파싱 실패 — 에러 응답으로 pending 해제
         self.postMessage({
-            type:  'DIFF_RESULT',
+            type: 'DIFF_RESULT',
             id,
             changeLog: [],
             error: `[DSM] diff.worker: JSON.parse 실패 — ${String(parseErr)}`,
@@ -92,24 +92,20 @@ self.onmessage = function (event) {
 
     // ── diff 연산 ─────────────────────────────────────────────────────────────
     try {
-        const changeLog = deepDiff(
-            initial  ?? {},
-            current  ?? {},
-            itemKey  ?? undefined
-        );
+        const changeLog = deepDiff(initial ?? {}, current ?? {}, itemKey ?? undefined);
 
         self.postMessage({
-            type:      'DIFF_RESULT',
+            type: 'DIFF_RESULT',
             id,
             changeLog,
         });
     } catch (diffErr) {
         // diff 연산 자체의 예외 — 에러 응답으로 pending 해제
         self.postMessage({
-            type:      'DIFF_RESULT',
+            type: 'DIFF_RESULT',
             id,
             changeLog: [],
-            error:     `[DSM] diff.worker: deepDiff 실패 — ${String(diffErr)}`,
+            error: `[DSM] diff.worker: deepDiff 실패 — ${String(diffErr)}`,
         });
     }
 };
