@@ -46,7 +46,7 @@ afterEach(() => {
  */
 function createTestState({ idempotent = false, debug = false } = {}) {
     const handler = new ApiHandler({
-        host:       'localhost:8080',
+        host: 'localhost:8080',
         debug,
         idempotent,
     });
@@ -87,8 +87,8 @@ describe('ApiHandler — idempotent 옵션', () => {
 
     it('[TC-IDMP-004] 기존 URL 관련 필드(host, debug)는 idempotent 옵션과 독립적으로 동작해야 한다', () => {
         const handler = new ApiHandler({
-            host:       'api.example.com',
-            debug:      true,
+            host: 'api.example.com',
+            debug: true,
             idempotent: true,
         });
         expect(handler._idempotent).toBe(true);
@@ -146,7 +146,7 @@ describe('DomainState.save() — idempotent: true', () => {
     it('[TC-IDMP-021] idempotent: true 시 PUT 요청에 Idempotency-Key 헤더가 포함되어야 한다', async () => {
         const { state, fetchSpy } = createTestState({ idempotent: true });
         // 모든 필드 변경 → dirtyRatio 100% → PUT 분기
-        state.data.name  = 'Changed';
+        state.data.name = 'Changed';
         state.data.email = 'new@example.com';
         await state.save('/api/users/1');
 
@@ -166,13 +166,16 @@ describe('DomainState.save() — idempotent: true', () => {
     });
 
     it('[TC-IDMP-023] UUID 형식이 UUID v4 패턴이어야 한다', async () => {
-        const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        const UUID_V4_PATTERN =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
         const { state, fetchSpy } = createTestState({ idempotent: true });
         state.data.name = 'Changed';
         await state.save('/api/users/1');
 
         const [, options] = fetchSpy.mock.calls[0];
-        const uuid = /** @type {Record<string, string>} */ (options?.headers ?? {})['Idempotency-Key'];
+        const uuid = /** @type {Record<string, string>} */ (options?.headers ?? {})[
+            'Idempotency-Key'
+        ];
         expect(uuid).toMatch(UUID_V4_PATTERN);
     });
 });
@@ -230,7 +233,11 @@ describe('DomainState.save() — 실패 후 UUID 재사용 (재시도)', () => {
         state.data.name = 'Changed';
 
         // 1차 시도: 서버 오류로 실패
-        fetchSpy.mockRejectedValueOnce({ status: 500, statusText: 'Internal Server Error', body: '' });
+        fetchSpy.mockRejectedValueOnce({
+            status: 500,
+            statusText: 'Internal Server Error',
+            body: '',
+        });
 
         let firstUUID;
         try {
@@ -379,9 +386,9 @@ describe('ApiHandler.get() — Idempotency-Key 미포함', () => {
         const handler = new ApiHandler({ host: 'localhost:8080', idempotent: true });
 
         // GET 응답 mock: 유효한 JSON 반환
-        const fetchSpy = vi.spyOn(handler, '_fetch').mockResolvedValue(
-            JSON.stringify({ name: 'Davi', email: 'davi@example.com' })
-        );
+        const fetchSpy = vi
+            .spyOn(handler, '_fetch')
+            .mockResolvedValue(JSON.stringify({ name: 'Davi', email: 'davi@example.com' }));
 
         await handler.get('/api/users/1');
 
@@ -438,10 +445,7 @@ describe('하위 호환성 — idempotent 옵션 없는 기존 소비자 코드'
     it('[TC-IDMP-090] idempotent 옵션 없이 생성한 ApiHandler도 에러 없이 동작해야 한다', async () => {
         const handler = new ApiHandler({ host: 'localhost:8080' });
         const fetchSpy = vi.spyOn(handler, '_fetch').mockResolvedValue(null);
-        const state = DomainState.fromJSON(
-            JSON.stringify({ name: 'Davi' }),
-            handler
-        );
+        const state = DomainState.fromJSON(JSON.stringify({ name: 'Davi' }), handler);
         state.data.name = 'Changed';
 
         await expect(state.save('/api/users/1')).resolves.toBeUndefined();
@@ -451,10 +455,7 @@ describe('하위 호환성 — idempotent 옵션 없는 기존 소비자 코드'
     it('[TC-IDMP-091] idempotent 옵션 없이 remove()도 에러 없이 동작해야 한다', async () => {
         const handler = new ApiHandler({ host: 'localhost:8080' });
         const fetchSpy = vi.spyOn(handler, '_fetch').mockResolvedValue(null);
-        const state = DomainState.fromJSON(
-            JSON.stringify({ name: 'Davi' }),
-            handler
-        );
+        const state = DomainState.fromJSON(JSON.stringify({ name: 'Davi' }), handler);
 
         await expect(state.remove('/api/users/1')).resolves.toBeUndefined();
         expect(fetchSpy).toHaveBeenCalledOnce();

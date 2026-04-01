@@ -83,8 +83,8 @@ function _generateUUID() {
     // Node.js 20+ 및 모던 브라우저에서는 이 분기가 절대 실행되지 않는다.
     devWarn(
         '[DSM] crypto.randomUUID() 미지원 환경입니다. ' +
-        'Math.random() 기반 UUID 폴백을 사용합니다. ' +
-        '프로덕션 환경에서는 crypto.randomUUID()를 지원하는 환경을 사용하세요.'
+            'Math.random() 기반 UUID 폴백을 사용합니다. ' +
+            '프로덕션 환경에서는 crypto.randomUUID()를 지원하는 환경을 사용하세요.'
     );
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = (Math.random() * 16) | 0;
@@ -820,9 +820,10 @@ export class DomainState {
         // 빈 객체({})일 때 _fetch() 내부의 스프레드 병합에서 no-op으로 처리된다.
         // 한 번 구성하여 POST / PUT / PATCH 세 분기 모두에 재사용한다.
         /** @type {Record<string, string>} */
-        const idempotencyHeaders = typeof this.#idempotencyKey === 'string'
-            ? { 'Idempotency-Key': this.#idempotencyKey }
-            : {};
+        const idempotencyHeaders =
+            typeof this.#idempotencyKey === 'string'
+                ? { 'Idempotency-Key': this.#idempotencyKey }
+                : {};
         // ─────────────────────────────────────────────────────────────────────
 
         try {
