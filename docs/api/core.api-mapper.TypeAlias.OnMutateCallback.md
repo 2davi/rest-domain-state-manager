@@ -1,6 +1,8 @@
 # Type Alias: OnMutateCallback
 
-> **OnMutateCallback** = () => `void`
+```ts
+type OnMutateCallback = () => void;
+```
 
 ## Type Parameters
 

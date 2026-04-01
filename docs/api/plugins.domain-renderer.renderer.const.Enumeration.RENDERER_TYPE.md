@@ -27,7 +27,9 @@ switch (config.type) {
 
 ### BUTTON
 
-> **BUTTON**: `"button"`
+```ts
+BUTTON: "button";
+```
 
 `<button>` 그룹 렌더러를 사용한다.
 
@@ -35,7 +37,9 @@ switch (config.type) {
 
 ### CHECKBOX
 
-> **CHECKBOX**: `"checkbox"`
+```ts
+CHECKBOX: "checkbox";
+```
 
 `<input type="checkbox">` 그룹 렌더러를 사용한다.
 
@@ -43,7 +47,9 @@ switch (config.type) {
 
 ### RADIO
 
-> **RADIO**: `"radio"`
+```ts
+RADIO: "radio";
+```
 
 `<input type="radio">` 그룹 렌더러를 사용한다.
 
@@ -51,6 +57,8 @@ switch (config.type) {
 
 ### SELECT
 
-> **SELECT**: `"select"`
+```ts
+SELECT: "select";
+```
 
 `<select>` 드롭다운 렌더러를 사용한다.

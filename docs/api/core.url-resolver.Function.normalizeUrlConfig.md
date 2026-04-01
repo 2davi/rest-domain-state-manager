@@ -1,6 +1,8 @@
 # Function: normalizeUrlConfig()
 
-> **normalizeUrlConfig**(`config?`): [`NormalizedUrlConfig`](core.url-resolver.Interface.NormalizedUrlConfig.md)
+```ts
+function normalizeUrlConfig(config?): NormalizedUrlConfig;
+```
 
 URL 입력 설정 객체(`UrlConfig`)를 받아 정규화된 내부 형태(`NormalizedUrlConfig`)로 변환한다.
 

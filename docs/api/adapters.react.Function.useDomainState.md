@@ -1,6 +1,8 @@
 # Function: useDomainState()
 
-> **useDomainState**(`domainState`): `object`
+```ts
+function useDomainState(domainState): object;
+```
 
 `DomainState`의 불변 스냅샷을 React 컴포넌트에 연결하는 커스텀 훅.
 

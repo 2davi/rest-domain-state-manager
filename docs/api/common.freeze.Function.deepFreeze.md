@@ -1,6 +1,8 @@
 # Function: deepFreeze()
 
-> **deepFreeze**\<`T`\>(`obj`, `seen?`): `T`
+```ts
+function deepFreeze<T>(obj, seen?): T;
+```
 
 객체와 모든 중첩 객체를 재귀적으로 동결한다.
 

@@ -1,5 +1,7 @@
 # Type Alias: ButtonItem
 
-> **ButtonItem** = `Record`\<`string`, `any`\>
+```ts
+type ButtonItem = Record<string, any>;
+```
 
 ## Type Parameters

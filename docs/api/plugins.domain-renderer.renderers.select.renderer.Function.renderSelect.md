@@ -1,6 +1,11 @@
 # Function: renderSelect()
 
-> **renderSelect**(`container`, `dataArray`, `config`): `HTMLSelectElement`
+```ts
+function renderSelect(
+   container, 
+   dataArray, 
+   config): HTMLSelectElement;
+```
 
 `<select>` 드롭다운 요소를 생성하고 컨테이너에 추가한다.
 

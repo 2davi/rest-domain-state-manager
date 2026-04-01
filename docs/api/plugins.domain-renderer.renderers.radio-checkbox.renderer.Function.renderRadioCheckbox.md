@@ -1,6 +1,11 @@
 # Function: renderRadioCheckbox()
 
-> **renderRadioCheckbox**(`container`, `dataArray`, `config`): `HTMLInputElement`[]
+```ts
+function renderRadioCheckbox(
+   container, 
+   dataArray, 
+   config): HTMLInputElement[];
+```
 
 radio 또는 checkbox 그룹을 컨테이너 요소에 렌더링한다.
 

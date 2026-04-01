@@ -1,5 +1,7 @@
 # Type Alias: FieldsSchema
 
-> **FieldsSchema** = `Record`\<`string`, [`FieldSchema`](domain.DomainVO.Interface.FieldSchema.md)\>
+```ts
+type FieldsSchema = Record<string, FieldSchema>;
+```
 
 ## Type Parameters

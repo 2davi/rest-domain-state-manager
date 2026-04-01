@@ -47,10 +47,12 @@
     "format": "prettier --write \"src/**/*.js\" \"index.js\" \"test/**/*.js\"",
     "format:check": "prettier --check \"src/**/*.js\" \"index.js\" \"test/**/*.js\"",
     "test": "vitest run",
-    "prepublishOnly": "npm run lint && npm run format && npm run test && npm run build",
+    "coverage": "npm run test -- --coverage",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
     "docs:dev": "vitepress dev docs",
     "docs:build": "npm run docs:api && vitepress build docs",
-    "docs:api": "typedoc"
+    "docs:api": "typedoc",
+    "preDeploy": "npm run lint && npm run format && npm run test && npm run build && npm run docs:build"
   },
   "keywords": [
     "rest",

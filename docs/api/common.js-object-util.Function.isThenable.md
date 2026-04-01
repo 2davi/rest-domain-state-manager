@@ -1,6 +1,8 @@
 # Function: isThenable()
 
-> **isThenable**(`value`): `boolean`
+```ts
+function isThenable(value): boolean;
+```
 
 isThenable() : 값이 thenable(Promise-like)인지 확인한다.
 

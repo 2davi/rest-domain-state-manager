@@ -1,6 +1,8 @@
 # Function: toPatch()
 
-> **toPatch**(`getChangeLogFn`): [`JsonPatchOperation`](core.api-mapper.Interface.JsonPatchOperation.md)[]
+```ts
+function toPatch(getChangeLogFn): JsonPatchOperation[];
+```
 
 `changeLog` 배열을 RFC 6902 JSON Patch 연산 배열로 변환한다.
 

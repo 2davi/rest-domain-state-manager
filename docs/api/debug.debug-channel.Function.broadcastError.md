@@ -1,6 +1,8 @@
 # Function: broadcastError()
 
-> **broadcastError**(`key`, `error`): `void`
+```ts
+function broadcastError(key, error): void;
+```
 
 `DomainPipeline`의 `after()` 핸들러 실패를 채널에 broadcast한다.
 

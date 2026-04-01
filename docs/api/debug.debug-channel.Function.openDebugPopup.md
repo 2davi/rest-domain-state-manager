@@ -1,6 +1,8 @@
 # Function: openDebugPopup()
 
-> **openDebugPopup**(): `void`
+```ts
+function openDebugPopup(): void;
+```
 
 디버그 팝업 창을 열거나, 이미 열려있으면 포커스한다.
 

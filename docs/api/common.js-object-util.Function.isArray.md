@@ -1,6 +1,8 @@
 # Function: isArray()
 
-> **isArray**(`value`): `boolean`
+```ts
+function isArray(value): boolean;
+```
 
 isArray() : 값이 배열인지 확인한다.
 

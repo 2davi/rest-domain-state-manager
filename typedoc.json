@@ -4,6 +4,7 @@
   "entryPointStrategy": "expand",
   "out": "docs/api",
   "plugin": ["typedoc-plugin-markdown"],
+  "useCodeBlocks": true,
   "hideBreadcrumbs": true,
   "hidePageHeader": true,
   "readme": "none",

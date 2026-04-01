@@ -1,6 +1,8 @@
 # Function: toPayload()
 
-> **toPayload**(`getTargetFn`): `string`
+```ts
+function toPayload(getTargetFn): string;
+```
 
 원본 객체를 POST / PUT 전송용 JSON 문자열로 직렬화한다.
 

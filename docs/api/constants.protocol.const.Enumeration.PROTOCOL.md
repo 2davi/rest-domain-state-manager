@@ -6,22 +6,30 @@ PROTOCOL : 지원하는 URL 프로토콜 상수
 
 ### FILE
 
-> **FILE**: `"file:///"`
+```ts
+FILE: "file:///";
+```
 
 ***
 
 ### HTTP
 
-> **HTTP**: `"http://"`
+```ts
+HTTP: "http://";
+```
 
 ***
 
 ### HTTPS
 
-> **HTTPS**: `"https://"`
+```ts
+HTTPS: "https://";
+```
 
 ***
 
 ### SSH
 
-> **SSH**: `"ssh://"`
+```ts
+SSH: "ssh://";
+```

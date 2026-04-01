@@ -6,7 +6,9 @@ OP : JSON Patch 연산 유형 상수
 
 ### ADD
 
-> **ADD**: `"add"`
+```ts
+ADD: "add";
+```
 
 프로퍼티 신규 추가
 
@@ -14,7 +16,9 @@ OP : JSON Patch 연산 유형 상수
 
 ### REMOVE
 
-> **REMOVE**: `"remove"`
+```ts
+REMOVE: "remove";
+```
 
 프로퍼티 삭제
 
@@ -22,6 +26,8 @@ OP : JSON Patch 연산 유형 상수
 
 ### REPLACE
 
-> **REPLACE**: `"replace"`
+```ts
+REPLACE: "replace";
+```
 
 기존 프로퍼티 값 교체

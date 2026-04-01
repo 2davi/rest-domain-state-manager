@@ -1,6 +1,8 @@
 # Type Alias: FromFormFactory
 
-> **FromFormFactory** = (`formOrId`, `handler`, `options?`) => [`DomainState`](domain.DomainState.Class.DomainState.md)
+```ts
+type FromFormFactory = (formOrId, handler, options?) => DomainState;
+```
 
 ## Type Parameters
 

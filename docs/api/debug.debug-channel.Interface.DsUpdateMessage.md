@@ -4,7 +4,9 @@
 
 ### label
 
-> **label**: `string`
+```ts
+label: string;
+```
 
 변경된 `DomainState`의 식별 레이블
 
@@ -12,7 +14,9 @@
 
 ### snapshot
 
-> **snapshot**: [`DomainStateSnapshot`](debug.debug-channel.Interface.DomainStateSnapshot.md)
+```ts
+snapshot: DomainStateSnapshot;
+```
 
 변경 직후 스냅샷
 
@@ -20,7 +24,9 @@
 
 ### tabId
 
-> **tabId**: `string`
+```ts
+tabId: string;
+```
 
 전송 탭의 고유 ID
 
@@ -28,7 +34,9 @@
 
 ### tabUrl
 
-> **tabUrl**: `string`
+```ts
+tabUrl: string;
+```
 
 전송 탭의 현재 URL
 
@@ -36,6 +44,8 @@
 
 ### type
 
-> **type**: `"DS_UPDATE"`
+```ts
+type: "DS_UPDATE";
+```
 
 메시지 타입

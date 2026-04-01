@@ -1,6 +1,8 @@
 # Function: resolveProtocol()
 
-> **resolveProtocol**(`opts?`): `string`
+```ts
+function resolveProtocol(opts?): string;
+```
 
 주어진 옵션을 우선순위에 따라 평가하여 프로토콜 문자열을 결정한다.
 

@@ -1,6 +1,11 @@
 # Function: createProxy()
 
-> **createProxy**(`domainObject`, `onMutate?`): [`ProxyWrapper`](core.api-mapper.Interface.ProxyWrapper.md)
+```ts
+function createProxy(
+   domainObject, 
+   onMutate?, 
+   trackingMode?): ProxyWrapper;
+```
 
 순수 JS 객체를 Proxy로 감싸 변경 추적 엔진을 생성하고 "도개교" 세트를 반환한다.
 
@@ -41,9 +46,20 @@ Proxy로 감쌀 순수 JS 객체 또는 배열
 
 ### onMutate?
 
-[`OnMutateCallback`](core.api-mapper.TypeAlias.OnMutateCallback.md) \| `null`
+  \| [`OnMutateCallback`](core.api-mapper.TypeAlias.OnMutateCallback.md)
+  \| `null`
 
 변경 기록 직후 호출되는 콜백. 기본값 `null`.
+
+### trackingMode?
+
+`"realtime"` \| `"lazy"`
+
+변경 추적 모드.
+  - `'realtime'` (기본): `set` 트랩 발화마다 `changeLog`와 `dirtyFields`에 즉시 기록.
+  - `'lazy'`: `changeLog`와 `dirtyFields` 기록을 건너뜀.
+    `onMutate` 콜백은 여전히 호출되어 Shadow State 갱신(`_scheduleFlush`)은 정상 동작.
+    `DomainState.save()` 시점에 `diff-worker-client.requestDiff()`로 diff를 계산한다.
 
 ## Returns
 

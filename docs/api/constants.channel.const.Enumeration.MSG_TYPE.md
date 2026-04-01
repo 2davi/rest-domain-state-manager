@@ -12,28 +12,38 @@ DS_ERROR       : after() 핸들러 실패 알림
 
 ### DS\_ERROR
 
-> **DS\_ERROR**: `"DS_ERROR"`
+```ts
+DS_ERROR: "DS_ERROR";
+```
 
 ***
 
 ### DS\_UPDATE
 
-> **DS\_UPDATE**: `"DS_UPDATE"`
+```ts
+DS_UPDATE: "DS_UPDATE";
+```
 
 ***
 
 ### TAB\_PING
 
-> **TAB\_PING**: `"TAB_PING"`
+```ts
+TAB_PING: "TAB_PING";
+```
 
 ***
 
 ### TAB\_REGISTER
 
-> **TAB\_REGISTER**: `"TAB_REGISTER"`
+```ts
+TAB_REGISTER: "TAB_REGISTER";
+```
 
 ***
 
 ### TAB\_UNREGISTER
 
-> **TAB\_UNREGISTER**: `"TAB_UNREGISTER"`
+```ts
+TAB_UNREGISTER: "TAB_UNREGISTER";
+```

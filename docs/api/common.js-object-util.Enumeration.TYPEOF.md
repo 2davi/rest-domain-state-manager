@@ -6,46 +6,62 @@ TYPEOF : typeof 연산자 반환값 상수
 
 ### BIGINT
 
-> **BIGINT**: `"bigint"`
+```ts
+BIGINT: "bigint";
+```
 
 ***
 
 ### BOOLEAN
 
-> **BOOLEAN**: `"boolean"`
+```ts
+BOOLEAN: "boolean";
+```
 
 ***
 
 ### FUNCTION
 
-> **FUNCTION**: `"function"`
+```ts
+FUNCTION: "function";
+```
 
 ***
 
 ### NUMBER
 
-> **NUMBER**: `"number"`
+```ts
+NUMBER: "number";
+```
 
 ***
 
 ### OBJECT
 
-> **OBJECT**: `"object"`
+```ts
+OBJECT: "object";
+```
 
 ***
 
 ### STRING
 
-> **STRING**: `"string"`
+```ts
+STRING: "string";
+```
 
 ***
 
 ### SYMBOL
 
-> **SYMBOL**: `"symbol"`
+```ts
+SYMBOL: "symbol";
+```
 
 ***
 
 ### UNDEFINED
 
-> **UNDEFINED**: `"undefined"`
+```ts
+UNDEFINED: "undefined";
+```

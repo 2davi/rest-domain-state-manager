@@ -1,6 +1,11 @@
 # Function: renderButton()
 
-> **renderButton**(`container`, `dataArray`, `config`): `HTMLButtonElement`[]
+```ts
+function renderButton(
+   container, 
+   dataArray, 
+   config): HTMLButtonElement[];
+```
 
 `<button>` 그룹을 컨테이너 요소에 렌더링한다.
 

@@ -1,6 +1,8 @@
 # Type Alias: AfterHandler
 
-> **AfterHandler** = (`domainState`) => `void` \| `Promise`\<`void`\>
+```ts
+type AfterHandler = (domainState) => void | Promise<void>;
+```
 
 ## Type Parameters
 

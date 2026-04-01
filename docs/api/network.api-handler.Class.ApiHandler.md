@@ -4,7 +4,9 @@
 
 ### Constructor
 
-> **new ApiHandler**(`urlConfig?`): `ApiHandler`
+```ts
+new ApiHandler(urlConfig?): ApiHandler;
+```
 
 `ApiHandler` 인스턴스를 생성한다.
 
@@ -15,9 +17,12 @@
 
 ##### urlConfig?
 
-[`UrlConfig`](core.url-resolver.Interface.UrlConfig.md) = `{}`
+[`ApiHandlerConfig`](network.api-handler.TypeAlias.ApiHandlerConfig.md) = `{}`
 
-URL 설정 객체. `host` 또는 `baseURL` 중 하나를 포함해야 한다.
+URL 및 `ApiHandler` 동작 설정 객체.
+  URL 관련 필드(`host`, `baseURL`, `protocol` 등)는 `UrlConfig` 참조.
+  `idempotent: true`이면 `DomainState.save()` / `remove()` 호출 시
+  `Idempotency-Key` 헤더를 자동으로 발급하고 관리한다.
 
 #### Returns
 
@@ -42,6 +47,10 @@ const api = new ApiHandler({ host: 'api.example.com', env: 'production' });
 ```
 
 ```ts
+const api = new ApiHandler({ host: 'api.example.com', idempotent: true });
+```
+
+```ts
 const api = new ApiHandler({ baseURL: 'localhost:8080/app/api', debug: true });
 ```
 
@@ -53,7 +62,9 @@ const api = new ApiHandler({ host: 'api.example.com', protocol: 'HTTPS' });
 
 ### \_debug
 
-> **\_debug**: `boolean`
+```ts
+_debug: boolean;
+```
 
 디버그 플래그. `get()`으로 생성한 `DomainState`의 `debug` 옵션에 전파된다.
 
@@ -61,7 +72,9 @@ const api = new ApiHandler({ host: 'api.example.com', protocol: 'HTTPS' });
 
 ### \_headers
 
-> **\_headers**: `Record`\<`string`, `string`\>
+```ts
+_headers: Record<string, string>;
+```
 
 모든 요청에 공통으로 주입되는 HTTP 헤더.
 `_fetch()` 호출 시 `options.headers`와 병합된다.
@@ -69,9 +82,28 @@ const api = new ApiHandler({ host: 'api.example.com', protocol: 'HTTPS' });
 
 ***
 
+### \_idempotent
+
+```ts
+_idempotent: boolean;
+```
+
+멱등성 키(Idempotency-Key) 자동 발급 여부.
+
+`true`이면 `DomainState.save()` / `remove()` 호출 시
+`Idempotency-Key` 헤더를 자동으로 발급하고 관리한다.
+
+`DomainState.save()` 내부에서 이 플래그를 직접 참조한다.
+`false`(기본값)이면 Idempotency-Key 관련 로직이 완전히 건너뛰어져
+기존 소비자 코드와 완전히 하위 호환된다.
+
+***
+
 ### \_urlConfig
 
-> **\_urlConfig**: [`NormalizedUrlConfig`](core.url-resolver.Interface.NormalizedUrlConfig.md)
+```ts
+_urlConfig: NormalizedUrlConfig;
+```
 
 정규화된 URL 설정. 요청마다 `buildURL()`에 전달된다.
 
@@ -79,7 +111,9 @@ const api = new ApiHandler({ host: 'api.example.com', protocol: 'HTTPS' });
 
 ### \_fetch()
 
-> **\_fetch**(`url`, `options?`): `Promise`\<`string` \| `null`\>
+```ts
+_fetch(url, options?): Promise<string | null>;
+```
 
 `fetch()` 공통 처리 메서드. `DomainState.save()` / `remove()` 내부에서 위임 호출된다.
 
@@ -97,6 +131,7 @@ const api = new ApiHandler({ host: 'api.example.com', protocol: 'HTTPS' });
 ```
 { ...this._headers, ...options.headers }
 ```
+`DomainState.save()`에서 전달하는 `Idempotency-Key` 헤더도 이 병합을 통해 주입된다.
 
 #### Parameters
 
@@ -138,8 +173,9 @@ await this._handler._fetch(url, {
 
 ```ts
 await this._handler._fetch(url, {
-    method: 'PATCH',
-    body:   JSON.stringify([{ op: 'replace', path: '/name', value: 'Davi' }]),
+    method:  'PATCH',
+    body:    JSON.stringify([{ op: 'replace', path: '/name', value: 'Davi' }]),
+    headers: { 'Idempotency-Key': 'a1b2c3d4-...' },
 });
 ```
 
@@ -152,7 +188,9 @@ await this._handler._fetch(url, { method: 'DELETE' });
 
 ### get()
 
-> **get**(`requestPath`, `options?`): `Promise`\<[`DomainState`](domain.DomainState.Class.DomainState.md)\>
+```ts
+get(requestPath, options?): Promise<DomainState>;
+```
 
 HTTP GET 요청을 전송하고 응답을 `DomainState`로 변환하여 반환한다.
 
@@ -225,7 +263,9 @@ try {
 
 ### getUrlConfig()
 
-> **getUrlConfig**(): [`NormalizedUrlConfig`](core.url-resolver.Interface.NormalizedUrlConfig.md)
+```ts
+getUrlConfig(): NormalizedUrlConfig;
+```
 
 이 `ApiHandler` 인스턴스의 정규화된 URL 설정을 반환한다.
 
@@ -252,7 +292,9 @@ _resolveURL(requestPath) {
 
 ### init()
 
-> **init**(`config?`): `ApiHandler`
+```ts
+init(config?): ApiHandler;
+```
 
 CSRF 토큰을 초기화한다. DOM이 준비된 시점에 1회 호출한다.
 
@@ -323,7 +365,9 @@ api.init({ csrfToken: 'test-csrf-token' });
 
 ### isDebug()
 
-> **isDebug**(): `boolean`
+```ts
+isDebug(): boolean;
+```
 
 이 `ApiHandler` 인스턴스의 디버그 플래그를 반환한다.
 

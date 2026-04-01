@@ -1,6 +1,8 @@
 # Function: closeDebugChannel()
 
-> **closeDebugChannel**(): `void`
+```ts
+function closeDebugChannel(): void;
+```
 
 `BroadcastChannel`을 명시적으로 닫고 내부 참조를 해제한다.
 

@@ -1,6 +1,8 @@
 # Function: setSilent()
 
-> **setSilent**(`value`): `void`
+```ts
+function setSilent(value): void;
+```
 
 silent 플래그를 설정한다.
 `DomainState.configure({ silent })` 내부에서만 호출되어야 한다.

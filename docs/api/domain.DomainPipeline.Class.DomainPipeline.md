@@ -7,7 +7,9 @@
 
 ### Constructor
 
-> **new DomainPipeline**(`resourceMap`, `options?`): `DomainPipeline`
+```ts
+new DomainPipeline(resourceMap, options?): DomainPipeline;
+```
 
 `DomainPipeline` 인스턴스를 생성한다.
 
@@ -49,7 +51,9 @@ const result = await DomainState.all({ roles: api.get('/api/roles') }, { strict:
 
 ### \_failurePolicy
 
-> **\_failurePolicy**: `"ignore"` \| `"rollback-all"` \| `"fail-fast"`
+```ts
+_failurePolicy: "ignore" | "rollback-all" | "fail-fast";
+```
 
 파이프라인 실패 시 보상 트랜잭션 정책.
 `'ignore'`(기본값)이면 기존 동작과 동일하다.
@@ -58,7 +62,9 @@ const result = await DomainState.all({ roles: api.get('/api/roles') }, { strict:
 
 ### \_queue
 
-> **\_queue**: [`QueueEntry`](domain.DomainPipeline.Interface.QueueEntry.md)[]
+```ts
+_queue: QueueEntry[];
+```
 
 `after()` 핸들러 큐. 등록 순서가 곧 실행 순서다.
 `run()` 2단계에서 이 배열을 순서대로 순차 `await`한다.
@@ -67,7 +73,9 @@ const result = await DomainState.all({ roles: api.get('/api/roles') }, { strict:
 
 ### \_resourceMap
 
-> **\_resourceMap**: [`ResourceMap`](domain.DomainPipeline.TypeAlias.ResourceMap.md)
+```ts
+_resourceMap: ResourceMap;
+```
 
 병렬 fetch 대상 리소스 맵.
 키: 리소스 식별자, 값: `Promise<DomainState>`.
@@ -77,7 +85,9 @@ const result = await DomainState.all({ roles: api.get('/api/roles') }, { strict:
 
 ### \_strict
 
-> **\_strict**: `boolean`
+```ts
+_strict: boolean;
+```
 
 strict 모드 플래그.
 `true`이면 첫 실패에서 즉시 `reject`, `false`이면 `_errors`에 기록 후 계속.
@@ -86,7 +96,9 @@ strict 모드 플래그.
 
 ### \_compensate()
 
-> **\_compensate**(`resolved`, `keys`): `void`
+```ts
+_compensate(resolved, keys): void;
+```
 
 지정된 키 목록의 `DomainState`에 순서대로 `restore()`를 호출한다.
 
@@ -116,7 +128,9 @@ strict 모드 플래그.
 
 ### \_dispatchPipelineRollback()
 
-> **\_dispatchPipelineRollback**(`errors`, `resolved`): `void`
+```ts
+_dispatchPipelineRollback(errors, resolved): void;
+```
 
 파이프라인 보상 트랜잭션 완료 후 `dsm:pipeline-rollback` CustomEvent를 발행한다.
 
@@ -146,7 +160,9 @@ Node.js / Vitest 환경에서는 window가 없으므로 건너뛴다.
 
 ### after()
 
-> **after**(`key`, `handler`): `DomainPipeline`
+```ts
+after(key, handler): DomainPipeline;
+```
 
 특정 리소스에 대한 후처리 핸들러를 큐에 등록한다.
 
@@ -211,7 +227,9 @@ pipeline.after('nonExistent', handler);
 
 ### run()
 
-> **run**(): `Promise`\<[`PipelineResult`](domain.DomainPipeline.TypeAlias.PipelineResult.md)\>
+```ts
+run(): Promise<PipelineResult>;
+```
 
 등록된 fetch Promise와 `after()` 핸들러를 순서대로 실행한다.
 

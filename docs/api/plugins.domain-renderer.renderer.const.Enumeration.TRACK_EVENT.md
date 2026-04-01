@@ -25,7 +25,9 @@ el.addEventListener(event, handler);
 
 ### SELECT
 
-> **SELECT**: `"change"`
+```ts
+SELECT: "change";
+```
 
 select 계열 요소 추적 이벤트.
 `select`, `input[type=radio|checkbox]` 에 적용된다.
@@ -35,7 +37,9 @@ select 계열 요소 추적 이벤트.
 
 ### TEXT
 
-> **TEXT**: `"blur"`
+```ts
+TEXT: "blur";
+```
 
 텍스트 계열 input 추적 이벤트.
 `input[type=text|email|password|...]`, `textarea` 에 적용된다.

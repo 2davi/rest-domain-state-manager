@@ -1,6 +1,8 @@
 # Function: shouldBypassDeepProxy()
 
-> **shouldBypassDeepProxy**(`prop`): `boolean`
+```ts
+function shouldBypassDeepProxy(prop): boolean;
+```
 
 shouldBypassDeepProxy() : Proxy get 트랩에서 deep proxy 진입을 건너뛰어야 하는 프로퍼티인지 판별한다.
 

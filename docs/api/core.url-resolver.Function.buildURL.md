@@ -1,6 +1,8 @@
 # Function: buildURL()
 
-> **buildURL**(`normalized`, `requestPath?`): `string`
+```ts
+function buildURL(normalized, requestPath?): string;
+```
 
 정규화된 URL 설정(`NormalizedUrlConfig`)과 `requestPath`를 조합하여 최종 URL 문자열을 반환한다.
 

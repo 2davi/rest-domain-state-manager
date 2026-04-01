@@ -1,6 +1,8 @@
 # Function: devWarn()
 
-> **devWarn**(`message`): `void`
+```ts
+function devWarn(message): void;
+```
 
 개발 환경에서만 `console.warn`을 발화한다. `silent: true`이면 억제된다.
 

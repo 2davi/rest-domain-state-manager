@@ -6,76 +6,102 @@ TOSTRING_TAG : Object.prototype.toString() 태그 상수
 
 ### ARRAY
 
-> **ARRAY**: `"[object Array]"`
+```ts
+ARRAY: "[object Array]";
+```
 
 ***
 
 ### BOOLEAN
 
-> **BOOLEAN**: `"[object Boolean]"`
+```ts
+BOOLEAN: "[object Boolean]";
+```
 
 ***
 
 ### DATE
 
-> **DATE**: `"[object Date]"`
+```ts
+DATE: "[object Date]";
+```
 
 ***
 
 ### FUNCTION
 
-> **FUNCTION**: `"[object Function]"`
+```ts
+FUNCTION: "[object Function]";
+```
 
 ***
 
 ### MAP
 
-> **MAP**: `"[object Map]"`
+```ts
+MAP: "[object Map]";
+```
 
 ***
 
 ### NULL
 
-> **NULL**: `"[object Null]"`
+```ts
+NULL: "[object Null]";
+```
 
 ***
 
 ### NUMBER
 
-> **NUMBER**: `"[object Number]"`
+```ts
+NUMBER: "[object Number]";
+```
 
 ***
 
 ### OBJECT
 
-> **OBJECT**: `"[object Object]"`
+```ts
+OBJECT: "[object Object]";
+```
 
 ***
 
 ### PROMISE
 
-> **PROMISE**: `"[object Promise]"`
+```ts
+PROMISE: "[object Promise]";
+```
 
 ***
 
 ### REGEXP
 
-> **REGEXP**: `"[object RegExp]"`
+```ts
+REGEXP: "[object RegExp]";
+```
 
 ***
 
 ### SET
 
-> **SET**: `"[object Set]"`
+```ts
+SET: "[object Set]";
+```
 
 ***
 
 ### STRING
 
-> **STRING**: `"[object String]"`
+```ts
+STRING: "[object String]";
+```
 
 ***
 
 ### UNDEFINED
 
-> **UNDEFINED**: `"[object Undefined]"`
+```ts
+UNDEFINED: "[object Undefined]";
+```

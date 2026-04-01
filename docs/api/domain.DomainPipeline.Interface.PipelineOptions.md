@@ -4,7 +4,9 @@
 
 ### failurePolicy?
 
-> `optional` **failurePolicy?**: `"ignore"` \| `"rollback-all"` \| `"fail-fast"`
+```ts
+optional failurePolicy?: "ignore" | "rollback-all" | "fail-fast";
+```
 
 파이프라인 실패 시 보상 트랜잭션 정책.
 
@@ -20,7 +22,9 @@
 
 ### strict?
 
-> `optional` **strict?**: `boolean`
+```ts
+optional strict?: boolean;
+```
 
 `true`이면 fetch 또는 `after()` 핸들러 실패 시 즉시 reject.
   `false`(기본값)이면 `_errors`에 기록하고 계속 진행.

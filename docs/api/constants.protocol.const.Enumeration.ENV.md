@@ -6,10 +6,14 @@ ENV : 실행 환경 식별자 상수
 
 ### DEVELOPMENT
 
-> **DEVELOPMENT**: `"development"`
+```ts
+DEVELOPMENT: "development";
+```
 
 ***
 
 ### PRODUCTION
 
-> **PRODUCTION**: `"production"`
+```ts
+PRODUCTION: "production";
+```

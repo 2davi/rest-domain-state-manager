@@ -1,6 +1,8 @@
 # Variable: DIRTY\_THRESHOLD
 
-> `const` `readonly` **DIRTY\_THRESHOLD**: `number` = `0.7`
+```ts
+const readonly DIRTY_THRESHOLD: number = 0.7;
+```
 
 DIRTY_THRESHOLD : PUT/PATCH 자동 분기 임계값
 

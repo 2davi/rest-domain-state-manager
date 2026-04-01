@@ -1,5 +1,7 @@
 # Type Alias: ArrayMutationResult
 
-> **ArrayMutationResult** = `unknown`
+```ts
+type ArrayMutationResult = unknown;
+```
 
 ## Type Parameters

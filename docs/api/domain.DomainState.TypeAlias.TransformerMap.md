@@ -1,5 +1,7 @@
 # Type Alias: TransformerMap
 
-> **TransformerMap** = `Record`\<`string`, (`value`) => `any`\>
+```ts
+type TransformerMap = Record<string, (value) => any>;
+```
 
 ## Type Parameters

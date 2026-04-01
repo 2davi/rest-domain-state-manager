@@ -1,11 +1,15 @@
 # Type Alias: PipelineResult
 
-> **PipelineResult** = `Record`\<`string`, [`DomainState`](domain.DomainState.Class.DomainState.md)\> & `object`
+```ts
+type PipelineResult = Record<string, DomainState> & object;
+```
 
 ## Type Declaration
 
 ### \_errors?
 
-> `optional` **\_errors?**: `object`[]
+```ts
+optional _errors?: object[];
+```
 
 ## Type Parameters

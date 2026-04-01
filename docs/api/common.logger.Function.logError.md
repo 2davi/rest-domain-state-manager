@@ -1,6 +1,8 @@
 # Function: logError()
 
-> **logError**(`message`): `void`
+```ts
+function logError(message): void;
+```
 
 환경 무관하게 `console.error`를 발화한다. `silent: true`이면 억제된다.
 

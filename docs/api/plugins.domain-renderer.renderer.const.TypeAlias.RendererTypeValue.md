@@ -1,5 +1,7 @@
 # Type Alias: RendererTypeValue
 
-> **RendererTypeValue** = `"select"` \| `"radio"` \| `"checkbox"` \| `"button"`
+```ts
+type RendererTypeValue = "select" | "radio" | "checkbox" | "button";
+```
 
 ## Type Parameters

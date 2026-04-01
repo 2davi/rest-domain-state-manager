@@ -1,14 +1,16 @@
 # ~~Variable: DomainRenderer~~
 
-> `const` **DomainRenderer**: `object`
-
-`DomainState`에 `renderTo()` DOM 렌더링 기능을 주입하는 플러그인 객체.
+```ts
+const DomainRenderer: object;
+```
 
 ## Type Declaration
 
 ### ~~install~~
 
-> **install**: (`DomainStateClass`) => `void`
+```ts
+install: (DomainStateClass) => void;
+```
 
 #### Parameters
 
@@ -22,7 +24,10 @@
 
 ## Deprecated
 
-v1.0.0에서 deprecated됩니다. ...를 사용하세요.
+v1.4.0 — UIComposer로 대체되었습니다.
+v2.x에서 제거 예정. 기존 코드는 v2.x 전까지 정상 동작합니다.
+
+`DomainState`에 `renderTo()` DOM 렌더링 기능을 주입하는 플러그인 객체.
 
 `DomainState.use(DomainRenderer)` 한 번으로 설치한다.
 설치 후 모든 `DomainState` 인스턴스에서 `renderTo()`를 호출할 수 있다.

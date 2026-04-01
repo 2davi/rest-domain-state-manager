@@ -1,5 +1,7 @@
 # Type Alias: RadioCheckboxItem
 
-> **RadioCheckboxItem** = `Record`\<`string`, `any`\>
+```ts
+type RadioCheckboxItem = Record<string, any>;
+```
 
 ## Type Parameters

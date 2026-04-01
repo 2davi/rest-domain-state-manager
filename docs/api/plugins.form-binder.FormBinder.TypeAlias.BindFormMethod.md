@@ -1,6 +1,8 @@
 # Type Alias: BindFormMethod
 
-> **BindFormMethod** = (`formOrId`) => [`DomainState`](domain.DomainState.Class.DomainState.md)
+```ts
+type BindFormMethod = (formOrId) => DomainState;
+```
 
 ## Type Parameters
 

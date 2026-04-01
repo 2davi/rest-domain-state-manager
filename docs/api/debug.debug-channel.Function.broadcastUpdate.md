@@ -1,6 +1,8 @@
 # Function: broadcastUpdate()
 
-> **broadcastUpdate**(`label`, `snapshot`): `void`
+```ts
+function broadcastUpdate(label, snapshot): void;
+```
 
 `DomainState`의 상태 변경을 채널에 broadcast하고 `_stateRegistry`를 갱신한다.
 

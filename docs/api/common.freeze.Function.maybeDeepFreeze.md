@@ -1,6 +1,8 @@
 # Function: maybeDeepFreeze()
 
-> **maybeDeepFreeze**\<`T`\>(`obj`): `T`
+```ts
+function maybeDeepFreeze<T>(obj): T;
+```
 
 개발 환경에서만 `deepFreeze`를 적용한다. 프로덕션에서는 no-op.
 

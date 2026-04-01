@@ -7,7 +7,9 @@
 
 ### Constructor
 
-> **new DomainVO**(): `DomainVO`
+```ts
+new DomainVO(): DomainVO;
+```
 
 #### Returns
 
@@ -17,7 +19,9 @@
 
 ### checkSchema()
 
-> **checkSchema**(`data`): [`SchemaCheckResult`](domain.DomainVO.Interface.SchemaCheckResult.md)
+```ts
+checkSchema(data): SchemaCheckResult;
+```
 
 REST API 응답 데이터가 이 VO의 스키마(`static fields`)와 일치하는지 검증한다.
 
@@ -74,7 +78,9 @@ new SimpleVO().checkSchema({ anything: 1 });
 
 ### getBaseURL()
 
-> **getBaseURL**(): `string` \| `null`
+```ts
+getBaseURL(): string | null;
+```
 
 서브클래스에 선언된 `static baseURL`을 반환한다.
 미선언이면 `null`을 반환한다.
@@ -111,7 +117,9 @@ new SimpleVO().getBaseURL(); // → null
 
 ### getTransformers()
 
-> **getTransformers**(): [`TransformerMap`](domain.DomainVO.TypeAlias.TransformerMap.md)
+```ts
+getTransformers(): TransformerMap;
+```
 
 `static fields`에서 `transform` 함수를 추출하여 필드명 → 함수 맵으로 반환한다.
 
@@ -143,7 +151,9 @@ new OrderVO().getTransformers();
 
 ### getValidators()
 
-> **getValidators**(): [`ValidatorMap`](domain.DomainVO.TypeAlias.ValidatorMap.md)
+```ts
+getValidators(): ValidatorMap;
+```
 
 `static fields`에서 `validate` 함수를 추출하여 필드명 → 함수 맵으로 반환한다.
 
@@ -174,7 +184,9 @@ new ProductVO().getValidators();
 
 ### toSkeleton()
 
-> **toSkeleton**(): `object`
+```ts
+toSkeleton(): object;
+```
 
 서브클래스에서 선언한 `static fields`를 기반으로 기본값 골격 객체를 생성한다.
 

@@ -1,6 +1,8 @@
 # Function: safeClone()
 
-> **safeClone**(`value`): `any`
+```ts
+function safeClone(value): any;
+```
 
 값을 깊게 복사한다.
 

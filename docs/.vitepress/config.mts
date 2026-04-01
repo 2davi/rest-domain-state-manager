@@ -19,6 +19,23 @@ export default defineConfig({
 
     // ── Vite 설정 — Playground에서 /index.js 로 라이브러리 resolve ──────────
     vite: {
+        plugins: [
+            {
+                name: 'escape-typedoc-angle-brackets',
+                transform(code, id) {
+                if (!id.includes('docs/api') || !id.endsWith('.md')) return;
+                // 코드 블록 밖의 bare < > 를 HTML 엔티티로 치환
+                return code
+                    .split('```')
+                    .map((segment, i) =>
+                    i % 2 === 0
+                        ? segment.replace(/<(?!\/?[a-zA-Z])/g, '&lt;')
+                        : segment
+                    )
+                    .join('```');
+                },
+            },
+        ],
         resolve: {
             alias: {
                 // Playground 컴포넌트 내부의 import('/index.js') 가

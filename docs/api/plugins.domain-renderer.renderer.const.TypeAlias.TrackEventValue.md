@@ -1,5 +1,7 @@
 # Type Alias: TrackEventValue
 
-> **TrackEventValue** = `"blur"` \| `"change"`
+```ts
+type TrackEventValue = "blur" | "change";
+```
 
 ## Type Parameters

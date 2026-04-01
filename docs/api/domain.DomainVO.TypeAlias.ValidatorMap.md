@@ -1,5 +1,7 @@
 # Type Alias: ValidatorMap
 
-> **ValidatorMap** = `Record`\<`string`, (`value`) => `boolean`\>
+```ts
+type ValidatorMap = Record<string, (value) => boolean>;
+```
 
 ## Type Parameters

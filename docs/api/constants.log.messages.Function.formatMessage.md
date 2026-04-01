@@ -1,6 +1,8 @@
 # Function: formatMessage()
 
-> **formatMessage**(`template`, `values?`): `string`
+```ts
+function formatMessage(template, values?): string;
+```
 
 formatMessage() : 로그 메시지 템플릿의 {placeholder}를 실제 값으로 치환한다.
 

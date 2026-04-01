@@ -4,7 +4,9 @@
 
 ### default?
 
-> `optional` **default?**: `any`
+```ts
+optional default?: any;
+```
 
 필드의 기본값. `toSkeleton()`이 초기 객체를 생성할 때 사용한다.
   `object` 또는 `array`이면 `safeClone(val)`로 deep copy하여
@@ -16,7 +18,9 @@
 
 ### transform?
 
-> `optional` **transform?**: (`value`) => `any`
+```ts
+optional transform?: (value) => any;
+```
 
 타입 변환 함수. `toPayload()` 직렬화 전에 실행되어 값을 변환한다.
   `DomainState._transformers`에 주입된다.
@@ -36,7 +40,9 @@
 
 ### validate?
 
-> `optional` **validate?**: (`value`) => `boolean`
+```ts
+optional validate?: (value) => boolean;
+```
 
 필드 유효성 검사 함수. 반환값이 `false`이면 유효하지 않은 값으로 간주한다.
   `DomainState._validators`에 주입되어 `save()` 직전에 실행될 예정이다.

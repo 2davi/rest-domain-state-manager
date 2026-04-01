@@ -4,7 +4,9 @@
 
 ### clearChangeLog
 
-> **clearChangeLog**: () => `void`
+```ts
+clearChangeLog: () => void;
+```
 
 동기화 성공 후 변경 이력 전체를 초기화한다.
 
@@ -16,7 +18,9 @@
 
 ### clearDirtyFields
 
-> **clearDirtyFields**: () => `void`
+```ts
+clearDirtyFields: () => void;
+```
 
 변경된 최상위 키 집합을 초기화한다.
 
@@ -28,7 +32,9 @@
 
 ### getChangeLog
 
-> **getChangeLog**: () => [`ChangeLogEntry`](core.api-mapper.Interface.ChangeLogEntry.md)[]
+```ts
+getChangeLog: () => ChangeLogEntry[];
+```
 
 현재 변경 이력의 얕은 복사본을 반환한다. 외부 변조 방지.
 
@@ -40,7 +46,9 @@
 
 ### getDirtyFields
 
-> **getDirtyFields**: () => `Set`\<`string`\>
+```ts
+getDirtyFields: () => Set<string>;
+```
 
 변경된 최상위 키 집합의 복사본을 반환한다.
 
@@ -52,7 +60,9 @@
 
 ### getTarget
 
-> **getTarget**: () => `object`
+```ts
+getTarget: () => object;
+```
 
 변경이 누적된 원본 객체를 반환한다.
 
@@ -64,7 +74,9 @@
 
 ### proxy
 
-> **proxy**: `object`
+```ts
+proxy: object;
+```
 
 변경 추적이 활성화된 Proxy 객체. 유일한 외부 진입점.
 
@@ -72,7 +84,9 @@
 
 ### restoreChangeLog
 
-> **restoreChangeLog**: (`entries`) => `void`
+```ts
+restoreChangeLog: (entries) => void;
+```
 
 changeLog를 스냅샷 항목으로 교체한다.
 
@@ -90,7 +104,9 @@ changeLog를 스냅샷 항목으로 교체한다.
 
 ### restoreDirtyFields
 
-> **restoreDirtyFields**: (`fields`) => `void`
+```ts
+restoreDirtyFields: (fields) => void;
+```
 
 dirtyFields를 스냅샷 키 집합으로 교체한다.
 
@@ -108,7 +124,9 @@ dirtyFields를 스냅샷 키 집합으로 교체한다.
 
 ### restoreTarget
 
-> **restoreTarget**: (`data`) => `void`
+```ts
+restoreTarget: (data) => void;
+```
 
 domainObject를 스냅샷 데이터로 직접 복원한다. Proxy 우회.
 

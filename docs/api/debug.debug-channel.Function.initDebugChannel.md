@@ -1,6 +1,8 @@
 # Function: initDebugChannel()
 
-> **initDebugChannel**(): `void`
+```ts
+function initDebugChannel(): void;
+```
 
 디버그 채널의 브라우저 전용 사이드 이펙트를 초기화한다.
 

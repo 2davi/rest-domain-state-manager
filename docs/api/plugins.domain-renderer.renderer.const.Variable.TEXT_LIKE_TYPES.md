@@ -1,6 +1,8 @@
 # Variable: TEXT\_LIKE\_TYPES
 
-> `const` `readonly` **TEXT\_LIKE\_TYPES**: `ReadonlySet`\<`string`\>
+```ts
+const readonly TEXT_LIKE_TYPES: ReadonlySet<string>;
+```
 
 `TRACK_EVENT.TEXT` 전략(`blur` 이벤트)을 적용할 텍스트 계열 input type 집합.
 

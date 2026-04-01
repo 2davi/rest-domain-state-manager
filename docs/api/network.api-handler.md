@@ -43,6 +43,16 @@ await user.save('/api/users/user_001');
 ```
 
 ```ts
+const api = new ApiHandler({ host: 'api.example.com', idempotent: true });
+try {
+    await user.save('/api/users/1');
+} catch (err) {
+    // 네트워크 타임아웃 후 재시도: 동일 Idempotency-Key UUID가 자동 재사용된다.
+    await user.save('/api/users/1');
+}
+```
+
+```ts
 const userApi  = new ApiHandler({ host: 'user-service.com', env: 'production' });
 const orderApi = new ApiHandler({ host: 'order-service.com', env: 'production' });
 const user  = await userApi.get('/api/users/1');
@@ -59,6 +69,10 @@ await order.save('/api/orders/999'); // → order-service.com 으로 전송
 
 - [GetOptions](network.api-handler.Interface.GetOptions.md)
 - [HttpError](network.api-handler.Interface.HttpError.md)
+
+## Type Aliases
+
+- [ApiHandlerConfig](network.api-handler.TypeAlias.ApiHandlerConfig.md)
 
 ## References
 

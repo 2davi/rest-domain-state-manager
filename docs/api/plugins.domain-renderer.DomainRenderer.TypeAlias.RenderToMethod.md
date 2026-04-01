@@ -1,6 +1,8 @@
 # Type Alias: RenderToMethod
 
-> **RenderToMethod** = (`container`, `config`) => [`RenderResult`](plugins.domain-renderer.DomainRenderer.TypeAlias.RenderResult.md)
+```ts
+type RenderToMethod = (container, config) => RenderResult;
+```
 
 ## Type Parameters
 

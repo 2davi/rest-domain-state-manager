@@ -5,6 +5,8 @@ ERR : throw되는 Error 메시지 상수
 
 ## Variables
 
+- [COLLECTION\_HANDLER\_MISSING](constants.error.messages.ERR.Variable.COLLECTION_HANDLER_MISSING.md)
+- [COLLECTION\_PATH\_MISSING](constants.error.messages.ERR.Variable.COLLECTION_PATH_MISSING.md)
 - [FROM\_FORM\_TYPE](constants.error.messages.ERR.Variable.FROM_FORM_TYPE.md)
 - [FROM\_VO\_TYPE](constants.error.messages.ERR.Variable.FROM_VO_TYPE.md)
 - [PIPELINE\_NOT\_CONFIGURED](constants.error.messages.ERR.Variable.PIPELINE_NOT_CONFIGURED.md)
