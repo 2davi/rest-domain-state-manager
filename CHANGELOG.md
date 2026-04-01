@@ -1,3 +1,18 @@
+## [1.2.0](https://github.com/2davi/rest-domain-state-manager/compare/v1.1.0...v1.2.0) (2026-04-01)
+
+### ✨ Features
+
+* **common:** implement LCS-based deep diff utility for lazy tracking mode ([33f63a0](https://github.com/2davi/rest-domain-state-manager/commit/33f63a0379467eaa3b0f5ce821e1bc5343814e25))
+* **core:** add trackingMode branch to Proxy set trap ([0e61e2a](https://github.com/2davi/rest-domain-state-manager/commit/0e61e2a93dc356f6d50fb588d5d710fa64fcbb74))
+* **core:** export DomainCollection from index.js ([2e23df9](https://github.com/2davi/rest-domain-state-manager/commit/2e23df9467bc58703b1b1ba6174a805b03f32061))
+* **domain:** implement DomainCollection class with create/fromJSONArray factories ([61b6c25](https://github.com/2davi/rest-domain-state-manager/commit/61b6c252587f9b3980f2e18507dff9b19c40e1fa))
+* **domain:** integrate trackingMode and lazy diff pipeline into DomainState ([4e3a682](https://github.com/2davi/rest-domain-state-manager/commit/4e3a682eb86bfb10627eb476352b490d88037734))
+* **ui:** create src/ui/ layer and UILayout base class ([51a8148](https://github.com/2davi/rest-domain-state-manager/commit/51a8148eaeb83cd5d003ff19aa0285ea49d1cab1))
+* **ui:** implement CollectionBinder MVP in src/ui/collection/ ([29df4f5](https://github.com/2davi/rest-domain-state-manager/commit/29df4f5e15a02545433b260939b35927a357c02b))
+* **ui:** implement UIComposer plugin installing bind/bindCollection ([f07873c](https://github.com/2davi/rest-domain-state-manager/commit/f07873c64f177c45db9a3d23d004c3930ff3c950))
+* **workers:** add diff-worker-client.js for lazy mode with Node.js fallback. ([226e5ea](https://github.com/2davi/rest-domain-state-manager/commit/226e5eae71fe809948c68f861df2750ce1794479))
+* **workers:** add diff.worker.js for lazy mode changeLog generation ([9b92a63](https://github.com/2davi/rest-domain-state-manager/commit/9b92a63e3d03138afab5a4ee75d780ff6c07f2d8))
+
 ## [1.1.0](https://github.com/2davi/rest-domain-state-manager/compare/v1.0.2...v1.1.0) (2026-04-01)
 
 ### ✨ Features
