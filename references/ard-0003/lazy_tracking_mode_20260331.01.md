@@ -52,10 +52,10 @@ Proxy `set` 트랩이 changeLog 기록을 `save()` 이후로 미루는 구조이
 
 ### 두 가지 추적 모드
 
-| 모드 | changeLog 기록 시점 | 적합한 상황 | `_initialSnapshot` 필요 여부 |
-|---|---|---|---|
-| `'realtime'` (기본) | Proxy `set` 트랩 발화 즉시 | 개발 단계 디버깅, BroadcastChannel 실시간 모니터링 | 불필요 |
-| `'lazy'` (신규) | `save()` 호출 시점에 diff로 생성 | 운용 환경 성능, 네트워크 페이로드 최소화 | 필수 |
+| 모드                | changeLog 기록 시점              | 적합한 상황                                        | `_initialSnapshot` 필요 여부 |
+| ------------------- | -------------------------------- | -------------------------------------------------- | ---------------------------- |
+| `'realtime'` (기본) | Proxy `set` 트랩 발화 즉시       | 개발 단계 디버깅, BroadcastChannel 실시간 모니터링 | 불필요                       |
+| `'lazy'` (신규)     | `save()` 호출 시점에 diff로 생성 | 운용 환경 성능, 네트워크 페이로드 최소화           |  필수                        |
 
 `trackingMode`는 각 `DomainState` 인스턴스 생성 시 명시적 플래그로 선택한다.
 라이브러리 전역 기본값으로 설정하지 않는다.
@@ -324,16 +324,16 @@ save({ itemKey: 'id' }) 호출
 
 ### 수정/생성 파일 목록
 
-| 파일 | 변경 종류 | 변경 내용 |
-|---|---|---|
-| `src/domain/DomainState.js` | **수정** | `trackingMode` 옵션 추가, `_initialSnapshot` 저장, `save()` lazy 분기, 성공 후 snapshot 갱신, JSDoc 갱신 |
-| `src/core/api-proxy.js` | **수정** | `set` 트랩 내 `trackingMode !== 'lazy'` 조건 분기 추가, `createProxy()` options 파라미터 갱신 |
-| `src/workers/diff.worker.js` | **신규 생성** | DIFF 메시지 수신, lcs-diff.js 호출, DIFF_RESULT 응답 |
-| `src/common/lcs-diff.js` | **신규 생성** | `deepDiff(initial, current, itemKey?)` 유틸 함수 |
-| `vitest.config.js` | **수정** | Worker 테스트 환경 설정 추가 |
-| `tests/domain/DomainState.test.js` | **수정** | trackingMode 분기 정확성 테스트 케이스 추가 |
-| `tests/workers/diff.worker.test.js` | **신규 생성** | diff 연산 및 LCS 케이스 단위 테스트 |
-| `tests/common/lcs-diff.test.js` | **신규 생성** | LCS diff 알고리즘 단위 테스트 |
+| 파일                                   | 변경 종류     | 변경 내용                                                                                                |
+| -------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------- |
+| `src/domain/DomainState.js`            | **수정**      | `trackingMode` 옵션 추가, `_initialSnapshot` 저장, `save()` lazy 분기, 성공 후 snapshot 갱신, JSDoc 갱신 |
+| `src/core/api-proxy.js`                | **수정**      | `set` 트랩 내 `trackingMode !== 'lazy'` 조건 분기 추가, `createProxy()` options 파라미터 갱신            |
+| `src/workers/diff.worker.js`           | **신규 생성** | DIFF 메시지 수신, lcs-diff.js 호출, DIFF_RESULT 응답                                                     |
+| `src/common/lcs-diff.js`               | **신규 생성** | `deepDiff(initial, current, itemKey?)` 유틸 함수                                                         |
+| `vitest.config.js`                     | **수정**      | Worker 테스트 환경 설정 추가                                                                             |
+| `tests/domain/DomainState.test.js`     | **수정**      | trackingMode 분기 정확성 테스트 케이스 추가                                                              |
+| `tests/workers/diff.worker.test.js`    | **신규 생성** | diff 연산 및 LCS 케이스 단위 테스트                                                                      |
+| `tests/common/lcs-diff.test.js`        | **신규 생성** | LCS diff 알고리즘 단위 테스트                                                                            |
 
 ### Feature 브랜치명
 
@@ -391,15 +391,15 @@ feat(domain): integrate trackingMode and lazy diff pipeline into DomainState
 
 ## (f) 검증 기준 (Definition of Done)
 
-| 항목 | 기준 |
-|---|---|
-| `npm run lint` | error 0건 |
-| `npm test` | 전체 테스트 통과 (기존 TC 회귀 없음) |
-| `realtime` 모드 | 기존 동작 완전 동일, changeLog 즉시 기록 확인 |
-| `lazy` 모드 생성 | `_initialSnapshot` 저장 확인 |
-| `lazy` 모드 변경 중 | changeLog 비어있음 확인 |
-| `lazy` 모드 `save()` | diff Worker 호출 → 최종 diff만 반영된 changeLog 확인 |
-| `lazy` 모드 성공 후 | `_initialSnapshot` 갱신 확인 |
-| LCS diff — 행 삭제+추가 | `replace` 대신 `remove` + `add` 생성 확인 |
-| `itemKey` 미지정 fallback | positional 방어 로직 동작 확인 |
-| Worker 오프로딩 안전성 | diff 연산 중 상태 변경이 changeLog에 영향 없음 확인 |
+| 항목                      | 기준                                                 |
+| ------------------------- | ---------------------------------------------------- |
+| `npm run lint`            | error 0건                                            |
+| `npm test`                | 전체 테스트 통과 (기존 TC 회귀 없음)                 |
+| `realtime` 모드           | 기존 동작 완전 동일, changeLog 즉시 기록 확인        |
+| `lazy` 모드 생성          | `_initialSnapshot` 저장 확인                         |
+| `lazy` 모드 변경 중       | changeLog 비어있음 확인                              |
+| `lazy` 모드 `save()`      | diff Worker 호출 → 최종 diff만 반영된 changeLog 확인 |
+| `lazy` 모드 성공 후       | `_initialSnapshot` 갱신 확인                         |
+| LCS diff — 행 삭제+추가   | `replace` 대신 `remove` + `add` 생성 확인            |
+| `itemKey` 미지정 fallback | positional 방어 로직 동작 확인                       |
+| Worker 오프로딩 안전성    | diff 연산 중 상태 변경이 changeLog에 영향 없음 확인  |
