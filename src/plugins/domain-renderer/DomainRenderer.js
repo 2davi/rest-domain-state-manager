@@ -89,7 +89,7 @@ import { devWarn } from '../../common/logger.js';
 /**
  * @deprecated v1.4.0 — UIComposer로 대체되었습니다.
  * v2.x에서 제거 예정. 기존 코드는 v2.x 전까지 정상 동작합니다.
- * 
+ *
  * `DomainState`에 `renderTo()` DOM 렌더링 기능을 주입하는 플러그인 객체.
  *
  * `DomainState.use(DomainRenderer)` 한 번으로 설치한다.
@@ -118,7 +118,7 @@ export const DomainRenderer = {
     /**
      * @deprecated v1.4.0 — UIComposer로 대체되었습니다.
      * v2.x에서 제거 예정. 기존 코드는 v2.x 전까지 정상 동작합니다.
-     * 
+     *
      * `DomainState` 클래스에 `renderTo()` 메서드를 주입한다.
      * `DomainState.use(DomainRenderer)` 호출 시 자동으로 실행된다.
      *

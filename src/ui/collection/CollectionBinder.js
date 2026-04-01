@@ -30,8 +30,14 @@
  * @see {@link module:domain/DomainCollection DomainCollection}
  */
 
-import { DomainCollection } from '../../domain/DomainCollection.js';
-import { DomainState }      from '../../domain/DomainState.js';
+/**
+ * JSDoc 전용 타입 참조 — 런타임 import 없음.
+ * `DomainCollection` / `DomainState`는 이 모듈에서 instanceof 검사 없이
+ * 소비자에게서 주입된 인스턴스를 그대로 사용하므로 런타임 의존이 불필요하다.
+ *
+ * @typedef {import('../../domain/DomainCollection.js').DomainCollection} DomainCollection
+ * @typedef {import('../../domain/DomainState.js').DomainState} DomainState
+ */
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -187,8 +193,12 @@ function _setupRowInputListeners(rowEl, state, layout) {
         if (!el) continue;
 
         const tag = el.tagName.toLowerCase();
-        const eventName = (tag === 'select' || el.getAttribute('type') === 'checkbox' ||
-            el.getAttribute('type') === 'radio') ? 'change' : 'input';
+        const eventName =
+            tag === 'select' ||
+            el.getAttribute('type') === 'checkbox' ||
+            el.getAttribute('type') === 'radio'
+                ? 'change'
+                : 'input';
 
         el.addEventListener(eventName, () => {
             const value = _getElementValue(el);
@@ -205,7 +215,7 @@ function _setupRowInputListeners(rowEl, state, layout) {
  */
 function _updateRowNumbers(containerEl) {
     let idx = 1;
-    for (const rowEl of containerEl.children) {
+    for (const rowEl of Array.from(containerEl.children)) {
         const numEl = rowEl.querySelector('.dsm-row-number');
         if (numEl) numEl.textContent = String(idx);
         idx++;
@@ -225,14 +235,12 @@ function _syncSelectAll(containerEl, selectAllSelector) {
     );
     if (!selectAllEl) return;
 
-    const checkboxes = [...containerEl.querySelectorAll('.dsm-checkbox')];
+    const checkboxes = Array.from(containerEl.querySelectorAll('.dsm-checkbox'));
     if (checkboxes.length === 0) {
         selectAllEl.checked = false;
         return;
     }
-    const allChecked = checkboxes.every(
-        (cb) => /** @type {HTMLInputElement} */ (cb).checked
-    );
+    const allChecked = checkboxes.every((cb) => /** @type {HTMLInputElement} */ (cb).checked);
     selectAllEl.checked = allChecked;
 }
 
@@ -279,7 +287,7 @@ export function createCollectionBinder(collection, containerEl, options) {
     // ── 이벤트 위임: 개별 행 체크박스(selectOne) ─────────────────────────────
     // 소비자가 직접 바인딩하지 않고 컨테이너에 위임하여 동적 DOM을 지원한다.
     /**
-     * @param {Event} e
+     * @param {Event} e - 위임된 클릭 이벤트 객체
      */
     function _onContainerClick(e) {
         const target = /** @type {Element} */ (e.target);
@@ -301,9 +309,9 @@ export function createCollectionBinder(collection, containerEl, options) {
     /**
      * 행 DOM에 `<select>` sourceKey 옵션을 채운다.
      *
-     * @param {Element} rowEl
-     * @param {typeof import('../UILayout.js').UILayout} _layout
-     * @param {Record<string, DomainCollection>} _sources
+     * @param {Element} rowEl - 행 DOM 요소
+     * @param {typeof import('../UILayout.js').UILayout} _layout - UILayout 클래스
+     * @param {Record<string, DomainCollection>} _sources - sourceKey → DomainCollection 소스 맵
      */
     function _populateSourceSelects(rowEl, _layout, _sources) {
         for (const [, config] of Object.entries(_layout.columns)) {
@@ -314,8 +322,8 @@ export function createCollectionBinder(collection, containerEl, options) {
                 // sourceKey 선언됐는데 sources에 없음 → Silent Failure 불허
                 throw new Error(
                     `[DSM] CollectionBinder: columns에 선언된 sourceKey="${config.sourceKey}"가 ` +
-                    'sources 옵션에 없습니다. ' +
-                    `bindCollection() 호출 시 sources: { ${config.sourceKey}: collection }을 전달하세요.`
+                        'sources 옵션에 없습니다. ' +
+                        `bindCollection() 호출 시 sources: { ${config.sourceKey}: collection }을 전달하세요.`
                 );
             }
 
@@ -351,7 +359,7 @@ export function createCollectionBinder(collection, containerEl, options) {
      */
     function addEmpty() {
         const newState = collection.add({});
-        const rowEl    = layout.cloneRow(template);
+        const rowEl = layout.cloneRow(template);
 
         _populateSourceSelects(rowEl, layout, sources);
         if (mode === 'edit') _setupRowInputListeners(rowEl, newState, layout);
@@ -369,7 +377,7 @@ export function createCollectionBinder(collection, containerEl, options) {
      * 반드시 내림차순 정렬 후 제거해야 한다.
      */
     function removeChecked() {
-        const rows = [...containerEl.children];
+        const rows = Array.from(containerEl.children);
 
         // 체크된 행의 인덱스 수집 → 내림차순 정렬 (LIFO)
         const indices = rows
@@ -410,7 +418,7 @@ export function createCollectionBinder(collection, containerEl, options) {
      * @param {boolean} checked - 체크 여부
      */
     function selectAll(checked) {
-        for (const rowEl of containerEl.children) {
+        for (const rowEl of Array.from(containerEl.children)) {
             const cb = /** @type {HTMLInputElement | null} */ (
                 rowEl.querySelector('.dsm-checkbox')
             );
@@ -423,7 +431,7 @@ export function createCollectionBinder(collection, containerEl, options) {
      * 현재 체크 상태를 반전한다.
      */
     function invertSelection() {
-        for (const rowEl of containerEl.children) {
+        for (const rowEl of Array.from(containerEl.children)) {
             const cb = /** @type {HTMLInputElement | null} */ (
                 rowEl.querySelector('.dsm-checkbox')
             );
@@ -444,7 +452,7 @@ export function createCollectionBinder(collection, containerEl, options) {
     function validate() {
         let isValid = true;
 
-        for (const rowEl of containerEl.children) {
+        for (const rowEl of Array.from(containerEl.children)) {
             for (const [field, config] of Object.entries(layout.columns)) {
                 if (!config.required) continue;
 
@@ -481,7 +489,7 @@ export function createCollectionBinder(collection, containerEl, options) {
      * @returns {DomainState[]}
      */
     function getCheckedItems() {
-        return [...containerEl.children]
+        return Array.from(containerEl.children)
             .filter((rowEl) => {
                 const cb = /** @type {HTMLInputElement | null} */ (
                     rowEl.querySelector('.dsm-checkbox')
@@ -512,8 +520,8 @@ export function createCollectionBinder(collection, containerEl, options) {
         invertSelection,
         validate,
         getCheckedItems,
-        getItems:  () => collection.getItems(),
-        getCount:  () => collection.getCount(),
+        getItems: () => collection.getItems(),
+        getCount: () => collection.getCount(),
         destroy,
     };
 }

@@ -152,24 +152,22 @@ export class UILayout {
      */
     static getTemplate(mode = 'edit') {
         const isReadonly = mode === 'read';
-        const selector = isReadonly
-            ? this.readonlyTemplateSelector
-            : this.templateSelector;
+        const selector = isReadonly ? this.readonlyTemplateSelector : this.templateSelector;
 
         // ── selector 미선언 ───────────────────────────────────────────────────
         if (!selector) {
             if (isReadonly) {
                 throw new Error(
                     `[DSM] UILayout.getTemplate(): ${this.name || 'UILayout'}에 ` +
-                    'readonlyTemplateSelector가 선언되지 않았습니다. ' +
-                    "mode: 'read'로 bindCollection()을 호출하려면 " +
-                    'static readonlyTemplateSelector = \'#yourReadTemplate\'을 선언하세요.'
+                        'readonlyTemplateSelector가 선언되지 않았습니다. ' +
+                        "mode: 'read'로 bindCollection()을 호출하려면 " +
+                        "static readonlyTemplateSelector = '#yourReadTemplate'을 선언하세요."
                 );
             }
             throw new Error(
                 `[DSM] UILayout.getTemplate(): ${this.name || 'UILayout'}에 ` +
-                'templateSelector가 선언되지 않았습니다. ' +
-                'static templateSelector = \'#yourTemplate\'을 선언하세요.'
+                    'templateSelector가 선언되지 않았습니다. ' +
+                    "static templateSelector = '#yourTemplate'을 선언하세요."
             );
         }
         // ─────────────────────────────────────────────────────────────────────
@@ -179,15 +177,15 @@ export class UILayout {
         if (!el) {
             throw new Error(
                 `[DSM] UILayout.getTemplate(): selector="${selector}"로 ` +
-                'DOM 요소를 찾을 수 없습니다. ' +
-                'HTML에 해당 <template> 요소가 존재하는지 확인하세요.'
+                    'DOM 요소를 찾을 수 없습니다. ' +
+                    'HTML에 해당 <template> 요소가 존재하는지 확인하세요.'
             );
         }
         if (!(el instanceof HTMLTemplateElement)) {
             throw new Error(
                 `[DSM] UILayout.getTemplate(): selector="${selector}"가 ` +
-                `<${el.tagName.toLowerCase()}> 요소를 가리킵니다. ` +
-                '<template> 요소여야 합니다.'
+                    `<${el.tagName.toLowerCase()}> 요소를 가리킵니다. ` +
+                    '<template> 요소여야 합니다.'
             );
         }
         // ─────────────────────────────────────────────────────────────────────
@@ -211,7 +209,7 @@ export class UILayout {
         if (!rowEl) {
             throw new Error(
                 '[DSM] UILayout.cloneRow(): <template> 콘텐츠에 자식 요소가 없습니다. ' +
-                '<template> 내부에 행(row)을 구성하는 HTML 요소를 선언하세요.'
+                    '<template> 내부에 행(row)을 구성하는 HTML 요소를 선언하세요.'
             );
         }
         return rowEl;

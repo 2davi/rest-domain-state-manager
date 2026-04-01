@@ -30,13 +30,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { UILayout }             from '../../src/ui/UILayout.js';
+import { UILayout } from '../../src/ui/UILayout.js';
 import { createCollectionBinder } from '../../src/ui/collection/CollectionBinder.js';
-import { UIComposer }           from '../../src/ui/UIComposer.js';
-import { DomainCollection }     from '../../src/domain/DomainCollection.js';
-import { DomainState }          from '../../src/domain/DomainState.js';
-import { ApiHandler }           from '../../src/network/api-handler.js';
-import { DomainPipeline }       from '../../src/domain/DomainPipeline.js';
+import { UIComposer } from '../../src/ui/UIComposer.js';
+import { DomainCollection } from '../../src/domain/DomainCollection.js';
+import { DomainState } from '../../src/domain/DomainState.js';
+import { ApiHandler } from '../../src/network/api-handler.js';
+import { DomainPipeline } from '../../src/domain/DomainPipeline.js';
 
 // ── 전역 설정 ─────────────────────────────────────────────────────────────────
 
@@ -55,9 +55,21 @@ afterEach(() => {
 
 // ── 테스트용 UILayout 서브클래스 ─────────────────────────────────────────────
 
+/** sourceKey 없는 기본 테스트용 UILayout — 대부분의 TC에서 사용 */
 class TestLayout extends UILayout {
     static templateSelector = '#testTemplate';
     static readonlyTemplateSelector = '#testReadTemplate';
+    static itemKey = 'certId';
+
+    static columns = {
+        certName: { selector: '[data-field="certName"]', required: true },
+        certType: { selector: '[data-field="certType"]' }, // sourceKey 없음
+    };
+}
+
+/** sourceKey 포함 레이아웃 — TC-UI-070 / TC-UI-071 전용 */
+class TestLayoutWithSource extends UILayout {
+    static templateSelector = '#testTemplate';
     static itemKey = 'certId';
 
     static columns = {
@@ -94,7 +106,7 @@ function setupDOM() {
 
 /** 테스트용 DomainCollection 생성 헬퍼 */
 function createTestCollection(items = []) {
-    const handler  = new ApiHandler({ host: 'localhost:8080' });
+    const handler = new ApiHandler({ host: 'localhost:8080' });
     vi.spyOn(handler, '_fetch').mockResolvedValue(null);
 
     if (items.length === 0) return DomainCollection.create(handler);
@@ -191,7 +203,7 @@ describe('CollectionBinder — 초기 렌더링', () => {
         setupDOM();
         const collection = createTestCollection([
             { certId: 1, certName: '정보처리기사', certType: 'IT' },
-            { certId: 2, certName: '한국사',       certType: 'HISTORY' },
+            { certId: 2, certName: '한국사', certType: 'HISTORY' },
         ]);
         const containerEl = document.getElementById('grid');
         createCollectionBinder(collection, containerEl, { layout: TestLayout, sources: {} });
@@ -201,9 +213,7 @@ describe('CollectionBinder — 초기 렌더링', () => {
 
     it('[TC-UI-021] 각 행에 DomainState 데이터가 채워져야 한다', () => {
         setupDOM();
-        const collection = createTestCollection([
-            { certId: 1, certName: '정보처리기사' },
-        ]);
+        const collection = createTestCollection([{ certId: 1, certName: '정보처리기사' }]);
         const containerEl = document.getElementById('grid');
         createCollectionBinder(collection, containerEl, { layout: TestLayout, sources: {} });
 
@@ -229,8 +239,9 @@ describe('CollectionBinder — 초기 렌더링', () => {
         const containerEl = document.getElementById('grid');
         createCollectionBinder(collection, containerEl, { layout: TestLayout, sources: {} });
 
-        const nums = [...containerEl.querySelectorAll('.dsm-row-number')]
-            .map((el) => el.textContent);
+        const nums = [...containerEl.querySelectorAll('.dsm-row-number')].map(
+            (el) => el.textContent
+        );
         expect(nums).toEqual(['1', '2']);
     });
 });
@@ -244,7 +255,8 @@ describe('CollectionBinder — 행 추가/제거', () => {
         const collection = createTestCollection([]);
         const containerEl = document.getElementById('grid');
         const { addEmpty } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         const state = addEmpty();
@@ -263,7 +275,8 @@ describe('CollectionBinder — 행 추가/제거', () => {
         ]);
         const containerEl = document.getElementById('grid');
         const { removeChecked } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         // 1번(index 0)과 3번(index 2) 체크
@@ -281,12 +294,11 @@ describe('CollectionBinder — 행 추가/제거', () => {
 
     it('[TC-UI-032] removeAll()은 모든 행을 제거해야 한다', () => {
         setupDOM();
-        const collection = createTestCollection([
-            { certId: 1 }, { certId: 2 }, { certId: 3 },
-        ]);
+        const collection = createTestCollection([{ certId: 1 }, { certId: 2 }, { certId: 3 }]);
         const containerEl = document.getElementById('grid');
         const { removeAll } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         removeAll();
@@ -300,13 +312,15 @@ describe('CollectionBinder — 행 추가/제거', () => {
         const collection = createTestCollection([{ certId: 1 }]);
         const containerEl = document.getElementById('grid');
         const { addEmpty } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         addEmpty();
 
-        const nums = [...containerEl.querySelectorAll('.dsm-row-number')]
-            .map((el) => el.textContent);
+        const nums = [...containerEl.querySelectorAll('.dsm-row-number')].map(
+            (el) => el.textContent
+        );
         expect(nums).toEqual(['1', '2']);
     });
 });
@@ -320,7 +334,8 @@ describe('CollectionBinder — 선택 제어', () => {
         const collection = createTestCollection([{ certId: 1 }, { certId: 2 }]);
         const containerEl = document.getElementById('grid');
         const { selectAll } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         selectAll(true);
@@ -334,14 +349,17 @@ describe('CollectionBinder — 선택 제어', () => {
         const collection = createTestCollection([{ certId: 1 }, { certId: 2 }]);
         const containerEl = document.getElementById('grid');
         const { selectAll } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         selectAll(true);
         selectAll(false);
 
         const checkboxes = [...containerEl.querySelectorAll('.dsm-checkbox')];
-        expect(checkboxes.every((cb) => !/** @type {HTMLInputElement} */ (cb).checked)).toBe(true);
+        expect(checkboxes.every((cb) => !(/** @type {HTMLInputElement} */ (cb).checked))).toBe(
+            true
+        );
     });
 
     it('[TC-UI-042] invertSelection()은 체크 상태를 반전해야 한다', () => {
@@ -349,14 +367,17 @@ describe('CollectionBinder — 선택 제어', () => {
         const collection = createTestCollection([{ certId: 1 }, { certId: 2 }]);
         const containerEl = document.getElementById('grid');
         const { selectAll, invertSelection } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         selectAll(true); // 모두 체크
         invertSelection(); // 반전 → 모두 해제
 
         const checkboxes = [...containerEl.querySelectorAll('.dsm-checkbox')];
-        expect(checkboxes.every((cb) => !/** @type {HTMLInputElement} */ (cb).checked)).toBe(true);
+        expect(checkboxes.every((cb) => !(/** @type {HTMLInputElement} */ (cb).checked))).toBe(
+            true
+        );
     });
 });
 
@@ -369,7 +390,8 @@ describe('CollectionBinder — validate()', () => {
         const collection = createTestCollection([{ certId: 1, certName: '정보처리기사' }]);
         const containerEl = document.getElementById('grid');
         const { validate } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         expect(validate()).toBe(true);
@@ -380,7 +402,8 @@ describe('CollectionBinder — validate()', () => {
         const collection = createTestCollection([{ certId: 1, certName: '' }]);
         const containerEl = document.getElementById('grid');
         const { validate } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         const result = validate();
@@ -395,7 +418,8 @@ describe('CollectionBinder — validate()', () => {
         const collection = createTestCollection([{ certId: 1, certName: '' }]);
         const containerEl = document.getElementById('grid');
         const { validate } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         validate(); // is-invalid 추가
@@ -421,7 +445,9 @@ describe('CollectionBinder — Reactive 바인딩', () => {
         const collection = createTestCollection([{ certId: 1, certName: 'Init' }]);
         const containerEl = document.getElementById('grid');
         createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {}, mode: 'edit',
+            layout: TestLayout,
+            sources: {},
+            mode: 'edit',
         });
 
         const inputEl = /** @type {HTMLInputElement} */ (
@@ -438,7 +464,9 @@ describe('CollectionBinder — Reactive 바인딩', () => {
         const collection = createTestCollection([{ certId: 1, certName: 'Init' }]);
         const containerEl = document.getElementById('grid');
         createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {}, mode: 'read',
+            layout: TestLayout,
+            sources: {},
+            mode: 'read',
         });
 
         // read 모드에서는 readonlyTemplate이 사용됨
@@ -465,7 +493,7 @@ describe('CollectionBinder — sourceKey', () => {
         vi.spyOn(handler, '_fetch').mockResolvedValue(null);
         const certTypes = DomainCollection.fromJSONArray(
             JSON.stringify([
-                { typeId: 'IT',      typeName: 'IT자격증' },
+                { typeId: 'IT', typeName: 'IT자격증' },
                 { typeId: 'HISTORY', typeName: '역사자격증' },
             ]),
             handler
@@ -474,14 +502,18 @@ describe('CollectionBinder — sourceKey', () => {
         const collection = createTestCollection([{ certId: 1, certName: 'A', certType: 'IT' }]);
         const containerEl = document.getElementById('grid');
         createCollectionBinder(collection, containerEl, {
-            layout: TestLayout,
+            layout: TestLayoutWithSource,
             sources: { certTypes },
         });
 
-        const selectEl = containerEl.querySelector('[data-field="certType"]');
-        expect(selectEl?.children.length).toBe(2);
-        expect(/** @type {HTMLOptionElement} */ (selectEl?.children[0]).value).toBe('IT');
-        expect(/** @type {HTMLOptionElement} */ (selectEl?.children[0]).textContent).toBe('IT자격증');
+        const selectEl = /** @type {HTMLSelectElement} */ (
+            containerEl.querySelector('[data-field="certType"]')
+        );
+        expect(selectEl).not.toBeNull();
+        const options = Array.from(selectEl.children);
+        expect(options.length).toBe(2);
+        expect(/** @type {HTMLOptionElement} */ (options[0]).value).toBe('IT');
+        expect(/** @type {HTMLOptionElement} */ (options[0]).textContent).toBe('IT자격증');
     });
 
     it('[TC-UI-071] sourceKey 선언됐는데 sources에 없으면 Error를 throw해야 한다', () => {
@@ -492,7 +524,7 @@ describe('CollectionBinder — sourceKey', () => {
         // sources에 certTypes 미전달
         expect(() =>
             createCollectionBinder(collection, containerEl, {
-                layout: TestLayout,
+                layout: TestLayoutWithSource,
                 sources: {}, // certTypes 없음
             })
         ).toThrow(/sourceKey="certTypes"/);
@@ -511,7 +543,7 @@ describe('UIComposer — 플러그인', () => {
         const containerEl = document.getElementById('grid');
 
         const controls = collection.bind(containerEl, {
-            layout:  TestLayout,
+            layout: TestLayout,
             sources: {},
         });
 
@@ -532,7 +564,9 @@ describe('UIComposer — 플러그인', () => {
         const origBind = DomainCollection.prototype.bind;
         // @ts-ignore
         DomainCollection.prototype.bind = function () {
-            throw new Error('[DSM] DomainCollection.bind(): UIComposer 플러그인이 설치되지 않았습니다.');
+            throw new Error(
+                '[DSM] DomainCollection.bind(): UIComposer 플러그인이 설치되지 않았습니다.'
+            );
         };
 
         expect(() =>

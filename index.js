@@ -31,7 +31,7 @@ import { DomainRenderer } from './src/plugins/domain-renderer/DomainRenderer.js'
 import { FormBinder } from './src/plugins/form-binder/FormBinder.js';
 import { closeDebugChannel } from './src/debug/debug-channel.js';
 import { UIComposer } from './src/ui/UIComposer.js';
-import { UILayout }   from './src/ui/UILayout.js';
+import { UILayout } from './src/ui/UILayout.js';
 
 DomainState.configure({
     // index.js가 두 모듈을 import하는 유일한 파일 (Composition Root).
