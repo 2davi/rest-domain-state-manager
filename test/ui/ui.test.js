@@ -385,7 +385,8 @@ describe('CollectionBinder — 선택 제어', () => {
         const collection = createTestCollection([{ certId: 1 }, { certId: 2 }]);
         const containerEl = document.getElementById('grid');
         const { selectAll, getCheckedItems } = createCollectionBinder(collection, containerEl, {
-            layout: TestLayout, sources: {},
+            layout: TestLayout,
+            sources: {},
         });
 
         selectAll(true);

@@ -85,13 +85,13 @@ describe('DomainRenderer — renderTo()', () => {
             })
         ).toThrow();
     });
-    
+
     it('TC-DR-005: type:button → HTMLButtonElement 배열 생성, data-value 일치', () => {
         makeContainer();
         const roles = makeRoleList();
         const state = makeArrayState(roles);
         const result = state.renderTo('container', {
-            type:       'button',
+            type: 'button',
             valueField: 'roleId',
             labelField: 'roleName',
         });
@@ -101,4 +101,3 @@ describe('DomainRenderer — renderTo()', () => {
         expect(result[0].dataset.value).toBe(String(roles[0].roleId));
     });
 });
-

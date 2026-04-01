@@ -167,7 +167,7 @@ describe('normalizeUrlConfig — host + baseURL 충돌 해소', () => {
     it('baseURL이 host로 시작하면 basePath로 해석해야 한다 (케이스 A)', () => {
         // host + baseURL 동시 입력, baseURL.startsWith(host) → basePath 추출
         const handler = new ApiHandler({
-            host:    'localhost:8080',
+            host: 'localhost:8080',
             baseURL: 'localhost:8080/api/v1',
         });
         const config = handler.getUrlConfig();
@@ -186,7 +186,7 @@ describe('normalizeUrlConfig — host + baseURL 충돌 해소', () => {
     // 179번째 줄: baseURL.includes(host) → host 무시 (케이스 B)
     it('baseURL 안에 host가 포함된 full URL 형태면 host를 무시해야 한다 (케이스 B)', () => {
         const handler = new ApiHandler({
-            host:    'api.example.com',
+            host: 'api.example.com',
             baseURL: 'https://api.example.com/v1',
         });
         const config = handler.getUrlConfig();
@@ -195,23 +195,29 @@ describe('normalizeUrlConfig — host + baseURL 충돌 해소', () => {
     });
 
     it('host/baseURL 완전 무관 입력 시 ERR.URL_CONFLICT를 throw해야 한다 (케이스 C)', () => {
-        expect(() => new ApiHandler({
-            host:    'api.example.com',
-            baseURL: 'other-server.com/api',
-        })).toThrow(/충돌/);
+        expect(
+            () =>
+                new ApiHandler({
+                    host: 'api.example.com',
+                    baseURL: 'other-server.com/api',
+                })
+        ).toThrow(/충돌/);
     });
 
     it('유효하지 않은 protocol 값 전달 시 PROTOCOL_INVALID 에러를 throw해야 한다', () => {
-        expect(() => new ApiHandler({
-            host:     'api.example.com',
-            protocol: 'FTP',
-        })).toThrow(/유효하지 않은/);
+        expect(
+            () =>
+                new ApiHandler({
+                    host: 'api.example.com',
+                    protocol: 'FTP',
+                })
+        ).toThrow(/유효하지 않은/);
     });
 
     it('env 값이 전달되면 DEFAULT_PROTOCOL[env]로 프로토콜이 결정되어야 한다', () => {
         const handler = new ApiHandler({
             host: 'api.example.com',
-            env:  'production',
+            env: 'production',
         });
         expect(handler.getUrlConfig().protocol).toBe('https://');
     });
