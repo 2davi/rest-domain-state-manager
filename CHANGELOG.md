@@ -1,3 +1,15 @@
+## [1.1.0](https://github.com/2davi/rest-domain-state-manager/compare/v1.0.2...v1.1.0) (2026-04-01)
+
+### ✨ Features
+
+* **domain:** add [#idempotency](https://github.com/2davi/rest-domain-state-manager/issues/idempotency)Key private field to DomainState ([1abd4d2](https://github.com/2davi/rest-domain-state-manager/commit/1abd4d2e12fad41744e6b66006afe3eac46d0093)), closes [#idempotencyKey](https://github.com/2davi/rest-domain-state-manager/issues/idempotencyKey)
+* **domain:** implement Idempotency-Key header injection in save() ([72a8520](https://github.com/2davi/rest-domain-state-manager/commit/72a8520d847893b8989cb8a638591abcdd3f54f8)), closes [#idempotencyKey](https://github.com/2davi/rest-domain-state-manager/issues/idempotencyKey) [#idempotencyKey](https://github.com/2davi/rest-domain-state-manager/issues/idempotencyKey) [#idempotencyKey](https://github.com/2davi/rest-domain-state-manager/issues/idempotencyKey) [#idempotencyKey](https://github.com/2davi/rest-domain-state-manager/issues/idempotencyKey) [#idempotencyKey](https://github.com/2davi/rest-domain-state-manager/issues/idempotencyKey)
+* **network:** add idempotent option to ApiHandler constructor ([2280888](https://github.com/2davi/rest-domain-state-manager/commit/22808881d51b29a68a7b6925304d73a88d360568))
+
+### 🐛 Bug Fixes
+
+* **webdoc:** playgound components need to use shallowref on Reference of DomainState Objects. ([be281c7](https://github.com/2davi/rest-domain-state-manager/commit/be281c7e7f19ee36f2f73fc15c35538c33f092f5))
+
 ## [1.0.2](https://github.com/2davi/rest-domain-state-manager/compare/v1.0.1...v1.0.2) (2026-03-31)
 
 ### 🐛 Bug Fixes
