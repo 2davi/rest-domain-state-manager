@@ -379,6 +379,20 @@ describe('CollectionBinder — 선택 제어', () => {
             true
         );
     });
+
+    it('[TC-UI-043] getCheckedItems()는 체크된 행의 DomainState 목록을 반환해야 한다', () => {
+        setupDOM();
+        const collection = createTestCollection([{ certId: 1 }, { certId: 2 }]);
+        const containerEl = document.getElementById('grid');
+        const { selectAll, getCheckedItems } = createCollectionBinder(collection, containerEl, {
+            layout: TestLayout, sources: {},
+        });
+
+        selectAll(true);
+        const checked = getCheckedItems();
+        expect(checked).toHaveLength(2);
+        expect(checked[0]).toBeInstanceOf(DomainState);
+    });
 });
 
 // ────────────────────────────────────────────────────────────────────────────

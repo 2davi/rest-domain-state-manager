@@ -21,6 +21,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { DomainState } from '../../src/domain/DomainState.js';
 import { ApiHandler } from '../../src/network/api-handler.js';
 import { DomainPipeline } from '../../src/domain/DomainPipeline.js';
+import { terminateDiffWorker } from '../../src/workers/diff-worker-client.js';
 
 // ── 전역 설정 ─────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ beforeEach(() => {
 
 afterEach(() => {
     vi.restoreAllMocks();
+    terminateDiffWorker(); // Worker 정리 + terminateDiffWorker 함수 커버
 });
 
 // ── 헬퍼 ─────────────────────────────────────────────────────────────────────
