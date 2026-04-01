@@ -46,7 +46,7 @@
  * - 필드별 유효성 검사 함수(`validators`) 중앙 선언
  * - 필드별 타입 변환 함수(`transformers`) 중앙 선언
  * - GET 응답과 VO 스키마 일치 여부 검증(`checkSchema()`)
- * 
+ *
  * @module domain/DomainVO
  * @see {@link module:domain/DomainState DomainState}
  */
