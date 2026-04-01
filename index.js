@@ -11,6 +11,8 @@
  *   DomainCollection  1:N 배열 상태 컨테이너 + saveAll({ strategy: 'batch' })
  *   DomainPipeline    병렬 fetch + 순차 after() 체이닝
  *   DomainRenderer    DOM 렌더링 플러그인 (DomainState.use(DomainRenderer)로 설치)
+ *   UIComposer        HTML <template> 기반 그리드/폼 바인딩 플러그인
+ *   UILayout          UI 계약 선언 베이스 클래스 (templateSelector, columns)
  *
  * ── React 어댑터 (서브패스) ───────────────────────────────────────────────────
  *   import { useDomainState } from '@2davi/rest-domain-state-manager/adapters/react';
@@ -28,6 +30,8 @@ import { ApiHandler } from './src/network/api-handler.js';
 import { DomainRenderer } from './src/plugins/domain-renderer/DomainRenderer.js';
 import { FormBinder } from './src/plugins/form-binder/FormBinder.js';
 import { closeDebugChannel } from './src/debug/debug-channel.js';
+import { UIComposer } from './src/ui/UIComposer.js';
+import { UILayout }   from './src/ui/UILayout.js';
 
 DomainState.configure({
     // index.js가 두 모듈을 import하는 유일한 파일 (Composition Root).
@@ -44,5 +48,7 @@ export {
     DomainPipeline,
     DomainRenderer,
     FormBinder,
+    UIComposer,
+    UILayout,
     closeDebugChannel,
 };
