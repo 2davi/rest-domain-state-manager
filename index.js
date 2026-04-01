@@ -5,11 +5,12 @@
  * 외부 개발자는 이 파일만 알면 된다.
  *
  * ── 내보내는 것 ──────────────────────────────────────────────────────────────
- *   ApiHandler     HTTP 전송 레이어 클래스 (인스턴스 생성은 소비자가 담당)
- *   DomainState    팩토리 3종 + save / remove / log / openDebugger
- *   DomainVO       도메인 구조 선언 베이스 클래스
- *   DomainPipeline 병렬 fetch + 순차 after() 체이닝
- *   DomainRenderer DOM 렌더링 플러그인 (DomainState.use(DomainRenderer)로 설치)
+ *   ApiHandler        HTTP 전송 레이어 클래스 (인스턴스 생성은 소비자가 담당)
+ *   DomainState       팩토리 3종 + save / remove / log / openDebugger
+ *   DomainVO          도메인 구조 선언 베이스 클래스 (선택적 레이어)
+ *   DomainCollection  1:N 배열 상태 컨테이너 + saveAll({ strategy: 'batch' })
+ *   DomainPipeline    병렬 fetch + 순차 after() 체이닝
+ *   DomainRenderer    DOM 렌더링 플러그인 (DomainState.use(DomainRenderer)로 설치)
  *
  * ── React 어댑터 (서브패스) ───────────────────────────────────────────────────
  *   import { useDomainState } from '@2davi/rest-domain-state-manager/adapters/react';
@@ -22,6 +23,7 @@
 import { DomainPipeline } from './src/domain/DomainPipeline.js';
 import { DomainState } from './src/domain/DomainState.js';
 import { DomainVO } from './src/domain/DomainVO.js';
+import { DomainCollection } from './src/domain/DomainCollection.js';
 import { ApiHandler } from './src/network/api-handler.js';
 import { DomainRenderer } from './src/plugins/domain-renderer/DomainRenderer.js';
 import { FormBinder } from './src/plugins/form-binder/FormBinder.js';
@@ -38,6 +40,7 @@ export {
     ApiHandler,
     DomainState,
     DomainVO,
+    DomainCollection,
     DomainPipeline,
     DomainRenderer,
     FormBinder,
