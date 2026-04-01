@@ -121,10 +121,10 @@ modern-quickstart.md 구성
 
 기존 Playground 컴포넌트를 두 버전으로 분리한다:
 
-| 컴포넌트 | 트랙 | 보여주는 것 |
-|---|---|---|
+| 컴포넌트                    | 트랙      | 보여주는 것                                              |
+| --------------------------- | --------- | -------------------------------------------------------- |
 | `DomainStatePlayground.vue` | 모던 트랙 | `fromJSON()` + `data` 조작 + `getSnapshot()` 실시간 표시 |
-| `CollectionPlayground.vue` | SI 트랙 | `DomainCollection` + `addEmpty()` + `removeChecked()` |
+| `CollectionPlayground.vue`  | SI 트랙   | `DomainCollection` + `addEmpty()` + `removeChecked()`    |
 
 문서 페이지 내에서 Form을 수정하면 BroadcastChannel 디버그 패널이 즉각 반응하는 시각적 데모는 유지한다.
 
@@ -134,14 +134,14 @@ modern-quickstart.md 구성
 
 ### `README.md` — 전면 개편
 
-| 섹션 | 변경 내용 |
-|---|---|
-| 최상단 | Two-Track 즉시 분기 문구 추가 |
-| SI Quick Start | 새 코드 예제로 교체 (`<template>` + `bindCollection()`) |
-| 모던 Quick Start | `useDomainState()` 예제 유지, trackingMode 옵션 추가 소개 |
-| DomainVO 소개 | "선택적 레이어" 명시. 기본 예제에서 VO 제거. |
-| API 요약 테이블 | `DomainCollection`, `UIComposer`, `UILayout`, `trackingMode` 추가 |
-| CSRF / Idempotency | 초기화 방법 및 사용 시나리오 섹션 추가 |
+| 섹션               | 변경 내용                                                         |
+| ------------------ | ----------------------------------------------------------------- |
+| 최상단             | Two-Track 즉시 분기 문구 추가                                     |
+| SI Quick Start     | 새 코드 예제로 교체 (`<template>` + `bindCollection()`)           |
+| 모던 Quick Start   | `useDomainState()` 예제 유지, trackingMode 옵션 추가 소개         |
+| DomainVO 소개      | "선택적 레이어" 명시. 기본 예제에서 VO 제거.                      |
+| API 요약 테이블    | `DomainCollection`, `UIComposer`, `UILayout`, `trackingMode` 추가 |
+| CSRF / Idempotency | 초기화 방법 및 사용 시나리오 섹션 추가                            |
 
 ### `docs/guide/` — 신규 파일 생성
 
@@ -240,20 +240,20 @@ FormBinder 사용 중 deprecated 경고 콘솔에서 확인
 
 ### 수정/생성 파일 목록
 
-| 파일 | 변경 종류 | 변경 내용 |
-|---|---|---|
-| `README.md` | **수정** | Two-Track 분기 구조 전면 개편, 신규 API 추가, DomainVO 선택적 포지셔닝 |
-| `docs/index.md` | **수정** | 랜딩 Two-Track 즉시 분기 추가 |
-| `docs/guide/si-quickstart.md` | **신규 생성** | JSP 트랙 Quick Start |
-| `docs/guide/modern-quickstart.md` | **신규 생성** | React/Vue 트랙 Quick Start |
-| `docs/guide/domain-collection.md` | **신규 생성** | DomainCollection 사용 가이드 |
-| `docs/guide/ui-composer.md` | **신규 생성** | UIComposer + UILayout + CollectionBinder 사용 가이드 |
-| `docs/guide/tracking-modes.md` | **신규 생성** | realtime vs lazy 비교 및 선택 기준 |
-| `docs/guide/idempotency.md` | **신규 생성** | Idempotency-Key 활성화 및 재시도 패턴 |
-| `docs/guide/migration-v2.md` | **신규 생성** | FormBinder/DomainRenderer → UIComposer 전환 가이드 |
-| `docs/api/` | **재생성** | TypeDoc `npm run docs:api` 실행 (v1.5.x JSDoc 기준) |
-| `.vitepress/config.js` | **수정** | 사이드바 구조 갱신 |
-| `docs/.vitepress/components/` | **수정** | DomainStatePlayground.vue, CollectionPlayground.vue 갱신 |
+| 파일                              | 변경 종류     | 변경 내용                                                              |
+| --------------------------------- | ------------- | ---------------------------------------------------------------------- |
+| `README.md`                       | **수정**      | Two-Track 분기 구조 전면 개편, 신규 API 추가, DomainVO 선택적 포지셔닝 |
+| `docs/index.md`                   | **수정**      | 랜딩 Two-Track 즉시 분기 추가                                          |
+| `docs/guide/si-quickstart.md`     | **신규 생성** | JSP 트랙 Quick Start                                                   |
+| `docs/guide/modern-quickstart.md` | **신규 생성** | React/Vue 트랙 Quick Start                                             |
+| `docs/guide/domain-collection.md` | **신규 생성** | DomainCollection 사용 가이드                                           |
+| `docs/guide/ui-composer.md`       | **신규 생성** | UIComposer + UILayout + CollectionBinder 사용 가이드                   |
+| `docs/guide/tracking-modes.md`    | **신규 생성** | realtime vs lazy 비교 및 선택 기준                                     |
+| `docs/guide/idempotency.md`       | **신규 생성** | Idempotency-Key 활성화 및 재시도 패턴                                  |
+| `docs/guide/migration-v2.md`      | **신규 생성** | FormBinder/DomainRenderer → UIComposer 전환 가이드                     |
+| `docs/api/`                       | **재생성**    | TypeDoc `npm run docs:api` 실행 (v1.5.x JSDoc 기준)                    |
+| `.vitepress/config.js`            | **수정**      | 사이드바 구조 갱신                                                     |
+| `docs/.vitepress/components/`     | **수정**      | DomainStatePlayground.vue, CollectionPlayground.vue 갱신               |
 
 ### Feature 브랜치명
 
@@ -314,14 +314,14 @@ docs: update VitePress sidebar and Interactive Playground components
 
 ## (f) 검증 기준 (Definition of Done)
 
-| 항목 | 기준 |
-|---|---|
-| `npm run docs:build` | 에러 없이 완료 |
-| TypeDoc 빌드 | DomainCollection, UIComposer, UILayout 페이지 생성 확인 |
-| README 첫 화면 | Two-Track 분기 문구 노출 확인 |
-| SI Quick Start | JSP 예제 코드 복사 후 10분 내 동작 가능 수준 |
-| 모던 Quick Start | React 예제 코드 복사 후 5분 내 동작 가능 수준 |
-| DomainVO 포지셔닝 | README 기본 예제에서 VO 없는 흐름 우선 표시 확인 |
-| migration 문서 | FormBinder Before → UIComposer After 코드 비교 존재 확인 |
-| Playground | DomainStatePlayground, CollectionPlayground 정상 동작 확인 |
-| 깨진 링크 | `vitepress build` 후 dead link 0건 확인 |
+| 항목                 | 기준                                                       |
+| -------------------- | ---------------------------------------------------------- |
+| `npm run docs:build` | 에러 없이 완료                                             |
+| TypeDoc 빌드         | DomainCollection, UIComposer, UILayout 페이지 생성 확인    |
+| README 첫 화면       | Two-Track 분기 문구 노출 확인                              |
+| SI Quick Start       | JSP 예제 코드 복사 후 10분 내 동작 가능 수준               |
+| 모던 Quick Start     | React 예제 코드 복사 후 5분 내 동작 가능 수준              |
+| DomainVO 포지셔닝    | README 기본 예제에서 VO 없는 흐름 우선 표시 확인           |
+| migration 문서       | FormBinder Before → UIComposer After 코드 비교 존재 확인   |
+| Playground           | DomainStatePlayground, CollectionPlayground 정상 동작 확인 |
+| 깨진 링크            | `vitepress build` 후 dead link 0건 확인                    |
