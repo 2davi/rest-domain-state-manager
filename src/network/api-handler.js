@@ -37,6 +37,15 @@
  * user.data.name = 'Davi';
  * await user.save('/api/users/user_001');
  *
+ * @example <caption>Idempotency-Key 활성화 (타임아웃 재시도 안전)</caption>
+ * const api = new ApiHandler({ host: 'api.example.com', idempotent: true });
+ * try {
+ *     await user.save('/api/users/1');
+ * } catch (err) {
+ *     // 네트워크 타임아웃 후 재시도: 동일 Idempotency-Key UUID가 자동 재사용된다.
+ *     await user.save('/api/users/1');
+ * }
+ *
  * @example <caption>다중 백엔드 서버</caption>
  * const userApi  = new ApiHandler({ host: 'user-service.com', env: 'production' });
  * const orderApi = new ApiHandler({ host: 'order-service.com', env: 'production' });
@@ -91,6 +100,32 @@ import { ERR } from '../constants/error.messages.js';
  * @typedef {import('../core/url-resolver.js').UrlConfig} UrlConfig
  */
 
+/**
+ * `ApiHandler` 생성자에 전달하는 전체 설정 객체.
+ *
+ * URL 설정(`UrlConfig`)의 모든 프로퍼티를 그대로 수용하며,
+ * `ApiHandler` 전용 동작 옵션인 `idempotent`를 추가한다.
+ * `UrlConfig` 필드(`protocol`, `host`, `basePath`, `baseURL`, `env`, `debug`)의
+ * 상세 내용은 `url-resolver.js`의 `UrlConfig` typedef를 참조한다.
+ *
+ * @typedef {import('../core/url-resolver.js').UrlConfig & { idempotent?: boolean }} ApiHandlerConfig
+ *
+ * ---
+ *
+ * **`idempotent` 프로퍼티:**
+ *
+ * `true`이면 `DomainState.save()` / `remove()` 호출 시 `Idempotency-Key` 헤더를
+ * 자동으로 발급하고 관리한다.
+ *
+ * 네트워크 타임아웃으로 클라이언트가 응답을 받지 못했을 때,
+ * 소비자 `catch` 블록에서 `save()`를 재호출하면 동일 UUID가 자동으로 재사용된다.
+ * 서버가 이 UUID를 기준으로 중복 처리를 방지할 수 있다.
+ *
+ * 기본값 `false` — 기존 소비자 코드와 완전 하위 호환.
+ *
+ * @see {@link https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/ IETF Idempotency-Key HTTP Header Field (draft)}
+ */
+
 // ════════════════════════════════════════════════════════════════════════════════
 // 모듈 상수
 // ════════════════════════════════════════════════════════════════════════════════
@@ -137,8 +172,12 @@ class ApiHandler {
      * `normalizeUrlConfig(urlConfig)`를 즉시 실행하여 URL 설정을 정규화하고
      * `this._urlConfig`에 캐싱한다. 이후 모든 요청은 이 캐싱된 설정을 기반으로 한다.
      *
-     * @param {UrlConfig} [urlConfig={}]
-     *   URL 설정 객체. `host` 또는 `baseURL` 중 하나를 포함해야 한다.
+     * @param {ApiHandlerConfig} [urlConfig={}]
+     *   URL 및 `ApiHandler` 동작 설정 객체.
+     *   URL 관련 필드(`host`, `baseURL`, `protocol` 등)는 `UrlConfig` 참조.
+     *   `idempotent: true`이면 `DomainState.save()` / `remove()` 호출 시
+     *   `Idempotency-Key` 헤더를 자동으로 발급하고 관리한다.
+     *
      * @throws {Error} `urlConfig`의 `protocol` 값이 유효하지 않은 경우
      * @throws {Error} `host`와 `baseURL`이 동시에 입력되어 충돌 해소가 불가능한 경우
      *
@@ -147,6 +186,9 @@ class ApiHandler {
      *
      * @example <caption>운영 환경 (HTTPS 자동 선택)</caption>
      * const api = new ApiHandler({ host: 'api.example.com', env: 'production' });
+     *
+     * @example <caption>Idempotency-Key 활성화</caption>
+     * const api = new ApiHandler({ host: 'api.example.com', idempotent: true });
      *
      * @example <caption>통합 문자열형 baseURL</caption>
      * const api = new ApiHandler({ baseURL: 'localhost:8080/app/api', debug: true });
@@ -174,6 +216,20 @@ class ApiHandler {
          * @type {Record<string, string>}
          */
         this._headers = { 'Content-Type': 'application/json' };
+
+        /**
+         * 멱등성 키(Idempotency-Key) 자동 발급 여부.
+         *
+         * `true`이면 `DomainState.save()` / `remove()` 호출 시
+         * `Idempotency-Key` 헤더를 자동으로 발급하고 관리한다.
+         *
+         * `DomainState.save()` 내부에서 이 플래그를 직접 참조한다.
+         * `false`(기본값)이면 Idempotency-Key 관련 로직이 완전히 건너뛰어져
+         * 기존 소비자 코드와 완전히 하위 호환된다.
+         *
+         * @type {boolean}
+         */
+        this._idempotent = urlConfig.idempotent ?? false;
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -347,6 +403,7 @@ class ApiHandler {
      * ```
      * { ...this._headers, ...options.headers }
      * ```
+     * `DomainState.save()`에서 전달하는 `Idempotency-Key` 헤더도 이 병합을 통해 주입된다.
      *
      * @param {string}      url            - `buildURL()`이 반환한 완성된 요청 URL
      * @param {RequestInit} [options={}]   - `fetch()` 두 번째 인자와 동일. `method`, `body`, `headers` 포함.
@@ -361,10 +418,11 @@ class ApiHandler {
      *     body:   JSON.stringify({ name: 'Davi' }),
      * });
      *
-     * @example <caption>DomainState.save() 내부에서의 PATCH 호출</caption>
+     * @example <caption>DomainState.save() 내부에서의 PATCH 호출 (Idempotency-Key 포함)</caption>
      * await this._handler._fetch(url, {
-     *     method: 'PATCH',
-     *     body:   JSON.stringify([{ op: 'replace', path: '/name', value: 'Davi' }]),
+     *     method:  'PATCH',
+     *     body:    JSON.stringify([{ op: 'replace', path: '/name', value: 'Davi' }]),
+     *     headers: { 'Idempotency-Key': 'a1b2c3d4-...' },
      * });
      *
      * @example <caption>DomainState.remove() 내부에서의 DELETE 호출</caption>
