@@ -60,7 +60,7 @@
 
 import { DomainState } from './DomainState.js';
 import { normalizeUrlConfig } from '../core/url-resolver.js';
-import { ERR }         from '../constants/error.messages.js';
+import { ERR } from '../constants/error.messages.js';
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 타입 정의
@@ -111,7 +111,6 @@ import { ERR }         from '../constants/error.messages.js';
 // ════════════════════════════════════════════════════════════════════════════════
 
 export class DomainCollection {
-
     // ════════════════════════════════════════════════════════════════════════════
     // 생성자 (직접 호출 금지 — 팩토리 메서드 사용)
     // ════════════════════════════════════════════════════════════════════════════
@@ -140,7 +139,9 @@ export class DomainCollection {
          * @type {import('../core/url-resolver.js').NormalizedUrlConfig | null}
          */
         this._urlConfig = options.urlConfig
-            ? normalizeUrlConfig(/** @type {import('../core/url-resolver.js').UrlConfig} */ (options.urlConfig))
+            ? normalizeUrlConfig(
+                  /** @type {import('../core/url-resolver.js').UrlConfig} */ (options.urlConfig)
+              )
             : null;
 
         /**
@@ -255,9 +256,9 @@ export class DomainCollection {
             const itemJson = JSON.stringify(item);
             const state = DomainState.fromJSON(itemJson, handler, {
                 urlConfig: collection._urlConfig,
-                debug:        options.debug    ?? false,
+                debug: options.debug ?? false,
                 trackingMode: options.trackingMode ?? 'realtime',
-                itemKey:      options.itemKey   ?? undefined,
+                itemKey: options.itemKey ?? undefined,
             });
             // fromJSONArray로 생성된 개별 항목은 isNew: false (서버 데이터 기반)
             collection._items.push(state);
@@ -296,10 +297,10 @@ export class DomainCollection {
     add(initialData = {}) {
         const itemJson = JSON.stringify(initialData);
         const state = DomainState.fromJSON(itemJson, this._handler, {
-            urlConfig:    this._urlConfig,
-            debug:        this._debug,
+            urlConfig: this._urlConfig,
+            debug: this._debug,
             trackingMode: this._trackingMode,
-            itemKey:      this._itemKey,
+            itemKey: this._itemKey,
         });
         // 새로 추가된 항목은 서버에 아직 존재하지 않으므로 isNew: true
         state._isNew = true;
@@ -484,10 +485,10 @@ export class DomainCollection {
         // 스냅샷은 각 DomainState.save()와 동일한 방식으로 구성한다.
         const isNewBefore = this._isNew;
         const snapshots = this._items.map((state) => ({
-            data:        structuredClone(state._getTarget()),
-            changeLog:   state._getChangeLog(),
+            data: structuredClone(state._getTarget()),
+            changeLog: state._getChangeLog(),
             dirtyFields: state._getDirtyFields(),
-            isNew:       state._isNew,
+            isNew: state._isNew,
         }));
         // ─────────────────────────────────────────────────────────────────────
 
@@ -532,7 +533,7 @@ export class DomainCollection {
 
             for (let i = 0; i < this._items.length; i++) {
                 const state = this._items[i];
-                const snap  = snapshots[i];
+                const snap = snapshots[i];
                 if (!snap) continue; // 방어: 스냅샷 수보다 항목이 많아진 경우
 
                 state._restoreTarget(snap.data);

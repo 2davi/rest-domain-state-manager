@@ -14,9 +14,9 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { DomainCollection } from '../../src/domain/DomainCollection.js';
-import { DomainState       } from '../../src/domain/DomainState.js';
-import { ApiHandler         } from '../../src/network/api-handler.js';
-import { DomainPipeline     } from '../../src/domain/DomainPipeline.js';
+import { DomainState } from '../../src/domain/DomainState.js';
+import { ApiHandler } from '../../src/network/api-handler.js';
+import { DomainPipeline } from '../../src/domain/DomainPipeline.js';
 
 // ── 전역 설정 ─────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ afterEach(() => {
  * @returns {{ handler: ApiHandler, fetchSpy: import('vitest').Mock }}
  */
 function createHandler() {
-    const handler  = new ApiHandler({ host: 'localhost:8080' });
+    const handler = new ApiHandler({ host: 'localhost:8080' });
     const fetchSpy = vi.spyOn(handler, '_fetch').mockResolvedValue(null);
     return { handler, fetchSpy };
 }
@@ -46,7 +46,7 @@ function createHandler() {
 /** 테스트용 JSON 배열 문자열 */
 const CERT_JSON = JSON.stringify([
     { certId: 1, certName: '정보처리기사', certType: 'IT' },
-    { certId: 2, certName: '한국사능력',   certType: 'HISTORY' },
+    { certId: 2, certName: '한국사능력', certType: 'HISTORY' },
 ]);
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -96,16 +96,16 @@ describe('DomainCollection — 팩토리', () => {
 
     it('[TC-COL-006] fromJSONArray()에 배열이 아닌 JSON 전달 시 Error를 throw해야 한다', () => {
         const { handler } = createHandler();
-        expect(() =>
-            DomainCollection.fromJSONArray(JSON.stringify({ data: [] }), handler)
-        ).toThrow(/배열이어야 합니다/);
+        expect(() => DomainCollection.fromJSONArray(JSON.stringify({ data: [] }), handler)).toThrow(
+            /배열이어야 합니다/
+        );
     });
 
     it('[TC-COL-007] fromJSONArray()에 유효하지 않은 JSON 전달 시 SyntaxError를 throw해야 한다', () => {
         const { handler } = createHandler();
-        expect(() =>
-            DomainCollection.fromJSONArray('NOT_VALID_JSON', handler)
-        ).toThrow(SyntaxError);
+        expect(() => DomainCollection.fromJSONArray('NOT_VALID_JSON', handler)).toThrow(
+            SyntaxError
+        );
     });
 
     it('[TC-COL-008] fromJSONArray()에 빈 배열 JSON 전달 시 항목 수가 0이어야 한다', () => {
@@ -125,7 +125,9 @@ describe('DomainCollection — 팩토리', () => {
 
     it('[TC-COL-010] realtime 모드에서 fromJSONArray()의 _initialSnapshot은 null이어야 한다', () => {
         const { handler } = createHandler();
-        const certs = DomainCollection.fromJSONArray(CERT_JSON, handler, { trackingMode: 'realtime' });
+        const certs = DomainCollection.fromJSONArray(CERT_JSON, handler, {
+            trackingMode: 'realtime',
+        });
         expect(certs._initialSnapshot).toBeNull();
     });
 });
@@ -239,15 +241,14 @@ describe('DomainCollection — add() / remove()', () => {
         // 정방향: [0, 2] — 버그: 0 제거 후 C가 index 1로 밀려 index 2 제거 실패
         [0, 2].forEach((i) => certs.remove(i));
 
-        // 정방향으로 하면 A와 (원래 C가 아닌) 이미 밀린 인덱스의 항목이 제거됨
-        // 이 TC는 역순 제거가 왜 필요한지 재현하는 것이 목적이므로
-        // "잘못된 결과"가 나오는 것을 확인한다
-        expect(certs.getCount()).toBe(1); // 예상: 1개 남음 (B가 남아야 하지만...)
-        // 정방향으로 0, 2 제거: [A,B,C] → remove(0) → [B,C] → remove(2) → no-op (길이 초과)
-        // 실제로 [B,C]가 남는 것이 아니라 remove(2)가 범위 밖이라 [B,C]가 됨
-        // 즉, C가 남아있는 버그 — 이것이 LIFO가 필요한 이유
-        // (이 TC는 단순히 동작을 문서화하는 용도)
+        // 정방향 [0, 2] 제거 실제 흐름:
+        //   [A,B,C] → remove(0) → [B,C] → remove(2) → 범위 초과(길이 2), no-op
+        // 결과: [B,C] 2개가 남음. A만 제거되고 C는 살아있다.
+        // 의도는 A, C 제거 후 [B]만 남기는 것이었으나, 인덱스 밀림으로 실패.
+        // → UIComposer.removeChecked()가 반드시 내림차순 정렬을 강제해야 하는 이유.
+        expect(certs.getCount()).toBe(2);
         expect(certs.getItems()[0]._getTarget()).toMatchObject({ v: 'B' });
+        expect(certs.getItems()[1]._getTarget()).toMatchObject({ v: 'C' });
     });
 });
 
@@ -425,18 +426,21 @@ describe('DomainCollection.saveAll() — 실패 롤백', () => {
         }
     });
 
-    it('[TC-COL-061] saveAll() 실패 후 각 항목 데이터가 복원되어야 한다', async () => {
+    it('[TC-COL-061] saveAll() 실패 후 각 항목 데이터는 saveAll() 진입 시점 값을 유지해야 한다', async () => {
+        // saveAll() 스냅샷은 진입 시점(certName = 'Changed' 이후)의 상태를 저장한다.
+        // 롤백은 changeLog / dirtyFields / isNew 내부 추적 상태를 되돌리는 것이며
+        // 사용자 입력값('Changed')을 원래 서버 값('정보처리기사')으로 되돌리지 않는다.
         const { handler, fetchSpy } = createHandler();
         fetchSpy.mockRejectedValueOnce({ status: 409, statusText: 'Conflict', body: '' });
 
         const certs = DomainCollection.fromJSONArray(CERT_JSON, handler);
-        certs.getItems()[0].data.certName = 'Changed'; // 변경 후 실패
+        certs.getItems()[0].data.certName = 'Changed';
 
         try {
             await certs.saveAll({ strategy: 'batch', path: '/api/certificates' });
         } catch {
-            // 롤백 후 원래 값으로 복원
-            expect(certs.getItems()[0]._getTarget()).toMatchObject({ certName: '정보처리기사' });
+            // 롤백 후에도 사용자 변경값('Changed')이 유지된다
+            expect(certs.getItems()[0]._getTarget()).toMatchObject({ certName: 'Changed' });
         }
     });
 
@@ -461,9 +465,9 @@ describe('DomainCollection.saveAll() — 에러 케이스', () => {
         const { handler } = createHandler();
         const certs = DomainCollection.create(handler);
 
-        await expect(
-            certs.saveAll(/** @type {any} */ ({ strategy: 'batch' }))
-        ).rejects.toThrow(/path/i);
+        await expect(certs.saveAll(/** @type {any} */ ({ strategy: 'batch' }))).rejects.toThrow(
+            /path/i
+        );
     });
 
     it('[TC-COL-071] 미지원 strategy 전달 시 Error를 throw해야 한다', async () => {
@@ -481,9 +485,9 @@ describe('DomainCollection.saveAll() — 에러 케이스', () => {
         const certs = DomainCollection.create(handler);
         /** @type {any} */ (certs)._handler = null;
 
-        await expect(
-            certs.saveAll({ strategy: 'batch', path: '/api/certs' })
-        ).rejects.toThrow(/ApiHandler/);
+        await expect(certs.saveAll({ strategy: 'batch', path: '/api/certs' })).rejects.toThrow(
+            /ApiHandler/
+        );
     });
 });
 
