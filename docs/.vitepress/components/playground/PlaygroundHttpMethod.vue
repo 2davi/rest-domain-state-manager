@@ -69,6 +69,9 @@ function initState() {
     stateRef.value = DomainState.fromJSON(JSON.stringify(data), apiRef.value, {
         isNew: isNewMode.value,
     })
+    //DEBUG
+    stateRef.value._isNew = isNewMode.value;
+    //console.debug("[initState()] stateRef.value._isNew = ", stateRef.value._isNew);
     Object.assign(form, stateRef.value._getTarget())
     unsub = stateRef.value.subscribe(syncDisplay)
     syncDisplay()
@@ -134,10 +137,15 @@ function doReset() {
 
 function toggleMode() {
     isNewMode.value = !isNewMode.value
+    stateRef.value._isNew = isNewMode.value;
+    //DEBUG
+    //console.debug("stateRef.value._isNew = ", stateRef.value._isNew);
     initState()
 }
 
 const predicted = computed(() => {
+    //DEBUG
+    //console.debug("[predicted] stateRef.value._isNew = ", stateRef.value._isNew);
     if (display.isNew) return 'POST'
     if (display.dirtyFields.length === 0) return 'PUT'
     if (display.dirtyRatio >= 0.7) return 'PUT'
@@ -174,7 +182,7 @@ const reasonText   = computed(() => {
                     <span class="pg-label">도메인 데이터</span>
                     <div class="pg-toggle">
                         <button :class="['tgl-btn', !isNewMode && 'on']" @click="isNewMode && toggleMode()">기존 (fromJSON)</button>
-                        <button :class="['tgl-btn', isNewMode && 'on']" @click="!isNewMode && toggleMode()">신규 (fromVO)</button>
+                        <button :class="['tgl-btn', isNewMode && 'on']" @click="!isNewMode && toggleMode()">신규 (_isNew)</button>
                     </div>
                 </div>
 
