@@ -6,7 +6,7 @@ export default defineConfig({
     title:       'DSM',
     description: 'REST 도메인 상태 관리 라이브러리 — Proxy 기반 자동 HTTP 분기 엔진',
     base:        '/rest-domain-state-manager/',
-    cleanUrls: false,
+    cleanUrls: true,
     
     head: [
         ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
