@@ -50,7 +50,7 @@ export default defineConfig({
         // .vitepress 폴더 자체를 정적 자산 폴더로 사용 (네 고집대로)
         // __dirname 대신 ESM 표준인 import.meta.url 을 사용해라.
         // ────────────────────────────────────────────────────────────
-        publicDir: fileURLToPath(new URL('.', import.meta.url)),
+        //publicDir: fileURLToPath(new URL('.', import.meta.url)),
     },
 
     locales: {
@@ -105,12 +105,12 @@ export default defineConfig({
                 {
                     text: 'Architecture 🏗', collapsed: true,
                     items: [
-                        { text: '시스템 개요',          link: '/architecture/overview' },
-                        { text: 'Proxy 엔진 심층 분석', link: '/architecture/proxy-engine' },
+                        { text: '시스템 개요',           link: '/architecture/overview' },
+                        { text: 'Proxy 엔진 심층 분석',  link: '/architecture/proxy-engine' },
                         { text: '상태 생명주기',         link: '/architecture/state-lifecycle' },
                         { text: 'HTTP 자동 라우팅',      link: '/architecture/http-routing' },
                         { text: '디버그 채널 프로토콜',  link: '/architecture/broadcast-channel' },
-                        { text: 'V8 최적화 전략 ⭐',    link: '/architecture/v8-optimization' },
+                        { text: 'V8 최적화 전략',        link: '/architecture/v8-optimization' },
                     ],
                 },
                 {
@@ -122,20 +122,20 @@ export default defineConfig({
                 {
                     text: 'Decision Log 📋', collapsed: true,
                     items: [
-                        { text: '전체 결정 타임라인',       link: '/decision-log/index' },
-                        { text: 'ARD-0000 — 아키텍처 진단', link: '/decision-log/ard-0000' },
-                        { text: 'ARD-0001 — V8 최적화 정렬', link: '/decision-log/ard-0001' },
-                        { text: 'IMPL-001 — Dirty Checking', link: '/decision-log/impl-dirty-fields' },
-                        { text: 'IMPL-002 — Optimistic Rollback', link: '/decision-log/impl-optimistic-rollback' },
-                        { text: 'IMPL-003 — Microtask Batching', link: '/decision-log/impl-microtask-batching' },
-                        { text: 'IMPL-004 — Src Layout', link: '/decision-log/impl-src-layout' },
-                        { text: 'IMPL-005 — CI/CD Pipeline', link: '/decision-log/impl-cicd-pipeline' },
+                        { text: '전체 결정 타임라인',               link: '/decision-log/index' },
+                        { text: 'ARD-0000 — 아키텍처 진단',         link: '/decision-log/ard-0000' },
+                        { text: 'ARD-0001 — V8 최적화 정렬',        link: '/decision-log/ard-0001' },
+                        { text: 'IMPL-001 — Dirty Checking',        link: '/decision-log/impl-dirty-fields' },
+                        { text: 'IMPL-002 — Optimistic Rollback',   link: '/decision-log/impl-optimistic-rollback' },
+                        { text: 'IMPL-003 — Microtask Batching',    link: '/decision-log/impl-microtask-batching' },
+                        { text: 'IMPL-004 — Src Layout',            link: '/decision-log/impl-src-layout' },
+                        { text: 'IMPL-005 — CI/CD Pipeline',        link: '/decision-log/impl-cicd-pipeline' },
                     ],
                 },
                 {
                     text: 'Migration 🔄', collapsed: true,
                     items: [
-                        { text: 'v2.0.0으로 이전하기', link: '/guide/migration-v2' },
+                        { text: 'v2.0.0으로 이전하기',  link: '/guide/migration-v2' },
                     ],
                 },
                 {
