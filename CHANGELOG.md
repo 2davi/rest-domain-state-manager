@@ -1,3 +1,15 @@
+## [1.2.2](https://github.com/2davi/rest-domain-state-manager/compare/v1.2.1...v1.2.2) (2026-04-02)
+
+### 🐛 Bug Fixes
+
+* **webdoc:** edit vitepress config.mts - cleanUrls option input. ([2e520c9](https://github.com/2davi/rest-domain-state-manager/commit/2e520c962cd2b0135ef5a14188a5dc90a5502e08))
+
+## [1.2.1](https://github.com/2davi/rest-domain-state-manager/compare/v1.2.0...v1.2.1) (2026-04-02)
+
+### 🐛 Bug Fixes
+
+* **webdoc:** debug VitePress PublicDir location. ([9a0f8ae](https://github.com/2davi/rest-domain-state-manager/commit/9a0f8aed66b399596d0c4f3700961a66a57cc2f2))
+
 ## [1.2.0](https://github.com/2davi/rest-domain-state-manager/compare/v1.1.0...v1.2.0) (2026-04-01)
 
 ### ✨ Features

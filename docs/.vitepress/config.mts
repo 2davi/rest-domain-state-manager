@@ -6,9 +6,10 @@ export default defineConfig({
     title:       'DSM',
     description: 'REST 도메인 상태 관리 라이브러리 — Proxy 기반 자동 HTTP 분기 엔진',
     base:        '/rest-domain-state-manager/',
-
+    cleanUrls: false,
+    
     head: [
-        ['link', { rel: 'icon', type: 'image/svg+xml', href: '/rest-domain-state-manager/favicon.svg' }],
+        ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
         ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
         ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
         ['link', {
@@ -50,7 +51,7 @@ export default defineConfig({
         // .vitepress 폴더 자체를 정적 자산 폴더로 사용 (네 고집대로)
         // __dirname 대신 ESM 표준인 import.meta.url 을 사용해라.
         // ────────────────────────────────────────────────────────────
-        publicDir: fileURLToPath(new URL('.', import.meta.url)),
+        //publicDir: fileURLToPath(new URL('.', import.meta.url)),
     },
 
     locales: {
