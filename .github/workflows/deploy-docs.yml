@@ -24,14 +24,14 @@ jobs:
           token: ${{ secrets.LAB_REPO_PAT }}
           path: 'lab-repo'
       
-# 1. 빌드 (dsm-repo 폴더 안에서 수행)
+      # 3. 빌드 (dsm-repo 폴더 안에서 수행)
       - name: Install & Build Docs
         working-directory: ./dsm-repo
         run: |
           npm install
           npm run docs:build
 
-      # 2. 동기화 및 커밋 (파일 경로 영점 조절)
+      # 4. 동기화 및 커밋 (파일 경로 영점 조절)
       - name: Sync and Push to Lab
         run: |
           # 1. lab 레포의 대상 폴더 비우기 (새 출발)
