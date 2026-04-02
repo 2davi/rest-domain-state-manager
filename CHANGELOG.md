@@ -1,3 +1,9 @@
+## [1.2.4](https://github.com/2davi/rest-domain-state-manager/compare/v1.2.3...v1.2.4) (2026-04-02)
+
+### 🐛 Bug Fixes
+
+* **webdoc:** debug Interactive Playground Component - save() HTTP Methods Logic ([018d031](https://github.com/2davi/rest-domain-state-manager/commit/018d031e963e064005037395bdc568b465f5a434))
+
 ## [1.2.3](https://github.com/2davi/rest-domain-state-manager/compare/v1.2.2...v1.2.3) (2026-04-02)
 
 ### 🐛 Bug Fixes
