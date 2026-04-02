@@ -1,7 +1,12 @@
+# 2026-04-02
+coverage/
+
 # 2026-03-25
 # Vitepress
 .vitepress/dist/
 .vitepress/cache/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,node,macos,windows
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,node,macos,windows
