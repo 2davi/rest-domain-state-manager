@@ -31,6 +31,34 @@ jobs:
           npm install
           npm run docs:build
 
+      - name: Patch VitePress index.html — move VP_SITE_DATA to head
+        working-directory: ./dsm-repo
+        run: |
+          python3 << 'EOF'
+          import re
+
+          path = '../lab-repo/rest-domain-state-manager/index.html'
+
+          with open(path, 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          # body 최하단의 VP_HASH_MAP + VP_SITE_DATA inline script를 추출
+          pattern = r'(<script>window\.__VP_HASH_MAP__.*?window\.__VP_SITE_DATA__.*?</script>)'
+          match = re.search(pattern, content, re.DOTALL)
+
+          if match:
+              script_tag = match.group(1)
+              # body에서 제거
+              content = content.replace(script_tag, '', 1)
+              # </head> 바로 앞에 주입
+              content = content.replace('</head>', script_tag + '\n</head>', 1)
+              with open(path, 'w', encoding='utf-8') as f:
+                  f.write(content)
+              print('Patched: VP_SITE_DATA moved to <head>')
+          else:
+              print('WARNING: VP_SITE_DATA script not found, skip patch')
+          EOF
+
       # 4. 동기화 및 커밋 (파일 경로 영점 조절)
       - name: Sync and Push to Lab
         run: |
