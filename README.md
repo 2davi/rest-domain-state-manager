@@ -287,6 +287,8 @@ class CertLayout extends UILayout {
 
 const api   = new ApiHandler({ host: 'localhost:8080' });
 const certs = DomainCollection.fromJSONArray(
+    // NOTE: 현재 ApiHandler.get() 메서드는 단일 객체 응답 중심으로 설계되어 있습니다 ^0^
+    // TODO: 빠른 업데이트를 통해 fetch 병행 없이 불러오도록 개선하겠습니다 ^~^;
     await fetch('/api/certificates').then(r => r.text()),
     api
 );
