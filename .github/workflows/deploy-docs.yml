@@ -44,28 +44,24 @@ jobs:
           # 3. patch: rsync 이후에 __VP_SITE_DATA__ 수정
           # 2026-04-02 커밋
           python3 << 'EOF'
-          import re
+          import re, glob
 
-          path = '../lab-repo/rest-domain-state-manager/index.html'
-
-          with open(path, 'r', encoding='utf-8') as f:
-              content = f.read()
-
-          # body 최하단의 VP_HASH_MAP + VP_SITE_DATA inline script를 추출
+          targets = glob.glob('lab-repo/rest-domain-state-manager/**/index.html', recursive=True)
           pattern = r'(<script>window\.__VP_HASH_MAP__.*?window\.__VP_SITE_DATA__.*?</script>)'
-          match = re.search(pattern, content, re.DOTALL)
 
-          if match:
-              script_tag = match.group(1)
-              # body에서 제거
-              content = content.replace(script_tag, '', 1)
-              # </head> 바로 앞에 주입
-              content = content.replace('</head>', script_tag + '\n</head>', 1)
-              with open(path, 'w', encoding='utf-8') as f:
-                  f.write(content)
-              print('Patched: VP_SITE_DATA moved to <head>')
-          else:
-              print('WARNING: VP_SITE_DATA script not found, skip patch')
+          for path in targets:
+              with open(path, 'r', encoding='utf-8') as f:
+                  content = f.read()
+              match = re.search(pattern, content, re.DOTALL)
+              if match:
+                  script_tag = match.group(1)
+                  content = content.replace(script_tag, '', 1)
+                  content = content.replace('</head>', script_tag + '\n</head>', 1)
+                  with open(path, 'w', encoding='utf-8') as f:
+                      f.write(content)
+                  print(f'Patched: {path}')
+              else:
+                  print(f'Skip (no match): {path}')
           EOF
 
           # 4. lab-repo 폴더로 이동해서 Git 작업 수행
