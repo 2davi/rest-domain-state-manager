@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/2davi/rest-domain-state-manager/compare/v1.2.2...v1.2.3) (2026-04-02)
+
+### 🐛 Bug Fixes
+
+* nothing. ([61ffea0](https://github.com/2davi/rest-domain-state-manager/commit/61ffea0415903eabefc374bf31c272ff72a870c2))
+* **webdoc:** edit config.mts again. ([5692208](https://github.com/2davi/rest-domain-state-manager/commit/56922089d933a7a2277b25f7e58321fe48831846))
+
 ## [1.2.2](https://github.com/2davi/rest-domain-state-manager/compare/v1.2.1...v1.2.2) (2026-04-02)
 
 ### 🐛 Bug Fixes
