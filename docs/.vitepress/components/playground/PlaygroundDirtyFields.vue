@@ -75,8 +75,12 @@ function syncDisplay() {
 }
 
 function onInput(f, val) {
-    f.val = val
+    f.val = val  // Vue 표시용만 즉시 갱신
+}
+
+function onBlur(f, val) {
     if (!stateRef.value) return
+    f.val = val
     if (f.path.length === 2) {
         stateRef.value.data[f.path[0]][f.path[1]] = val
     } else {
@@ -127,6 +131,7 @@ const ratioMethod = computed(() => {
                             class="pg-input"
                             :value="f.val"
                             @input="e => onInput(f, e.target.value)"
+                            @blur="e => onBlur(f, e.target.value)"
                         />
                         <div v-if="f.nested && display.dirtyFields.includes(f.topKey)" class="pg-nested-hint">
                             {{ f.label }} 수정 → dirtyFields에 <code>'{{ f.topKey }}'</code> 등록

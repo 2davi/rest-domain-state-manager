@@ -22,7 +22,7 @@ const form      = reactive({ ...INITIAL })
 const failMode  = ref(false)
 const log       = ref([])
 const loading   = ref(false)
-const snapshot  = reactive({ before: null, after: null })  // 마지막 save() 전후 data
+const snapshot = reactive({ clBefore: null, clAfter: null })  // 마지막 save() 전후 data
 
 // dsm:rollback 이벤트 리스너 핸들러 참조 (cleanup용)
 let rollbackListener = null
@@ -47,21 +47,38 @@ onUnmounted(() => {
     if (rollbackListener) window.removeEventListener('dsm:rollback', rollbackListener)
 })
 
+// display 상태 추가 (snapshot 패널 대체)
+const dsState = reactive({ changeLogCount: 0, dirtyFields: [], isNew: false })
+
 function doReset() {
     if (unsub) unsub()
     apiRef.value   = new MockApiHandler(INITIAL, { latency: 500 })
     stateRef.value = DomainState.fromJSON(JSON.stringify(INITIAL), apiRef.value)
     Object.assign(form, INITIAL)
     log.value      = []
-    snapshot.before = null
-    snapshot.after  = null
+    // snapshot 관련 라인이 있었다면 전부 제거
     addLog('info', '인스턴스 초기화 완료')
+    // dsState 초기화
+    dsState.changeLogCount = 0
+    dsState.dirtyFields    = []
+    dsState.isNew          = stateRef.value._isNew
+    // subscribe 등록
     unsub = stateRef.value.subscribe(() => {
+        if (!stateRef.value) return
         Object.assign(form, stateRef.value._getTarget())
+        dsState.changeLogCount = stateRef.value._getChangeLog().length
+        dsState.dirtyFields    = [...stateRef.value._getDirtyFields()]
+        dsState.isNew          = stateRef.value._isNew
     })
 }
 
 function onFieldInput(key, val) {
+    // Vue 표시용 로컬 상태만 즉시 업데이트
+    form[key] = val
+}
+
+function onFieldBlur(key, val) {
+    // 포커스 이탈 시 1회 DomainState 반영
     if (!stateRef.value) return
     stateRef.value.data[key] = val
 }
@@ -71,9 +88,8 @@ async function doSave() {
     loading.value = true
     apiRef.value.setFailMode(failMode.value)
 
-    const before = { ...stateRef.value._getTarget() }
-    snapshot.before = before.name
-    addLog('info', `save() 호출 — name: "${before.name}", failMode: ${failMode.value}`)
+    snapshot.clBefore = stateRef.value._getChangeLog().length
+    addLog('info', `save() 호출 — changeLog: ${snapshot.clBefore}개, failMode: ${failMode.value}`)
 
     try {
         await stateRef.value.save('/api/users/user_001')
@@ -81,8 +97,9 @@ async function doSave() {
         snapshot.after = stateRef.value._getTarget().name
         addLog('success', `✓ ${last.method} 성공 — changeLog 초기화됨`)
         addLog('info', `  → restore() 버튼으로 수동 보상 가능 (save() 이전 상태로 복원)`)
+        snapshot.clAfter = stateRef.value._getChangeLog().length  // = 0 (초기화됨)
     } catch (e) {
-        snapshot.after = stateRef.value._getTarget().name
+        snapshot.clAfter = stateRef.value._getChangeLog().length  // = N (복원됨)
         addLog('error', `✗ HTTP ${e.status} — 자동 롤백 완료`)
         addLog('info', `  → name 복원: "${stateRef.value._getTarget().name}"`)
     } finally {
@@ -94,6 +111,7 @@ function doRestore() {
     if (!stateRef.value) return
     const result = stateRef.value.restore()
     if (result) {
+        snapshot.clAfter = stateRef.value._getChangeLog().length  // 복원 후 갱신
         addLog('warn', `restore() 수동 호출 — 인메모리 상태 복원됨`)
         addLog('info', `  → name: "${stateRef.value._getTarget().name}"`)
     } else {
@@ -135,7 +153,8 @@ function addLog(type, msg) {
                     <div v-for="key in Object.keys(form)" :key="key" class="pg-field">
                         <label class="pg-field-label">{{ key }}</label>
                         <input class="pg-input" :value="form[key]"
-                            @input="e => { form[key]=e.target.value; onFieldInput(key, e.target.value) }" />
+                        @input="e => { form[key]=e.target.value }"
+                        @blur="e => onFieldBlur(key, e.target.value)" />
                     </div>
                 </div>
 
@@ -148,17 +167,23 @@ function addLog(type, msg) {
                 </div>
 
                 <!-- 스냅샷 비교 -->
-                <div v-if="snapshot.before !== null" class="pg-snapshot-box">
-                    <div class="pg-label">name 값 변화</div>
+                <div v-if="snapshot.clBefore !== null" class="pg-snapshot-box">
+                    <div class="pg-label">changeLog 상태</div>
                     <div class="pg-snap-row">
                         <span class="snap-label">save() 전</span>
-                        <span class="snap-val">{{ snapshot.before }}</span>
+                        <span class="snap-val">{{ snapshot.clBefore }}개</span>
                     </div>
                     <div class="pg-snap-row">
                         <span class="snap-label">현재</span>
-                        <span class="snap-val" :class="form.name === snapshot.before ? 'restored' : ''">
-                            {{ form.name }}
-                            <span v-if="form.name === snapshot.before" class="restored-badge">복원됨</span>
+                        <span class="snap-val"
+                            :class="snapshot.clAfter !== null && snapshot.clAfter === snapshot.clBefore ? 'restored' : ''">
+                            {{ snapshot.clAfter !== null ? snapshot.clAfter + '개' : '—' }}
+                            <span v-if="snapshot.clAfter !== null && snapshot.clAfter === 0"
+                                class="restored-badge" style="background:rgba(16,185,129,.15);color:#059669">
+                                초기화됨
+                            </span>
+                            <span v-else-if="snapshot.clAfter !== null && snapshot.clAfter === snapshot.clBefore"
+                                class="restored-badge">복원됨</span>
                         </span>
                     </div>
                 </div>
@@ -177,7 +202,41 @@ function addLog(type, msg) {
                     </div>
                     <div v-if="!log.length" class="pg-empty">save() 또는 restore()를 실행하면 로그가 표시됩니다</div>
                 </div>
-
+                
+                <!-- DomainState 현재 상태 패널 -->
+                <div class="pg-snapshot-box" style="margin-top:4px">
+                    <div class="pg-label" style="margin-bottom:6px">DomainState 내부 상태</div>
+                    <div class="pg-snap-row">
+                        <span class="snap-label">isNew</span>
+                        <span class="snap-val" :style="{color: dsState.isNew ? '#10b981' : '#6b7280'}">
+                            {{ dsState.isNew }}
+                        </span>
+                    </div>
+                    <div class="pg-snap-row">
+                        <span class="snap-label">changeLog</span>
+                        <span class="snap-val">
+                            {{ dsState.changeLogCount }}개
+                            <span v-if="dsState.changeLogCount === 0"
+                                style="font-size:.68rem;background:rgba(16,185,129,.12);color:#059669;padding:1px 6px;border-radius:8px;font-weight:600;font-family:sans-serif">
+                                초기화됨
+                            </span>
+                            <span v-else
+                                style="font-size:.68rem;background:rgba(245,158,11,.12);color:#b45309;padding:1px 6px;border-radius:8px;font-weight:600;font-family:sans-serif">
+                                미저장
+                            </span>
+                        </span>
+                    </div>
+                    <div class="pg-snap-row" style="align-items:flex-start">
+                        <span class="snap-label">dirtyFields</span>
+                        <span class="snap-val" style="font-size:.75rem;flex-wrap:wrap;gap:4px">
+                            <span v-if="dsState.dirtyFields.length === 0" style="color:var(--vp-c-text-3)">(없음)</span>
+                            <span v-for="f in dsState.dirtyFields" :key="f"
+                                style="background:rgba(245,158,11,.12);color:#b45309;padding:1px 6px;border-radius:6px;font-family:var(--vp-font-family-mono,monospace)">
+                                {{ f }}
+                            </span>
+                        </span>
+                    </div>
+                </div>
                 <div class="pg-hint">
                     💡 <code>restore()</code>는 인메모리 상태만 복원합니다.<br>
                     서버에 커밋된 내역 롤백은 소비자 책임입니다.<br>

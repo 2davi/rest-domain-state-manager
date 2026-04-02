@@ -64,6 +64,12 @@ function handleFieldInput(key, value) {
     addLog('change', `data.${key} = "${value}"`)
 }
 
+function handleFieldBlur(key, val) {
+    // 포커스 이탈 시 1회 DomainState 반영
+    if (!stateRef.value) return
+    stateRef.value.data[key] = val
+}
+
 function syncDisplay() {
     if (!stateRef.value) return
     display.data      = { ...stateRef.value._getTarget() }
@@ -108,7 +114,8 @@ const formFields = ['name', 'email', 'role']
                             <input
                                 class="pg-form-input"
                                 :value="display.data[key] ?? ''"
-                                @input="e => handleFieldInput(key, e.target.value)"
+                                @input="e => onFieldInput(key, e.target.value)"
+                                @blur="e => onFieldBlur(key, e.target.value)"
                                 :placeholder="mode === 'fromForm' ? '입력하세요' : ''"
                             />
                         </div>

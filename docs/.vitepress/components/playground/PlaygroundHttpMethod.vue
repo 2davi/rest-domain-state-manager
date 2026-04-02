@@ -94,9 +94,14 @@ function clearSave() {
 }
 
 function onFieldInput(key, val) {
+    // Vue 표시용 로컬 상태만 즉시 업데이트
+    form[key] = val
+}
+
+function onFieldBlur(key, val) {
+    // 포커스 이탈 시 1회 DomainState 반영
     if (!stateRef.value) return
     stateRef.value.data[key] = val
-    form[key] = val
 }
 
 async function doSave() {
@@ -183,6 +188,7 @@ const reasonText   = computed(() => {
                             class="pg-input"
                             :value="form[key]"
                             @input="e => onFieldInput(key, e.target.value)"
+                            @blur="e => onFieldBlur(key, e.target.value)"
                         />
                     </div>
                 </div>

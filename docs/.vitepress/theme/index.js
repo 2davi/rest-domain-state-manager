@@ -9,6 +9,7 @@ import PlaygroundBatching    from '../components/playground/PlaygroundBatching.v
 import PlaygroundCsrf        from '../components/playground/PlaygroundCsrf.vue'
 import PlaygroundShadowState from '../components/playground/PlaygroundShadowState.vue'
 import PlaygroundPipeline    from '../components/playground/PlaygroundPipeline.vue'
+import PlaygroundCollection from '../components/playground/PlaygroundCollection.vue'
 
 export default {
     extends: DefaultTheme,
@@ -22,5 +23,6 @@ export default {
         app.component('PlaygroundCsrf',        PlaygroundCsrf)
         app.component('PlaygroundShadowState', PlaygroundShadowState)
         app.component('PlaygroundPipeline',    PlaygroundPipeline)
+        app.component('PlaygroundCollection', PlaygroundCollection)
     },
 }

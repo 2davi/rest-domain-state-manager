@@ -78,22 +78,28 @@ export default defineConfig({
                 {
                     text: 'Getting Started', collapsed: false,
                     items: [
-                        { text: '설치 <span class="nav-badge light">1-1</span>',          link: '/guide/installation' },
-                        { text: '5분 빠른 시작 <span class="nav-badge light">1-2</span>', link: '/guide/quick-start' },
-                        { text: 'ApiHandler <span class="nav-badge light">1-3</span>',     link: '/guide/api-handler' },
+                        { text: '설치 <span class="nav-badge light">1-1</span>',                         link: '/guide/installation' },
+                        { text: '5분 빠른 시작 <span class="nav-badge light">1-2</span>',                link: '/guide/quick-start' },
+                        { text: 'ApiHandler <span class="nav-badge light">1-3</span>',                   link: '/guide/api-handler' },
+                        { text: 'JSP / 레거시 환경 <span class="nav-badge light">1-4</span>',            link: '/guide/si-quickstart' },
+                        { text: 'React / Vue <span class="nav-badge light">1-5</span>',                  link: '/guide/modern-quickstart' },
                     ],
                 },
                 {
                     text: 'Core Concepts', collapsed: false,
                     items: [
-                        { text: '팩토리 메서드 🏭 <span class="nav-badge heavy">2-1</span>',        link: '/guide/factories' },
-                        { text: 'save() 분기 전략 ⭐ <span class="nav-badge heavy">2-2</span>',     link: '/guide/save-strategy' },
-                        { text: 'DomainVO 스키마 <span class="nav-badge heavy">2-3</span>',          link: '/guide/domain-vo' },
-                        { text: 'DomainPipeline <span class="nav-badge heavy">2-4</span>',           link: '/guide/pipeline' },
-                        { text: 'React 어댑터 <span class="nav-badge heavy">2-5</span>',             link: '/guide/react-adapter' },
-                        { text: '디버거 <span class="nav-badge light">2-6</span>',                   link: '/guide/debugger' },
-                        { text: 'FormBinder 플러그인 <span class="nav-badge">2-7</span>',      link: '/guide/form-binder' },
-                        { text: 'DomainRenderer 플러그인 <span class="nav-badge">2-8</span>',  link: '/guide/domain-renderer' },
+                        { text: '팩토리 메서드 <span class="nav-badge heavy">2-1</span>',                link: '/guide/factories' },
+                        { text: 'save() 분기 전략 <span class="nav-badge heavy">2-2</span>',             link: '/guide/save-strategy' },
+                        { text: 'DomainVO 스키마 <span class="nav-badge heavy">2-3</span>',              link: '/guide/domain-vo' },
+                        { text: 'DomainPipeline <span class="nav-badge heavy">2-4</span>',               link: '/guide/pipeline' },
+                        { text: 'React 어댑터 <span class="nav-badge heavy">2-5</span>',                 link: '/guide/react-adapter' },
+                        { text: '디버거 <span class="nav-badge light">2-6</span>',                       link: '/guide/debugger' },
+                        { text: 'FormBinder 플러그인 <span class="nav-badge">2-7</span>',                link: '/guide/form-binder' },
+                        { text: 'DomainRenderer 플러그인 <span class="nav-badge">2-8</span>',            link: '/guide/domain-renderer' },
+                        { text: 'DomainCollection <span class="nav-badge heavy">2-9</span>',             link: '/guide/domain-collection' },
+                        { text: 'UIComposer & UILayout <span class="nav-badge heavy">2-10</span>',       link: '/guide/ui-composer' },
+                        { text: '추적 모드 (realtime / lazy) <span class="nav-badge heavy">2-11</span>', link: '/guide/tracking-modes' },
+                        { text: 'Idempotency-Key <span class="nav-badge light">2-12</span>',             link: '/guide/idempotency' },
                     ],
                 },
                 {
@@ -127,6 +133,12 @@ export default defineConfig({
                     ],
                 },
                 {
+                    text: 'Migration 🔄', collapsed: true,
+                    items: [
+                        { text: 'v2.0.0으로 이전하기', link: '/guide/migration-v2' },
+                    ],
+                },
+                {
                     text: 'Playground ▶', collapsed: true,
                     items: [
                         { text: 'Playground 모음',      link: '/playground/index' },   // ← 추가
@@ -141,6 +153,9 @@ export default defineConfig({
                         { text: 'DomainVO',       link: '/api/domain.DomainVO.Class.DomainVO' },
                         { text: 'DomainPipeline', link: '/api/domain.DomainPipeline.Class.DomainPipeline' },
                         { text: 'DomainRenderer', link: '/api/plugins.domain-renderer.DomainRenderer.Variable.DomainRenderer' },
+                        { text: 'DomainCollection', link: '/api/domain.DomainCollection.Class.DomainCollection' },
+                        { text: 'UIComposer',       link: '/api/ui.UIComposer.Variable.UIComposer' },
+                        { text: 'UILayout',         link: '/api/ui.UILayout.Class.UILayout' },
                         { text: 'FormBinder',     link: '/api/plugins.form-binder.FormBinder.Variable.FormBinder' },
                     ],
                 },

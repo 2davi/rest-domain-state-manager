@@ -14,6 +14,12 @@ hero:
     - theme: alt
       text: 철학 읽기
       link: /philosophy
+    - theme: brand
+      text: JSP / 레거시 환경 →
+      link: /guide/si-quickstart
+    - theme: brand
+      text: React / Vue →
+      link: /guide/modern-quickstart
 
 features:
   - icon: 🔍
@@ -39,6 +45,14 @@ features:
   - icon: 📡
     title: 내장 디버거
     details: BroadcastChannel API를 이용한 멀티탭 디버그 팝업을 제공합니다. Heartbeat GC로 탭 생명주기를 추적하고 실시간으로 상태 변화를 시각화합니다.
+
+  - icon: 📦
+    title: DomainCollection
+    details: 1:N 배열 상태를 단일 컨테이너로 관리합니다. add() / remove() / saveAll({ strategy:'batch' })으로 fnAddRow, fnReindexRows, 직렬화 보일러플레이트를 제거합니다.
+
+  - icon: 🎨
+    title: UIComposer & UILayout
+    details: HTML <template> 기반 그리드 양방향 바인딩. JS에서 DOM 구조를 생성하지 않습니다. UILayout으로 화면별 UI 계약을 선언하고 bind() 한 번으로 연결합니다.
 ---
 
 <br>

@@ -17,6 +17,7 @@ const stateRef    = shallowRef(null)
 const snapHistory = ref([])   // { snap, changedKeys, ts }
 const updateCount = ref(0)
 const loading     = ref(false)
+let _snapIdx = 0
 
 const INITIAL = {
     name:    'Davi',
@@ -60,7 +61,7 @@ function initState() {
             ? INITIAL[f.path[0]][f.path[1]]
             : INITIAL[f.path[0]]
     })
-    snapHistory.value = []
+    snapHistory.value.push({ snap: snap0, changedKeys: [], ts: Date.now(), idx: _snapIdx++ })
     updateCount.value = 0
 
     // 초기 스냅샷 기록
@@ -80,15 +81,19 @@ function initState() {
             snap:        next,
             changedKeys,
             ts:          Date.now(),
-            idx:         snapHistory.value.length,
+            idx:         _snapIdx++,
         })
         if (snapHistory.value.length > 6) snapHistory.value.shift()
     })
 }
 
 function onInput(f, val) {
-    f.val = val
+    f.val = val  // Vue 표시용만 즉시 갱신
+}
+
+function onBlur(f, val) {
     if (!stateRef.value) return
+    f.val = val
     if (f.path.length === 2) {
         stateRef.value.data[f.path[0]][f.path[1]] = val
     } else {
@@ -99,6 +104,7 @@ function onInput(f, val) {
 function doReset() {
     fields.forEach((f, i) => {
         const defaults = ['Davi','davi@example.com','admin','Seoul','04524']
+        _snapIdx = 1  // 초기 스냅샷(#0)이 이미 push됐으므로 1부터
         f.val = defaults[i]
     })
     initState()
@@ -137,6 +143,7 @@ function shortRef(obj) {
                             class="pg-input"
                             :value="f.val"
                             @input="e => onInput(f, e.target.value)"
+                            @blur="e => onBlur(f, e.target.value)"
                         />
                     </div>
                 </div>

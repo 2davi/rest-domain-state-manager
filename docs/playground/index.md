@@ -92,3 +92,13 @@
 → [DomainRenderer 플러그인 문서](/guide/domain-renderer)
 
 <PlaygroundRenderer />
+
+---
+
+## DomainCollection — 배열 상태 관리
+
+`fromJSONArray()`로 배열을 로드하고, `add()` / `remove()`로 항목을 조작한 뒤 `saveAll()`로 저장합니다. POST/PUT 자동 분기와 실패 롤백, realtime/lazy trackingMode 전환을 직접 확인합니다.
+
+→ [DomainCollection 가이드](/guide/domain-collection)
+
+<PlaygroundCollection />
