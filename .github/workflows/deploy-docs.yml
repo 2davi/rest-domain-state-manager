@@ -31,9 +31,18 @@ jobs:
           npm install
           npm run docs:build
 
-      - name: Patch VitePress index.html — move VP_SITE_DATA to head
-        working-directory: ./dsm-repo
+      # 4. 동기화 및 커밋 (파일 경로 영점 조절)
+      - name: Sync and Push to Lab
         run: |
+          # 1. lab 레포의 대상 폴더 비우기 (새 출발)
+          mkdir -p lab-repo/rest-domain-state-manager
+          
+          # 2. dsm-repo의 빌드 결과물(dist/)의 '내용물'을 lab-repo로 복사
+          # 소스 경로 끝의 / 가 중요함! (내용물만 복사한다는 뜻)
+          rsync -av --delete dsm-repo/docs/.vitepress/dist/ lab-repo/rest-domain-state-manager/
+
+          # 3. patch: rsync 이후에 __VP_SITE_DATA__ 수정
+          # 2026-04-02 커밋
           python3 << 'EOF'
           import re
 
@@ -59,22 +68,12 @@ jobs:
               print('WARNING: VP_SITE_DATA script not found, skip patch')
           EOF
 
-      # 4. 동기화 및 커밋 (파일 경로 영점 조절)
-      - name: Sync and Push to Lab
-        run: |
-          # 1. lab 레포의 대상 폴더 비우기 (새 출발)
-          mkdir -p lab-repo/rest-domain-state-manager
-          
-          # 2. dsm-repo의 빌드 결과물(dist/)의 '내용물'을 lab-repo로 복사
-          # 소스 경로 끝의 / 가 중요함! (내용물만 복사한다는 뜻)
-          rsync -av --delete dsm-repo/docs/.vitepress/dist/ lab-repo/rest-domain-state-manager/
-
-          # 3. lab-repo 폴더로 이동해서 Git 작업 수행
+          # 4. lab-repo 폴더로 이동해서 Git 작업 수행
           cd lab-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           
-          # 변경사항이 있을 때만 커밋 (에러 방지)
+          # 5. 변경사항이 있을 때만 커밋 (에러 방지)
           git diff-index --quiet HEAD || git commit -m "docs: sync from rest-domain-state-manager"
           git push origin main
