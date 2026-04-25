@@ -36,7 +36,7 @@ v1.2.4 이후 신규 사이클은 다음과 같이 분리된다:
 
 | # | 파일 | 사이클 | 기간 |
 | :---: | --- | --- | --- |
-| _현재 작성 중인 사이클이 곧 추가됩니다._ | | | |
+| 0001 | [cdr-0001-save-strategy-pivot.md](./cdr-0001-save-strategy-pivot.md) | Save Strategy Pivot & Library Repositioning | 2026-04-25 ~ ongoing |
 
 ## CDR 양식
 
